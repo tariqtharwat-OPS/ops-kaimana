@@ -1,3 +1,4 @@
+import React, { useState } from 'react';
 import { 
   BarChart3, 
   TrendingUp, 
@@ -87,7 +88,7 @@ export const ReportsPage: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {reports[category].map((report) => (
+        {(reports as any)[category].map((report: any) => (
           <button
             key={report.id}
             onClick={() => setSelectedReport(report.id)}
