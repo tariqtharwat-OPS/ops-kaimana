@@ -2,7 +2,6 @@ import React from 'react';
 import { 
   Package, 
   Search, 
-  ChevronRight, 
   Filter, 
   ShoppingBag,
   Clock,

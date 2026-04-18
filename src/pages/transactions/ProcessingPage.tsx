@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { 
   Plus, 
-  ChevronRight, 
   PlusCircle, 
   Trash2,
   ArrowLeft,
@@ -11,7 +10,7 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { MOCK_ITEMS, MOCK_GRADES, MOCK_SIZES } from '../../mockData';
-import { Button, Card, Header, Badge } from '../../components/ui/DesignSystem';
+import { Button, Card, Header } from '../../components/ui/DesignSystem';
 import { Table } from '../../components/ui/Table';
 
 interface OutputLine {

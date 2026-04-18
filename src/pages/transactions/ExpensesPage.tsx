@@ -7,8 +7,7 @@ import {
   Trash2,
   ArrowLeft,
   PlusCircle,
-  FileText,
-  CreditCard
+  FileText
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../../context/LanguageContext';

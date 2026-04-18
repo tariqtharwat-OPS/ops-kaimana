@@ -1,6 +1,6 @@
 import React from 'react';
 import { useParams } from 'react-router-dom';
-import { MOCK_RECEIVING, MOCK_EXPENSES, MOCK_SUPPLIERS, MOCK_ITEMS, MOCK_GRADES, MOCK_SIZES } from '../mockData';
+import { MOCK_RECEIVING, MOCK_SUPPLIERS, MOCK_ITEMS, MOCK_GRADES, MOCK_SIZES } from '../mockData';
 
 export const PrintPage: React.FC = () => {
   const { type, id } = useParams<{ type: string, id: string }>();
@@ -63,7 +63,7 @@ export const PrintPage: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {doc.items.map((item, idx) => {
+              {(doc as any).lines.map((item: any, idx: number) => {
                 const fish = MOCK_ITEMS.find(i => i.id === item.itemId);
                 return (
                   <tr key={idx}>
