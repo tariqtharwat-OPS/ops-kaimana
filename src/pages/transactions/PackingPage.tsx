@@ -186,7 +186,7 @@ export const PackingPage: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-sm">
-              {MOCK_PACKING.map((item) => {
+              {MOCK_PACKING.map((item: any) => {
                 const source = MOCK_ITEMS.find(i => i.id === item.sourceItemId);
                 const pack = MOCK_ITEMS.find(i => i.id === item.packagingItemId);
                 return (

@@ -13,8 +13,6 @@ import {
   ChevronRight,
   User as UserIcon,
   BarChart,
-  FileText,
-  DollarSign,
   UserCheck
 } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';

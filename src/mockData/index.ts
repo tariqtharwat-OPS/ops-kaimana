@@ -61,3 +61,7 @@ export const MOCK_CASH_MOVEMENTS = [
   { id: 'CSH-001', date: '2026-04-18', type: 'IN', source: 'Customer Payment', amount: 5000000, status: 'Posted' },
   { id: 'CSH-002', date: '2026-04-18', type: 'OUT', source: 'Supplier Payment', amount: 10000000, status: 'Posted' },
 ];
+
+export const MOCK_PACKING = [
+  { id: 'PCK-2604-001', date: '2026-04-18', sourceItemId: 'i2', sourceQty: 100, packagingItemId: 'i4', packagingQty: 100, outputItemId: 'i3', outputQty: 98, status: 'Posted' }
+];

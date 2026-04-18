@@ -1,4 +1,3 @@
-import React, { useState } from 'react';
 import { 
   BarChart3, 
   TrendingUp, 
@@ -14,10 +13,12 @@ import {
   Filter,
   Download,
   Printer,
-  Calendar
+  ChevronLeft,
+  RefreshCcw,
+  UserCheck
 } from 'lucide-react';
-import { useLanguage } from '../../context/LanguageContext';
-import { MOCK_ITEMS, MOCK_GRADES, MOCK_SIZES, MOCK_WORKERS } from '../../mockData';
+import { useLanguage } from '../context/LanguageContext';
+import { MOCK_ITEMS, MOCK_GRADES, MOCK_SIZES, MOCK_WORKERS } from '../mockData';
 
 type ReportCategory = 'operational' | 'financial' | 'payroll';
 
@@ -199,4 +200,3 @@ const ReportDetail: React.FC<{ id: string, onBack: () => void }> = ({ id, onBack
 const RefreshCcwIcon = (props: any) => <RefreshCcw {...props} />;
 const UserCheckIcon = (props: any) => <UserCheck {...props} />;
 const ArrowLeftIcon = (props: any) => <ChevronLeft {...props} />;
-import { RefreshCcw, UserCheck } from 'lucide-react';
