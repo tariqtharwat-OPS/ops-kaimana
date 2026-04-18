@@ -47,7 +47,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
       >
         <div className="p-8 flex items-center justify-center">
           <img 
-            src="/images/New-Logo.png" 
+            src="/images/logo.png" 
             alt="OPS Kaimana" 
             className={`${collapsed ? 'h-8' : 'h-16'} transition-all object-contain`}
           />
