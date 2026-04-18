@@ -1,18 +1,26 @@
 import React from 'react';
 
 // Button Component
-export const Button: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'primary' | 'secondary' | 'ghost' | 'danger' }> = ({ 
-  children, variant = 'primary', className = '', ...props 
+export const Button: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement> & { 
+  variant?: 'primary' | 'secondary' | 'ghost' | 'danger',
+  size?: 'sm' | 'md' | 'lg'
+}> = ({ 
+  children, variant = 'primary', size = 'md', className = '', ...props 
 }) => {
-  const base = "px-5 py-2.5 rounded-xl font-bold text-sm transition-all duration-200 active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed";
+  const base = "rounded-xl font-bold transition-all duration-200 active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed";
   const variants = {
     primary: "bg-ocean-800 text-white hover:bg-ocean-900 shadow-sm",
     secondary: "bg-ocean-50 text-ocean-800 border border-ocean-100 hover:bg-ocean-100",
     ghost: "bg-transparent text-slate-500 hover:bg-slate-50 hover:text-slate-900",
     danger: "bg-red-50 text-red-600 border border-red-100 hover:bg-red-100",
   };
+  const sizes = {
+    sm: "px-3 py-1.5 text-xs",
+    md: "px-5 py-2.5 text-sm",
+    lg: "px-8 py-4 text-base"
+  };
   return (
-    <button className={`${base} ${variants[variant]} ${className}`} {...props}>
+    <button className={`${base} ${variants[variant]} ${sizes[size]} ${className}`} {...props}>
       {children}
     </button>
   );

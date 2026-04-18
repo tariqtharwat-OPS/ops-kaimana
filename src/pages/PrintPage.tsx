@@ -1,126 +1,131 @@
-import React from 'react';
-import { useParams } from 'react-router-dom';
-import { MOCK_RECEIVING, MOCK_SUPPLIERS, MOCK_ITEMS, MOCK_GRADES, MOCK_SIZES } from '../mockData';
+import React, { useEffect, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useMasterData } from '../hooks/useMasterData';
+import { Badge } from '../components/ui/DesignSystem';
+import { Loader2, Printer, ChevronLeft } from 'lucide-react';
 
 export const PrintPage: React.FC = () => {
-  const { type, id } = useParams<{ type: string, id: string }>();
+  const { type, id } = useParams();
+  const navigate = useNavigate();
+  const [data, setData] = useState<any>(null);
+  
+  const { data: items } = useMasterData('items', true);
+  const { data: grades } = useMasterData('grades', true);
+  const { data: sizes } = useMasterData('sizes', true);
+  const { data: suppliers } = useMasterData('suppliers', true);
+  const { data: buyers } = useMasterData('buyers', true);
 
-  if (type === 'receiving') {
-    const doc = MOCK_RECEIVING.find(r => r.id === id) || MOCK_RECEIVING[0];
-    const supplier = MOCK_SUPPLIERS.find(s => s.id === doc.supplierId);
+  const { data: sourceData } = useMasterData(type || '', true);
 
-    return (
-      <div className="bg-white min-h-screen py-4 px-4">
-        <div className="A4-page mx-auto shadow-none border-none animate-in fade-in duration-500">
-          {/* Header - Compact */}
-          <div className="flex justify-between items-start mb-10 border-b-2 border-slate-900 pb-6">
-            <div className="flex gap-6 items-center">
-              <img src="/images/logo.png" alt="Logo" className="h-16 object-contain" />
+  useEffect(() => {
+    if (sourceData && id) {
+      const found = sourceData.find((d: any) => d.id === id);
+      setData(found);
+    }
+  }, [sourceData, id]);
+
+  if (!data) return <div className="p-20 text-center"><Loader2 className="animate-spin mx-auto" /></div>;
+
+  return (
+    <div className="min-h-screen bg-slate-50 p-8 print:p-0 print:bg-white">
+      <div className="max-w-4xl mx-auto space-y-8">
+        {/* Actions - Hidden on Print */}
+        <div className="flex justify-between items-center print:hidden bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+           <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-slate-500 font-bold hover:text-ocean-800 transition-colors">
+             <ChevronLeft size={20} /> Back
+           </button>
+           <button onClick={() => window.print()} className="flex items-center gap-2 bg-ocean-800 text-white px-6 py-2 rounded-xl font-bold shadow-lg shadow-ocean-800/20 hover:bg-ocean-900 transition-all">
+             <Printer size={20} /> Print to PDF
+           </button>
+        </div>
+
+        {/* Document Content */}
+        <div className="bg-white p-12 shadow-2xl rounded-[2rem] border border-slate-100 min-h-[11in] print:shadow-none print:border-none print:rounded-none">
+          {/* Header */}
+          <div className="flex justify-between items-start border-b-2 border-slate-900 pb-10 mb-10">
+            <div className="space-y-4">
+              <img src="/images/logo.png" alt="Logo" className="h-16 w-auto" />
               <div>
-                <h1 className="text-2xl font-black text-slate-900 tracking-tighter uppercase">{doc.sourceType === 'Lokal' ? 'Nota Penerimaan' : 'Goods Receipt'}</h1>
-                <p className="text-slate-500 font-bold tracking-widest text-[8px] uppercase">PT. OPS Kaimana • Production Document</p>
+                <h1 className="text-2xl font-black text-slate-900 tracking-tighter uppercase">PT. KAIMANA PLANT OPERATIONS</h1>
+                <p className="text-xs font-bold text-slate-400">Jl. Pelabuhan Baru, Kaimana, Papua Barat</p>
               </div>
             </div>
             <div className="text-right">
-              <div className="mb-2">
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Document No.</p>
-                <p className="text-lg font-black text-ocean-800 leading-tight">{doc.id}</p>
-              </div>
-              <div>
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Date</p>
-                <p className="text-sm font-bold text-slate-900">{doc.date}</p>
+              <h2 className="text-4xl font-black text-slate-900 tracking-tighter mb-2 uppercase">{type}</h2>
+              <div className="space-y-1">
+                <p className="text-xs font-black text-slate-400 uppercase tracking-widest">DOCUMENT NO</p>
+                <p className="text-lg font-black text-ocean-800">#{data.id?.substring(0, 8).toUpperCase()}</p>
+                <p className="text-xs font-bold text-slate-600 uppercase mt-2">{new Date(data.date).toLocaleDateString('id-ID', { dateStyle: 'full' })}</p>
               </div>
             </div>
           </div>
 
-          {/* Supplier Info - Compact */}
-          <div className="grid grid-cols-2 gap-10 mb-8 pb-6 border-b border-slate-100">
-            <div>
-              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Supplier</p>
-              <h3 className="text-xl font-black text-slate-900 leading-tight">{supplier?.name}</h3>
-              <p className="text-[11px] text-slate-500 font-medium leading-tight mt-1">
-                {supplier?.address || 'Kaimana, West Papua, Indonesia'}
-              </p>
+          {/* Parties */}
+          <div className="grid grid-cols-2 gap-12 mb-12">
+            <div className="space-y-4 bg-slate-50 p-6 rounded-2xl">
+               <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">DARI / FROM</h3>
+               <div className="font-black text-slate-900">
+                  {type === 'receivings' ? suppliers.find(s => s.id === data.supplierId)?.name || 'General Supplier' : 'KAIMANA PLANT'}
+               </div>
             </div>
-            <div className="text-right">
-              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Ship To</p>
-              <h3 className="text-md font-black text-slate-900 leading-tight">Plant Kaimana</h3>
-              <p className="text-[11px] text-slate-500 font-medium leading-tight mt-1">
-                PT. OPS Kaimana • Jl. Pelabuhan Kaimana
-              </p>
+            <div className="space-y-4 bg-slate-50 p-6 rounded-2xl border-l-4 border-ocean-800">
+               <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">UNTUK / TO</h3>
+               <div className="font-black text-slate-900">
+                  {type === 'sales' ? buyers.find(b => b.id === data.buyerId)?.name || 'General Buyer' : 'INTERNAL OPERATIONS'}
+               </div>
             </div>
           </div>
 
-          {/* Table - Compact to fit 12 items */}
-          <table className="w-full mb-10">
+          {/* Table */}
+          <table className="w-full mb-12">
             <thead>
-              <tr className="border-b border-slate-300">
-                <th className="py-2 text-left text-[9px] font-black uppercase tracking-widest">Description</th>
-                <th className="py-2 text-center text-[9px] font-black uppercase tracking-widest">Grade/Size</th>
-                <th className="py-2 text-right text-[9px] font-black uppercase tracking-widest">Qty</th>
-                <th className="py-2 text-right text-[9px] font-black uppercase tracking-widest">Price</th>
-                <th className="py-2 text-right text-[9px] font-black uppercase tracking-widest">Total</th>
+              <tr className="border-b-2 border-slate-100">
+                <th className="py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Item / Fish</th>
+                <th className="py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Spec</th>
+                <th className="py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest">Qty</th>
+                <th className="py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest">UOM</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
-              {(doc as any).lines.map((item: any, idx: number) => {
-                const fish = MOCK_ITEMS.find(i => i.id === item.itemId);
-                return (
-                  <tr key={idx}>
-                    <td className="py-2.5">
-                      <p className="font-bold text-slate-900 text-sm">{fish?.nameEn}</p>
-                      <p className="text-[10px] text-slate-400 italic font-medium">{fish?.nameId}</p>
-                    </td>
-                    <td className="py-2.5 text-center text-xs font-bold text-slate-600">
-                      {MOCK_GRADES.find(g => g.id === item.gradeId)?.name || '-'} / {MOCK_SIZES.find(s => s.id === item.sizeId)?.name || '-'}
-                    </td>
-                    <td className="py-2.5 text-right font-bold text-slate-900 text-sm">{item.quantity} {item.unit}</td>
-                    <td className="py-2.5 text-right text-xs font-bold text-slate-600">Rp {item.unitPrice.toLocaleString('id-ID')}</td>
-                    <td className="py-2.5 text-right font-black text-ocean-800 text-sm">Rp {(item.quantity * item.unitPrice).toLocaleString('id-ID')}</td>
-                  </tr>
-                );
-              })}
+            <tbody className="divide-y divide-slate-50">
+              {(data.lines || data.inputs || data.outputs || []).map((line: any, i: number) => (
+                <tr key={i}>
+                  <td className="py-4">
+                    <p className="font-black text-slate-900">{items.find(it => it.id === line.itemId)?.name || 'Unknown'}</p>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase">{items.find(it => it.id === line.itemId)?.englishName}</p>
+                  </td>
+                  <td className="py-4">
+                    <div className="flex gap-2">
+                       {line.gradeId && <span className="text-xs font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded uppercase">{grades.find(g => g.id === line.gradeId)?.name}</span>}
+                       {line.sizeId && <span className="text-xs font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded uppercase">{sizes.find(s => s.id === line.sizeId)?.name}</span>}
+                    </div>
+                  </td>
+                  <td className="py-4 text-right font-black text-slate-900">{line.quantity?.toLocaleString()}</td>
+                  <td className="py-4 text-right font-bold text-slate-400 uppercase">KG</td>
+                </tr>
+              ))}
             </tbody>
           </table>
 
-          {/* Totals & Signature - Bottom of page */}
-          <div className="flex justify-between items-start">
-             <div className="flex gap-10 pt-4">
-                <div className="text-center border-t border-slate-200 pt-2 w-36">
-                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-10">Supplier Signature</p>
-                  <p className="text-[9px] font-bold text-slate-300">( ............................ )</p>
-                </div>
-                <div className="text-center border-t border-slate-200 pt-2 w-36">
-                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-10">Plant Manager</p>
-                  <p className="text-[9px] font-bold text-slate-300">( Tariq Tharwat )</p>
-                </div>
-             </div>
-             <div className="w-64 bg-slate-50 p-4 rounded-xl border border-slate-100">
-               <div className="flex justify-between items-center mb-2">
-                 <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Subtotal</span>
-                 <span className="font-bold text-slate-600 text-xs">Rp {doc.grandTotal.toLocaleString('id-ID')}</span>
-               </div>
-               <div className="flex justify-between items-center pt-2 border-t border-slate-200">
-                 <span className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Grand Total</span>
-                 <span className="text-lg font-black text-ocean-800">Rp {doc.grandTotal.toLocaleString('id-ID')}</span>
-               </div>
-             </div>
+          {/* Footer / Signs */}
+          <div className="grid grid-cols-3 gap-8 mt-auto pt-20">
+            <div className="text-center space-y-16">
+               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">PREPARED BY</p>
+               <div className="border-b border-slate-200 mx-8"></div>
+               <p className="text-[10px] font-bold text-slate-300">Operations Officer</p>
+            </div>
+            <div className="text-center space-y-16">
+               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">VERIFIED BY</p>
+               <div className="border-b border-slate-200 mx-8"></div>
+               <p className="text-[10px] font-bold text-slate-300">Plant Manager</p>
+            </div>
+            <div className="text-center space-y-16">
+               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">RECEIVED BY</p>
+               <div className="border-b border-slate-200 mx-8"></div>
+               <p className="text-[10px] font-bold text-slate-300">Driver / Recipient</p>
+            </div>
           </div>
-          
-          <div className="mt-12 text-center border-t border-slate-50 pt-4">
-            <p className="text-[8px] font-black text-slate-300 uppercase tracking-[0.4em]">Kaimana Ocean Excellence • PT. OPS Kaimana</p>
-          </div>
-        </div>
-        
-        <div className="mt-10 flex justify-center no-print">
-          <button onClick={() => window.print()} className="bg-ocean-800 text-white px-10 py-4 rounded-2xl font-black text-sm shadow-2xl hover:bg-ocean-900 transition-all flex items-center gap-3">
-            Print Document
-          </button>
         </div>
       </div>
-    );
-  }
-
-  // Similar logic for Expense...
-  return <div>Expense Print View Placeholder (Following same style)</div>;
+    </div>
+  );
 };

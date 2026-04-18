@@ -1,198 +1,173 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
-  BarChart3, 
-  TrendingUp, 
-  PieChart, 
-  Users, 
-  Database, 
-  ArrowDownCircle, 
-  ArrowUpCircle, 
-  DollarSign, 
-  Clock, 
-  Briefcase,
-  ChevronRight,
-  Filter,
-  Download,
-  Printer,
-  ChevronLeft,
-  RefreshCcw,
-  UserCheck
+  BarChart, PieChart, TrendingUp, TrendingDown, 
+  Users, Package, DollarSign, Download, Filter, 
+  ChevronRight, Calendar, UserCheck
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
+import { useMasterData } from '../hooks/useMasterData';
+import { Card, Header, Button, Badge } from '../components/ui/DesignSystem';
+import { Table } from '../components/ui/Table';
 
-type ReportCategory = 'operational' | 'financial' | 'payroll';
+type ReportType = 'operational' | 'financial' | 'labor';
 
 export const ReportsPage: React.FC = () => {
   const { t } = useLanguage();
-  const [category, setCategory] = useState<ReportCategory>('operational');
-  const [selectedReport, setSelectedReport] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<ReportType>('operational');
+  const [dateRange, setDateRange] = useState({ start: '', end: '' });
 
-  const reports = {
-    operational: [
-      { id: 'rcv', label: t('Laporan Pembelian / Penerimaan', 'Purchasing / Receiving Report'), icon: ArrowDownCircle },
-      { id: 'proc', label: t('Laporan Pengolahan', 'Processing Report'), icon: RefreshCcw },
-      { id: 'stk', label: t('Laporan Stok', 'Stock Report'), icon: Database },
-      { id: 'sls', label: t('Laporan Penjualan', 'Sales Report'), icon: TrendingUp },
-      { id: 'exp', label: t('Laporan Biaya', 'Expense Report'), icon: DollarSign },
-      { id: 'sup', label: t('Laporan Supplier', 'Supplier Report'), icon: Users },
-      { id: 'buy', label: t('Laporan Buyer / Customer', 'Buyer / Customer Report'), icon: UserCheck },
-    ],
-    financial: [
-      { id: 'cin', label: t('Laporan Kas Masuk', 'Cash In Report'), icon: ArrowDownCircle },
-      { id: 'cout', label: t('Laporan Kas Keluar', 'Cash Out Report'), icon: ArrowUpCircle },
-      { id: 'svl', label: t('Laporan Nilai Penjualan', 'Sales Value Report'), icon: PieChart },
-      { id: 'pvl', label: t('Laporan Nilai Pembelian', 'Purchase Value Report'), icon: BarChart3 },
-      { id: 'prof', label: t('Ringkasan Profit (Profit Overview)', 'Profit Overview Report'), icon: TrendingUp },
-      { id: 'dfs', label: t('Ringkasan Keuangan Harian', 'Daily Financial Summary'), icon: Clock },
-    ],
-    payroll: [
-      { id: 'mon', label: t('Laporan Karyawan Bulanan', 'Monthly Workers Report'), icon: Briefcase },
-      { id: 'day', label: t('Laporan Karyawan Harian', 'Daily Workers Report'), icon: Clock },
-      { id: 'pys', label: t('Ringkasan Payroll', 'Payroll Summary Report'), icon: DollarSign },
-      { id: 'wgp', label: t('Laporan Pembayaran Gaji', 'Wage Payment Report'), icon: UserCheck },
-    ]
-  };
+  // Data
+  const { data: receivings } = useMasterData('receivings', true);
+  const { data: processing } = useMasterData('processing', true);
+  const { data: stock } = useMasterData('stock', true);
+  const { data: sales } = useMasterData('sales', true);
+  const { data: expenses } = useMasterData('expenses', true);
+  const { data: items } = useMasterData('items', true);
+  const { data: suppliers } = useMasterData('suppliers', true);
+  const { data: buyers } = useMasterData('buyers', true);
+  const { data: workers } = useMasterData('workers', true);
 
-  if (selectedReport) {
-    return <ReportDetail id={selectedReport} onBack={() => setSelectedReport(null)} />;
-  }
+  // Stats
+  const stats = useMemo(() => {
+    const totalSales = sales.filter(s => s.status === 'Posted').reduce((sum, s) => sum + (s.totalValue || 0), 0);
+    const totalExpenses = expenses.filter(e => e.status === 'Posted').reduce((sum, e) => sum + (e.totalAmount || 0), 0);
+    const totalQtyIn = receivings.filter(r => r.status === 'Posted').reduce((sum, r) => sum + (r.lines || []).reduce((s: number, l: any) => s + l.quantity, 0), 0);
+    const totalQtyOut = sales.filter(s => s.status === 'Posted').reduce((sum, s) => sum + (s.lines || []).reduce((s: number, l: any) => s + l.quantity, 0), 0);
+    
+    return { totalSales, totalExpenses, totalQtyIn, totalQtyOut, profit: totalSales - totalExpenses };
+  }, [sales, expenses, receivings]);
+
+  const renderOperational = () => (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <Card>
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">{t('Ringkasan Stok', 'Stock Summary')}</h3>
+          <Package className="text-slate-300" size={16} />
+        </div>
+        <Table 
+          data={stock}
+          columns={[
+            { header: 'ITEM', accessor: (s: any) => items.find(i => i.id === s.itemId)?.name || 'Unknown' },
+            { header: 'QTY', accessor: (s: any) => `${s.quantity} kg`, className: 'font-bold' },
+            { header: 'STATUS', accessor: (s: any) => <Badge variant={s.quantity > 0 ? 'posted' : 'draft'}>{s.quantity > 0 ? 'In Stock' : 'Empty'}</Badge> }
+          ]}
+        />
+      </Card>
+      <Card>
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">{t('Kinerja Produksi', 'Production Yield')}</h3>
+          <TrendingUp className="text-slate-300" size={16} />
+        </div>
+        <Table 
+          data={processing.filter(p => p.status === 'Posted').slice(0, 5)}
+          columns={[
+            { header: t('TANGGAL', 'DATE'), accessor: 'date' },
+            { header: t('RENDEMEN', 'YIELD'), accessor: (p: any) => `${p.yield?.toFixed(2)}%`, className: 'font-bold text-emerald-600' }
+          ]}
+        />
+      </Card>
+    </div>
+  );
+
+  const renderFinancial = () => (
+    <div className="space-y-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card className="bg-emerald-50 border-emerald-100">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">CASH IN (SALES)</span>
+            <TrendingUp size={16} className="text-emerald-500" />
+          </div>
+          <p className="text-2xl font-black text-emerald-900">Rp {stats.totalSales.toLocaleString()}</p>
+        </Card>
+        <Card className="bg-red-50 border-red-100">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[10px] font-black text-red-600 uppercase tracking-widest">CASH OUT (EXPENSES)</span>
+            <TrendingDown size={16} className="text-red-500" />
+          </div>
+          <p className="text-2xl font-black text-red-900">Rp {stats.totalExpenses.toLocaleString()}</p>
+        </Card>
+        <Card className="bg-ocean-50 border-ocean-100">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[10px] font-black text-ocean-600 uppercase tracking-widest">NET MARGIN</span>
+            <DollarSign size={16} className="text-ocean-500" />
+          </div>
+          <p className="text-2xl font-black text-ocean-900">Rp {stats.profit.toLocaleString()}</p>
+        </Card>
+      </div>
+      <Card>
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">{t('Daftar Penjualan', 'Sales / Revenue List')}</h3>
+        </div>
+        <Table 
+          data={sales.filter(s => s.status === 'Posted')}
+          columns={[
+            { header: 'DATE', accessor: 'date' },
+            { header: 'BUYER', accessor: (s: any) => buyers.find(b => b.id === s.buyerId)?.name || '--' },
+            { header: 'AMOUNT', accessor: (s: any) => `Rp ${s.totalValue?.toLocaleString()}`, className: 'font-bold' }
+          ]}
+        />
+      </Card>
+    </div>
+  );
+
+  const renderLabor = () => (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <Card>
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">{t('Daftar Pekerja Aktif', 'Active Workers')}</h3>
+          <Users className="text-slate-300" size={16} />
+        </div>
+        <Table 
+          data={workers}
+          columns={[
+            { header: 'NAME', accessor: 'name', className: 'font-bold' },
+            { header: 'POSITION', accessor: 'position' },
+            { header: 'WAGE TYPE', accessor: 'wageType' }
+          ]}
+        />
+      </Card>
+      <Card className="bg-slate-50 flex items-center justify-center p-20 border-2 border-dashed border-slate-200">
+         <div className="text-center space-y-4">
+           <UserCheck size={48} className="text-slate-200 mx-auto" />
+           <p className="text-sm font-black text-slate-300 uppercase tracking-widest">{t('Modul Payroll Siap Dikonfigurasi', 'Payroll Module Ready for Config')}</p>
+         </div>
+      </Card>
+    </div>
+  );
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight">{t('Pusat Laporan', 'Reports Hub')}</h1>
-          <p className="text-slate-500 font-medium">{t('Analisis operasional dan finansial plant dalam satu tempat', 'Plant operational and financial analysis in one place')}</p>
-        </div>
-        <div className="flex gap-2">
-          <button className="premium-button-secondary"><Download size={18} /> Export Data</button>
-        </div>
+    <div className="space-y-10 animate-in fade-in duration-500 pb-20">
+      <Header 
+        title={t('Pusat Laporan', 'Report Center')} 
+        subtitle={t('Analisis data operasional dan finansial terintegrasi', 'Integrated operational and financial data analysis')}
+        action={
+          <div className="flex gap-2">
+            <Button variant="secondary"><Download size={18} /> CSV</Button>
+            <Button variant="secondary"><Download size={18} /> PDF</Button>
+          </div>
+        }
+      />
+
+      <div className="flex gap-4 p-1 bg-slate-100 rounded-2xl w-fit">
+        <button onClick={() => setActiveTab('operational')}
+          className={`px-6 py-3 rounded-xl text-xs font-black tracking-widest uppercase transition-all ${activeTab === 'operational' ? 'bg-white text-ocean-800 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>
+          {t('Operasional', 'Operational')}
+        </button>
+        <button onClick={() => setActiveTab('financial')}
+          className={`px-6 py-3 rounded-xl text-xs font-black tracking-widest uppercase transition-all ${activeTab === 'financial' ? 'bg-white text-ocean-800 shadow-sm' : 'text-slate-400'}`}>
+          {t('Finansial', 'Financial')}
+        </button>
+        <button onClick={() => setActiveTab('labor')}
+          className={`px-6 py-3 rounded-xl text-xs font-black tracking-widest uppercase transition-all ${activeTab === 'labor' ? 'bg-white text-ocean-800 shadow-sm' : 'text-slate-400'}`}>
+          {t('Pekerja', 'Labor')}
+        </button>
       </div>
 
-      {/* Category Tabs */}
-      <div className="flex p-1.5 bg-slate-100 rounded-2xl w-fit border border-slate-200">
-        {(['operational', 'financial', 'payroll'] as ReportCategory[]).map((cat) => (
-          <button
-            key={cat}
-            onClick={() => setCategory(cat)}
-            className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
-              category === cat 
-                ? 'bg-white text-blue-600 shadow-lg shadow-slate-200 border border-slate-100' 
-                : 'text-slate-400 hover:text-slate-600'
-            }`}
-          >
-            {t(cat.charAt(0).toUpperCase() + cat.slice(1), cat.charAt(0).toUpperCase() + cat.slice(1))}
-          </button>
-        ))}
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {(reports as any)[category].map((report: any) => (
-          <button
-            key={report.id}
-            onClick={() => setSelectedReport(report.id)}
-            className="premium-card p-6 flex items-start gap-4 text-left group"
-          >
-            <div className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-600 transition-all border border-slate-100 group-hover:border-blue-100">
-              <report.icon size={24} />
-            </div>
-            <div className="flex-1">
-              <h3 className="font-black text-slate-900 leading-tight mb-1 group-hover:text-blue-600 transition-colors">{report.label}</h3>
-              <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">{t('Klik untuk melihat detail', 'Click to view detail')}</p>
-            </div>
-            <ChevronRight size={20} className="text-slate-300 group-hover:translate-x-1 transition-all" />
-          </button>
-        ))}
+      <div className="animate-in slide-in-from-bottom-4 duration-500">
+        {activeTab === 'operational' && renderOperational()}
+        {activeTab === 'financial' && renderFinancial()}
+        {activeTab === 'labor' && renderLabor()}
       </div>
     </div>
   );
 };
-
-const ReportDetail: React.FC<{ id: string, onBack: () => void }> = ({ id, onBack }) => {
-  const { t } = useLanguage();
-
-  return (
-    <div className="space-y-6 animate-in slide-in-from-right duration-500">
-       <div className="flex items-center gap-4">
-         <button onClick={onBack} className="p-3 bg-white border border-slate-200 rounded-2xl hover:bg-slate-50 transition-all shadow-sm">
-           <ChevronLeft size={20} className="text-slate-600" />
-         </button>
-         <div>
-           <h1 className="text-2xl font-black text-slate-900 tracking-tight">Report Detail: {id.toUpperCase()}</h1>
-           <p className="text-slate-500 font-medium">{t('Data real-time berdasarkan filter yang dipilih', 'Real-time data based on selected filters')}</p>
-         </div>
-       </div>
-
-       {/* Filters */}
-       <div className="premium-card p-6 flex flex-wrap items-end gap-4">
-         <div className="space-y-2">
-           <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('Rentang Tanggal', 'Date Range')}</label>
-           <div className="flex items-center gap-2">
-             <input type="date" className="premium-input w-40" />
-             <span className="text-slate-400">to</span>
-             <input type="date" className="premium-input w-40" />
-           </div>
-         </div>
-         <div className="space-y-2">
-           <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('Kategori', 'Category')}</label>
-           <select className="premium-input w-48">
-             <option>All Categories</option>
-           </select>
-         </div>
-         <button className="premium-button-primary px-4 py-2.5 h-[46px]"><Filter size={18} /> Apply</button>
-         <button className="premium-button-secondary px-4 py-2.5 h-[46px] ml-auto"><Printer size={18} /> Print Report</button>
-       </div>
-
-       {/* Summary Cards */}
-       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-         <div className="premium-card p-6 bg-blue-600 text-white border-none shadow-blue-200">
-           <p className="text-[10px] font-black uppercase tracking-widest opacity-70 mb-1">{t('Total Nilai', 'Total Value')}</p>
-           <h3 className="text-2xl font-black">Rp 125.400.000</h3>
-         </div>
-         <div className="premium-card p-6">
-           <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">{t('Total Volume', 'Total Volume')}</p>
-           <h3 className="text-2xl font-black text-slate-900">4,500 kg</h3>
-         </div>
-         <div className="premium-card p-6">
-           <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">{t('Rata-rata Harga', 'Avg Price')}</p>
-           <h3 className="text-2xl font-black text-slate-900">Rp 27,866</h3>
-         </div>
-         <div className="premium-card p-6">
-           <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">{t('Jumlah Transaksi', 'Transactions')}</p>
-           <h3 className="text-2xl font-black text-slate-900">42</h3>
-         </div>
-       </div>
-
-       {/* Table */}
-       <div className="premium-card overflow-hidden">
-         <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-slate-50 text-slate-500 text-[10px] font-black uppercase tracking-widest border-b border-slate-200">
-                <th className="px-6 py-4">Date</th>
-                <th className="px-6 py-4">Reference</th>
-                <th className="px-6 py-4">Description</th>
-                <th className="px-6 py-4 text-right">Qty</th>
-                <th className="px-6 py-4 text-right">Value</th>
-                <th className="px-6 py-4 text-center">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {[1, 2, 3, 4, 5].map((i) => (
-                <tr key={i} className="hover:bg-slate-50 transition-colors">
-                  <td className="px-6 py-4 text-sm font-bold text-slate-600 tracking-tight">2026-04-{10+i}</td>
-                  <td className="px-6 py-4 text-sm font-black text-slate-900">DOC-2604-00{i}</td>
-                  <td className="px-6 py-4 text-sm font-medium text-slate-500">Sample transaction data line {i}</td>
-                  <td className="px-6 py-4 text-sm font-black text-slate-900 text-right">250 kg</td>
-                  <td className="px-6 py-4 text-sm font-black text-blue-600 text-right">Rp 7.500.000</td>
-                  <td className="px-6 py-4 text-center">
-                    <span className="status-badge status-posted">Posted</span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-         </table>
-       </div>
-    </div>
-  );
-};
-

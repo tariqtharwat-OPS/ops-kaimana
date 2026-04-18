@@ -14,6 +14,8 @@ import { PrintPage } from './pages/PrintPage';
 import { Dashboard } from './pages/Dashboard';
 import { UsersPage } from './pages/UsersPage';
 
+import { SalesPage } from './pages/transactions/SalesPage';
+
 function App() {
   return (
     <AuthProvider>
@@ -31,6 +33,7 @@ function App() {
                   <Route path="/receiving" element={<ReceivingPage />} />
                   <Route path="/processing" element={<ProcessingPage />} />
                   <Route path="/packing" element={<PackingPage />} />
+                  <Route path="/sales" element={<SalesPage />} />
                   <Route path="/stock" element={<StockPage />} />
                   <Route path="/expenses" element={<ExpensesPage />} />
                   <Route path="/reports" element={<ReportsPage />} />
