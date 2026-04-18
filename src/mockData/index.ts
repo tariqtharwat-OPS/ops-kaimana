@@ -1,16 +1,22 @@
-export const MOCK_USERS = [
-  { id: 'u1', name: 'Admin Kaimana', role: 'Admin', email: 'admin@kaimana.com', isActive: true },
-  { id: 'u2', name: 'Manager Budi', role: 'Manager', email: 'manager@kaimana.com', isActive: true },
-  { id: 'u3', name: 'Operator Siti', role: 'Operator', email: 'siti@kaimana.com', isActive: true },
-  { id: 'u4', name: 'Finance Yudi', role: 'Finance', email: 'yudi@kaimana.com', isActive: true },
+export const MOCK_GRADES = [
+  { id: 'g1', name: 'Grade A' },
+  { id: 'g2', name: 'Grade B' },
+  { id: 'g3', name: 'Grade C' },
+];
+
+export const MOCK_SIZES = [
+  { id: 'sz1', name: 'Small (2-3kg)' },
+  { id: 'sz2', name: 'Medium (3-5kg)' },
+  { id: 'sz3', name: 'Large (5-10kg)' },
+  { id: 'sz4', name: 'Extra Large (>10kg)' },
 ];
 
 export const MOCK_ITEMS = [
-  { id: 'i1', nameId: 'Ikan Tuna Utuh', nameEn: 'Whole Tuna', category: 'Raw', unit: 'kg', isActive: true },
-  { id: 'i2', nameId: 'Tuna Loin', nameEn: 'Tuna Loin', category: 'Semi', unit: 'kg', isActive: true },
-  { id: 'i3', nameId: 'Tuna Saku', nameEn: 'Tuna Saku', category: 'Finished', unit: 'kg', isActive: true },
-  { id: 'i4', nameId: 'Plastik Vakum 1kg', nameEn: 'Vacuum Bag 1kg', category: 'Packaging', unit: 'pcs', isActive: true },
-  { id: 'i5', nameId: 'Box Karton', nameEn: 'Carton Box', category: 'Packaging', unit: 'pcs', isActive: true },
+  { id: 'i1', item_code: 'FT-TUNA-WH', nameId: 'Ikan Tuna Utuh', nameEn: 'Whole Tuna', category: 'Raw', default_unit: 'kg', active_status: true },
+  { id: 'i2', item_code: 'FT-TUNA-LN', nameId: 'Tuna Loin', nameEn: 'Tuna Loin', category: 'Semi', default_unit: 'kg', active_status: true },
+  { id: 'i3', item_code: 'FT-TUNA-SK', nameId: 'Tuna Saku', nameEn: 'Tuna Saku', category: 'Finished', default_unit: 'kg', active_status: true },
+  { id: 'i4', item_code: 'PK-VAC-1KG', nameId: 'Plastik Vakum 1kg', nameEn: 'Vacuum Bag 1kg', category: 'Packaging', default_unit: 'pcs', active_status: true },
+  { id: 'i5', item_code: 'PK-BOX-CRT', nameId: 'Box Karton', nameEn: 'Carton Box', category: 'Packaging', default_unit: 'pcs', active_status: true },
 ];
 
 export const MOCK_SUPPLIERS = [
@@ -32,8 +38,32 @@ export const MOCK_STOCK = [
 ];
 
 export const MOCK_RECEIVING = [
-  { id: 'RCV-2604-001', date: '2026-04-17', supplierId: 's1', itemId: 'i1', quantity: 500, unitPrice: 35000, totalPrice: 17500000, notes: 'Morning catch', status: 'Posted' },
-  { id: 'RCV-2604-002', date: '2026-04-17', supplierId: 's2', itemId: 'i1', quantity: 200, unitPrice: 35000, totalPrice: 7000000, notes: 'Afternoon catch', status: 'Draft' },
+  { 
+    id: 'RCV-2604-001', 
+    date: '2026-04-17', 
+    supplierId: 's1', 
+    sourceType: 'Local',
+    status: 'Posted',
+    notes: 'Morning catch',
+    grandTotal: 17500000,
+    createdBy: 'u1',
+    lines: [
+      { itemId: 'i1', gradeId: 'g1', sizeId: 'sz3', quantity: 500, unit: 'kg', unitPrice: 35000, total: 17500000 }
+    ]
+  },
+  { 
+    id: 'RCV-2604-002', 
+    date: '2026-04-17', 
+    supplierId: 's2', 
+    sourceType: 'Local',
+    status: 'Draft',
+    notes: 'Afternoon catch',
+    grandTotal: 7000000,
+    createdBy: 'u1',
+    lines: [
+      { itemId: 'i1', gradeId: 'g2', sizeId: 'sz2', quantity: 200, unit: 'kg', unitPrice: 35000, total: 7000000 }
+    ]
+  },
 ];
 
 export const MOCK_PROCESSING = [

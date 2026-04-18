@@ -16,7 +16,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Menu,
-  X
+  X,
+  User as UserIcon
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { Link, useLocation } from 'react-router-dom';
@@ -28,6 +29,13 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
   const location = useLocation();
   const isPrintView = location.pathname.startsWith('/print');
 
+  // Mock User Info
+  const user = {
+    name: 'Tariq Tharwat',
+    position: 'Plant Manager',
+    role: 'Admin'
+  };
+
   if (isPrintView) return <div className="print-view bg-white min-h-screen">{children}</div>;
 
   const navItems = [
@@ -35,12 +43,9 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
     { path: '/receiving', icon: ArrowDownCircle, labelId: 'Penerimaan', labelEn: 'Receiving' },
     { path: '/processing', icon: RefreshCcw, labelId: 'Pengolahan', labelEn: 'Processing' },
     { path: '/packing', icon: Package, labelId: 'Pengemasan', labelEn: 'Packing' },
-    { path: '/sales', icon: BarChart3, labelId: 'Penjualan', labelEn: 'Sales' },
-    { path: '/dispatch', icon: Truck, labelId: 'Pengiriman', labelEn: 'Dispatch' },
-    { path: '/expenses', icon: CreditCard, labelId: 'Biaya', labelEn: 'Expenses' },
     { path: '/stock', icon: Database, labelId: 'Stok', labelEn: 'Stock' },
+    { path: '/expenses', icon: CreditCard, labelId: 'Biaya', labelEn: 'Expenses' },
     { path: '/master', icon: Users, labelId: 'Data Master', labelEn: 'Master Data' },
-    { path: '/reports', icon: Printer, labelId: 'Laporan', labelEn: 'Reports' },
     { path: '/settings', icon: Settings, labelId: 'Pengaturan', labelEn: 'Settings' },
   ];
 
@@ -87,34 +92,37 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
         <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 shadow-sm z-10">
           <div className="flex items-center gap-4">
             <h2 className="font-semibold text-slate-800 text-lg">
-              {t('Sistem Operasional Plant', 'Plant Operational System')}
+              {t(`Selamat Datang, ${user.name}`, `Welcome, ${user.name}`)}
             </h2>
           </div>
           
           <div className="flex items-center gap-4">
             {/* Language Switcher */}
-            <div className="flex items-center bg-slate-100 rounded-full p-1 border border-slate-200">
+            <div className="flex items-center bg-slate-100 rounded-full p-0.5 border border-slate-200">
                <button 
                  onClick={() => setLanguage('id')}
-                 className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${language === 'id' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500'}`}
+                 className={`px-3 py-1 rounded-full text-[10px] font-black transition-all ${language === 'id' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500'}`}
                >ID</button>
                <button 
                  onClick={() => setLanguage('en')}
-                 className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${language === 'en' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500'}`}
+                 className={`px-3 py-1 rounded-full text-[10px] font-black transition-all ${language === 'en' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500'}`}
                >EN</button>
             </div>
 
             <div className="h-8 w-px bg-slate-200 mx-1"></div>
 
-            {/* Role Mock Switcher */}
-            <select className="text-xs bg-slate-50 border border-slate-200 rounded px-2 py-1 font-medium focus:ring-2 focus:ring-blue-500 outline-none">
-              <option>Admin</option>
-              <option>Manager</option>
-              <option>Operator</option>
-              <option>Finance</option>
-            </select>
+            {/* User Profile Info */}
+            <div className="flex items-center gap-3 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">
+              <div className="text-right">
+                <div className="text-xs font-bold text-slate-900 leading-none">{user.name}</div>
+                <div className="text-[10px] font-medium text-slate-500 mt-1">{user.position}</div>
+              </div>
+              <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 border border-blue-200">
+                <UserIcon size={16} />
+              </div>
+            </div>
 
-            <button className="p-2 text-slate-400 hover:text-slate-600 transition-colors">
+            <button className="p-2 text-slate-400 hover:text-red-500 transition-colors">
               <LogOut size={18} />
             </button>
           </div>

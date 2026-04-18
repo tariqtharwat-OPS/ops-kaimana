@@ -13,7 +13,7 @@ import {
   FileText
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
-import { MOCK_PACKING, MOCK_ITEMS } from '../../mockData';
+import { MOCK_PACKING, MOCK_ITEMS, MOCK_GRADES, MOCK_SIZES } from '../../mockData';
 
 export const PackingPage: React.FC = () => {
   const { t } = useLanguage();
@@ -61,26 +61,29 @@ export const PackingPage: React.FC = () => {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">{t('Barang Sumber', 'Source Item')}</label>
-                  <select className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500">
+                  <label className="text-xs font-bold text-slate-500 uppercase">{t('Barang Sumber', 'Source Item')}</label>
+                  <select className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-sm">
                     <option value="">{t('-- Pilih Barang --', '-- Select Item --')}</option>
                     {MOCK_ITEMS.filter(i => i.category === 'Semi').map(i => <option key={i.id} value={i.id}>{t(i.nameId, i.nameEn)}</option>)}
                   </select>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">{t('Kuantitas Sumber (kg)', 'Source Qty (kg)')}</label>
-                  <input type="number" className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" placeholder="0.00" />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">{t('Bahan Kemasan', 'Packaging Material')}</label>
-                  <select className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500">
-                    <option value="">{t('-- Pilih Kemasan --', '-- Select Packaging --')}</option>
-                    {MOCK_ITEMS.filter(i => i.category === 'Packaging').map(i => <option key={i.id} value={i.id}>{t(i.nameId, i.nameEn)}</option>)}
+                  <label className="text-xs font-bold text-slate-500 uppercase">{t('Grade Sumber', 'Source Grade')}</label>
+                  <select className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                    <option value="">--</option>
+                    {MOCK_GRADES.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
                   </select>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">{t('Kuantitas Kemasan (pcs)', 'Packaging Qty (pcs)')}</label>
-                  <input type="number" className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" placeholder="0" />
+                  <label className="text-xs font-bold text-slate-500 uppercase">{t('Kuantitas Sumber (kg)', 'Source Qty (kg)')}</label>
+                  <input type="number" className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-sm font-bold" placeholder="0.00" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-slate-500 uppercase">{t('Bahan Kemasan', 'Packaging Material')}</label>
+                  <select className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                    <option value="">{t('-- Pilih Kemasan --', '-- Select Packaging --')}</option>
+                    {MOCK_ITEMS.filter(i => i.category === 'Packaging').map(i => <option key={i.id} value={i.id}>{t(i.nameId, i.nameEn)}</option>)}
+                  </select>
                 </div>
               </div>
             </div>
@@ -92,15 +95,22 @@ export const PackingPage: React.FC = () => {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">{t('Barang Hasil', 'Output Item')}</label>
-                  <select className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500">
+                  <label className="text-xs font-bold text-slate-500 uppercase">{t('Barang Hasil', 'Output Item')}</label>
+                  <select className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-sm">
                     <option value="">{t('-- Pilih Barang --', '-- Select Item --')}</option>
                     {MOCK_ITEMS.filter(i => i.category === 'Finished').map(i => <option key={i.id} value={i.id}>{t(i.nameId, i.nameEn)}</option>)}
                   </select>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-emerald-700">{t('Kuantitas Hasil (kg)', 'Output Qty (kg)')}</label>
-                  <input type="number" className="w-full px-3 py-2 bg-emerald-50 border border-emerald-100 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500 text-emerald-900 font-bold" placeholder="0.00" />
+                  <label className="text-xs font-bold text-slate-500 uppercase">{t('Grade Hasil', 'Output Grade')}</label>
+                  <select className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                    <option value="">--</option>
+                    {MOCK_GRADES.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-emerald-700 uppercase">{t('Kuantitas Hasil (kg)', 'Output Qty (kg)')}</label>
+                  <input type="number" className="w-full px-3 py-2 bg-emerald-50 border border-emerald-100 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500 text-emerald-900 font-bold text-sm" placeholder="0.00" />
                 </div>
               </div>
             </div>
@@ -111,12 +121,12 @@ export const PackingPage: React.FC = () => {
                <h3 className="font-semibold text-slate-800 mb-4">{t('Status Stok', 'Stock Status')}</h3>
                <div className="space-y-2 text-xs">
                  <div className="flex justify-between">
-                   <span className="text-slate-500">{t('Tersedia (Semi)', 'Available (Semi)')}</span>
-                   <span className="font-bold text-slate-800">120.0 kg</span>
+                   <span className="text-slate-500 font-bold uppercase">{t('Loin Tersedia', 'Loin Available')}</span>
+                   <span className="font-black text-blue-600">120.0 kg</span>
                  </div>
                  <div className="flex justify-between">
-                   <span className="text-slate-500">{t('Tersedia (Kemasan)', 'Available (Pack)')}</span>
-                   <span className="font-bold text-slate-800">450 pcs</span>
+                   <span className="text-slate-500 font-bold uppercase">{t('Vakum Tersedia', 'Vac Available')}</span>
+                   <span className="font-black text-emerald-600">450 pcs</span>
                  </div>
                </div>
             </div>

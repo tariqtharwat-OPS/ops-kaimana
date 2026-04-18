@@ -5,7 +5,6 @@ import {
   Printer, 
   ChevronRight, 
   Filter, 
-  MoreVertical, 
   Save, 
   Send,
   Trash2,
@@ -13,15 +12,64 @@ import {
   Calendar,
   User,
   Hash,
-  FileText
+  FileText,
+  Package,
+  PlusCircle,
+  MoreVertical
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
-import { MOCK_RECEIVING, MOCK_SUPPLIERS, MOCK_ITEMS } from '../../mockData';
+import { MOCK_RECEIVING, MOCK_SUPPLIERS, MOCK_ITEMS, MOCK_GRADES, MOCK_SIZES } from '../../mockData';
+
+interface ReceivingLine {
+  id: string;
+  itemId: string;
+  gradeId: string;
+  sizeId: string;
+  quantity: number;
+  unit: string;
+  unitPrice: number;
+  total: number;
+}
 
 export const ReceivingPage: React.FC = () => {
   const { t } = useLanguage();
   const [view, setView] = useState<'list' | 'form'>('list');
   const [searchTerm, setSearchTerm] = useState('');
+  
+  // Form State
+  const [lines, setLines] = useState<ReceivingLine[]>([
+    { id: '1', itemId: '', gradeId: '', sizeId: '', quantity: 0, unit: 'kg', unitPrice: 0, total: 0 }
+  ]);
+
+  const addLine = () => {
+    setLines([...lines, { id: Date.now().toString(), itemId: '', gradeId: '', sizeId: '', quantity: 0, unit: 'kg', unitPrice: 0, total: 0 }]);
+  };
+
+  const removeLine = (id: string) => {
+    if (lines.length > 1) {
+      setLines(lines.filter(l => l.id !== id));
+    }
+  };
+
+  const updateLine = (id: string, field: keyof ReceivingLine, value: any) => {
+    const newLines = lines.map(line => {
+      if (line.id === id) {
+        const updatedLine = { ...line, [field]: value };
+        // Auto-update unit if item changes
+        if (field === 'itemId') {
+          const item = MOCK_ITEMS.find(i => i.id === value);
+          updatedLine.unit = item?.default_unit || 'kg';
+        }
+        // Auto-calculate total
+        updatedLine.total = updatedLine.quantity * updatedLine.unitPrice;
+        return updatedLine;
+      }
+      return line;
+    });
+    setLines(newLines);
+  };
+
+  const grandTotal = lines.reduce((sum, line) => sum + line.total, 0);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -34,7 +82,8 @@ export const ReceivingPage: React.FC = () => {
 
   if (view === 'form') {
     return (
-      <div className="space-y-6 animate-in fade-in duration-500">
+      <div className="space-y-6 animate-in fade-in duration-500 pb-20">
+        {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button 
@@ -45,7 +94,7 @@ export const ReceivingPage: React.FC = () => {
             </button>
             <div>
               <h1 className="text-2xl font-bold text-slate-900">{t('Penerimaan Baru', 'New Receiving')}</h1>
-              <p className="text-slate-500 text-sm">{t('Input data penerimaan barang dari supplier', 'Input receiving data from supplier')}</p>
+              <p className="text-slate-500 text-sm">{t('Dokumen penerimaan multi-item dari supplier', 'Multi-item receiving document from supplier')}</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -55,103 +104,156 @@ export const ReceivingPage: React.FC = () => {
             </button>
             <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200 font-medium">
               <Send size={18} />
-              {t('Post ke Stok', 'Post to Stock')}
+              {t('Post Dokumen', 'Post Document')}
             </button>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6">
-            <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-6">
-              <h3 className="font-semibold text-slate-800 border-b border-slate-100 pb-3">{t('Informasi Utama', 'Primary Information')}</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700 flex items-center gap-2">
-                    <Calendar size={14} className="text-slate-400" />
-                    {t('Tanggal', 'Date')}
-                  </label>
-                  <input type="date" className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all" defaultValue={new Date().toISOString().split('T')[0]} />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700 flex items-center gap-2">
-                    <User size={14} className="text-slate-400" />
-                    {t('Supplier', 'Supplier')}
-                  </label>
-                  <select className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all">
-                    <option value="">{t('-- Pilih Supplier --', '-- Select Supplier --')}</option>
-                    {MOCK_SUPPLIERS.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700 flex items-center gap-2">
-                    <Package size={14} className="text-slate-400" />
-                    {t('Barang', 'Item')}
-                  </label>
-                  <select className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all">
-                    <option value="">{t('-- Pilih Barang --', '-- Select Item --')}</option>
-                    {MOCK_ITEMS.filter(i => i.category === 'Raw').map(i => <option key={i.id} value={i.id}>{t(i.nameId, i.nameEn)}</option>)}
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700 flex items-center gap-2">
-                    <Hash size={14} className="text-slate-400" />
-                    {t('Kuantitas (kg)', 'Quantity (kg)')}
-                  </label>
-                  <input type="number" className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all" placeholder="0.00" />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700 flex items-center gap-2">
-                    <CreditCard size={14} className="text-slate-400" />
-                    {t('Harga Satuan', 'Unit Price')}
-                  </label>
-                  <input type="number" className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all" placeholder="Rp 0" />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">
-                    {t('Total Harga', 'Total Price')}
-                  </label>
-                  <div className="w-full px-3 py-2 bg-blue-50 border border-blue-100 rounded-lg text-blue-700 font-bold">
-                    Rp 0
-                  </div>
-                </div>
+        {/* Document Header Info */}
+        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t('No. Dokumen', 'Document No.')}</label>
+              <div className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-400 font-mono text-sm">
+                RCV-AUTO-GEN
               </div>
             </div>
-
-            <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
-              <label className="text-sm font-medium text-slate-700 flex items-center gap-2">
-                <FileText size={14} className="text-slate-400" />
-                {t('Catatan', 'Notes')}
-              </label>
-              <textarea rows={3} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all" placeholder={t('Tambahkan catatan...', 'Add notes...')}></textarea>
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t('Tanggal', 'Date')}</label>
+              <input type="date" className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all text-sm" defaultValue={new Date().toISOString().split('T')[0]} />
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t('Supplier', 'Supplier')}</label>
+              <select className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all text-sm">
+                <option value="">{t('-- Pilih Supplier --', '-- Select Supplier --')}</option>
+                {MOCK_SUPPLIERS.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t('Tipe Sumber', 'Source Type')}</label>
+              <select className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all text-sm">
+                <option value="Local">Lokal</option>
+                <option value="Import">Impor</option>
+              </select>
             </div>
           </div>
-
-          <div className="space-y-6">
-            <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-               <h3 className="font-semibold text-slate-800 mb-4">{t('Status Transaksi', 'Transaction Status')}</h3>
-               <div className="flex items-center gap-3 p-3 bg-amber-50 border border-amber-100 rounded-lg text-amber-700 text-sm font-medium mb-4">
-                 <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></div>
-                 {t('Draf Baru', 'New Draft')}
-               </div>
-               <p className="text-xs text-slate-500 leading-relaxed">
-                 {t('Transaksi belum masuk ke stok. Anda dapat menyimpan sebagai draf dan melanjutkannya nanti.', 'Transaction has not entered stock yet. You can save as draft and continue later.')}
-               </p>
-            </div>
-
-            <div className="bg-slate-900 p-6 rounded-xl shadow-xl text-white">
-               <h3 className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-4">{t('Ringkasan', 'Summary')}</h3>
-               <div className="space-y-3">
-                 <div className="flex justify-between text-sm">
-                   <span className="text-slate-400">{t('Subtotal', 'Subtotal')}</span>
-                   <span className="font-medium">Rp 0</span>
-                 </div>
-                 <div className="flex justify-between text-sm border-t border-slate-800 pt-3">
-                   <span className="text-slate-400">{t('Total', 'Total')}</span>
-                   <span className="text-xl font-bold text-blue-400">Rp 0</span>
-                 </div>
-               </div>
-            </div>
+          <div className="mt-6 space-y-2">
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t('Catatan', 'Notes')}</label>
+            <textarea rows={2} className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-all text-sm" placeholder={t('Tambahkan catatan dokumen...', 'Add document notes...')}></textarea>
           </div>
+        </div>
+
+        {/* Line Items Table */}
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="p-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+            <h3 className="font-bold text-slate-800 flex items-center gap-2">
+              <Package size={18} className="text-blue-500" />
+              {t('Item Penerimaan', 'Receiving Items')}
+            </h3>
+            <button 
+              onClick={addLine}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors text-sm font-bold"
+            >
+              <PlusCircle size={16} />
+              {t('Tambah Baris', 'Add Line')}
+            </button>
+          </div>
+          
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-slate-50/50 text-slate-500 text-[10px] font-bold uppercase tracking-widest border-b border-slate-200">
+                <th className="px-4 py-3 w-1/4">{t('Nama Ikan / Item', 'Fish / Item Name')}</th>
+                <th className="px-4 py-3 w-32">{t('Grade', 'Grade')}</th>
+                <th className="px-4 py-3 w-40">{t('Size / Ukuran', 'Size')}</th>
+                <th className="px-4 py-3 w-24 text-right">{t('Qty', 'Qty')}</th>
+                <th className="px-4 py-3 w-20">{t('Unit', 'Unit')}</th>
+                <th className="px-4 py-3 w-32 text-right">{t('Harga Satuan', 'Price')}</th>
+                <th className="px-4 py-3 w-32 text-right">{t('Total', 'Total')}</th>
+                <th className="px-4 py-3 w-12"></th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {lines.map((line, index) => (
+                <tr key={line.id} className="hover:bg-slate-50/50 transition-colors">
+                  <td className="px-4 py-3">
+                    <select 
+                      value={line.itemId}
+                      onChange={(e) => updateLine(line.id, 'itemId', e.target.value)}
+                      className="w-full bg-transparent border-none focus:ring-2 focus:ring-blue-500 rounded text-sm font-semibold text-slate-800"
+                    >
+                      <option value="">-- {t('Pilih Item', 'Select Item')} --</option>
+                      {MOCK_ITEMS.filter(i => i.category === 'Raw').map(i => (
+                        <option key={i.id} value={i.id}>{t(i.nameId, i.nameEn)}</option>
+                      ))}
+                    </select>
+                  </td>
+                  <td className="px-4 py-3">
+                    <select 
+                      value={line.gradeId}
+                      onChange={(e) => updateLine(line.id, 'gradeId', e.target.value)}
+                      className="w-full bg-transparent border-none focus:ring-2 focus:ring-blue-500 rounded text-sm text-slate-600"
+                    >
+                      <option value="">--</option>
+                      {MOCK_GRADES.map(g => (
+                        <option key={g.id} value={g.id}>{g.name}</option>
+                      ))}
+                    </select>
+                  </td>
+                  <td className="px-4 py-3">
+                    <select 
+                      value={line.sizeId}
+                      onChange={(e) => updateLine(line.id, 'sizeId', e.target.value)}
+                      className="w-full bg-transparent border-none focus:ring-2 focus:ring-blue-500 rounded text-sm text-slate-600"
+                    >
+                      <option value="">--</option>
+                      {MOCK_SIZES.map(s => (
+                        <option key={s.id} value={s.id}>{s.name}</option>
+                      ))}
+                    </select>
+                  </td>
+                  <td className="px-4 py-3">
+                    <input 
+                      type="number" 
+                      value={line.quantity || ''}
+                      onChange={(e) => updateLine(line.id, 'quantity', parseFloat(e.target.value) || 0)}
+                      className="w-full bg-transparent border-none focus:ring-2 focus:ring-blue-500 rounded text-right text-sm font-mono font-bold"
+                      placeholder="0"
+                    />
+                  </td>
+                  <td className="px-4 py-3 text-xs text-slate-400 font-bold uppercase">{line.unit}</td>
+                  <td className="px-4 py-3 text-right">
+                    <input 
+                      type="number" 
+                      value={line.unitPrice || ''}
+                      onChange={(e) => updateLine(line.id, 'unitPrice', parseFloat(e.target.value) || 0)}
+                      className="w-full bg-transparent border-none focus:ring-2 focus:ring-blue-500 rounded text-right text-sm font-mono"
+                      placeholder="0"
+                    />
+                  </td>
+                  <td className="px-4 py-3 text-right text-sm font-bold text-slate-900">
+                    Rp {line.total.toLocaleString('id-ID')}
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    <button 
+                      onClick={() => removeLine(line.id)}
+                      className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded transition-all"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr className="bg-slate-900 text-white">
+                <td colSpan={6} className="px-6 py-4 text-sm font-bold text-right uppercase tracking-wider">{t('Total Keseluruhan', 'Grand Total')}</td>
+                <td className="px-4 py-4 text-right text-lg font-black text-blue-400">
+                  Rp {grandTotal.toLocaleString('id-ID')}
+                </td>
+                <td></td>
+              </tr>
+            </tfoot>
+          </table>
         </div>
       </div>
     );
@@ -162,7 +264,7 @@ export const ReceivingPage: React.FC = () => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">{t('Penerimaan', 'Receiving')}</h1>
-          <p className="text-slate-500 text-sm">{t('Kelola transaksi barang masuk dari supplier', 'Manage incoming goods from suppliers')}</p>
+          <p className="text-slate-500 text-sm">{t('Kelola dokumen penerimaan barang masuk', 'Manage incoming goods receiving documents')}</p>
         </div>
         <button 
           onClick={() => setView('form')}
@@ -202,11 +304,9 @@ export const ReceivingPage: React.FC = () => {
             <thead>
               <tr className="bg-slate-50 text-slate-500 text-xs font-bold uppercase tracking-wider border-b border-slate-200">
                 <th className="px-6 py-4">{t('Tanggal', 'Date')}</th>
-                <th className="px-6 py-4">{t('No. Transaksi', 'Transaction No.')}</th>
+                <th className="px-6 py-4">{t('No. Dokumen', 'Doc No.')}</th>
                 <th className="px-6 py-4">{t('Supplier', 'Supplier')}</th>
-                <th className="px-6 py-4">{t('Barang', 'Item')}</th>
-                <th className="px-6 py-4 text-right">{t('Kuantitas', 'Quantity')}</th>
-                <th className="px-6 py-4 text-right">{t('Total', 'Total')}</th>
+                <th className="px-6 py-4 text-right">{t('Grand Total', 'Grand Total')}</th>
                 <th className="px-6 py-4 text-center">{t('Status', 'Status')}</th>
                 <th className="px-6 py-4"></th>
               </tr>
@@ -214,7 +314,6 @@ export const ReceivingPage: React.FC = () => {
             <tbody className="divide-y divide-slate-100">
               {MOCK_RECEIVING.map((item) => {
                 const supplier = MOCK_SUPPLIERS.find(s => s.id === item.supplierId);
-                const rawItem = MOCK_ITEMS.find(i => i.id === item.itemId);
                 return (
                   <tr key={item.id} className="hover:bg-slate-50 transition-colors group cursor-pointer">
                     <td className="px-6 py-4 text-sm text-slate-600 font-medium">{item.date}</td>
@@ -223,9 +322,7 @@ export const ReceivingPage: React.FC = () => {
                        <div className="text-sm font-semibold text-slate-800">{supplier?.name}</div>
                        <div className="text-xs text-slate-400">{supplier?.address}</div>
                     </td>
-                    <td className="px-6 py-4 text-sm text-slate-600">{t(rawItem?.nameId || '', rawItem?.nameEn || '')}</td>
-                    <td className="px-6 py-4 text-sm text-right font-mono font-semibold text-slate-700">{item.quantity} kg</td>
-                    <td className="px-6 py-4 text-sm text-right font-bold text-slate-900">Rp {item.totalPrice.toLocaleString('id-ID')}</td>
+                    <td className="px-6 py-4 text-sm text-right font-bold text-slate-900">Rp {item.grandTotal.toLocaleString('id-ID')}</td>
                     <td className="px-6 py-4 text-center">
                       <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${getStatusColor(item.status)}`}>
                         {item.status}
@@ -241,14 +338,6 @@ export const ReceivingPage: React.FC = () => {
               })}
             </tbody>
           </table>
-        </div>
-        
-        <div className="p-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500 font-medium">
-           <div>{t('Menampilkan 2 dari 2 transaksi', 'Showing 2 of 2 transactions')}</div>
-           <div className="flex gap-2">
-             <button className="px-3 py-1 bg-white border border-slate-200 rounded text-slate-400 cursor-not-allowed">Prev</button>
-             <button className="px-3 py-1 bg-white border border-slate-200 rounded text-slate-400 cursor-not-allowed">Next</button>
-           </div>
         </div>
       </div>
     </div>

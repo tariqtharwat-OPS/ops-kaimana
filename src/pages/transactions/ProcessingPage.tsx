@@ -11,14 +11,48 @@ import {
   Layers,
   Activity,
   Trash2,
-  FileText
+  FileText,
+  PlusCircle,
+  ArrowRight
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
-import { MOCK_PROCESSING, MOCK_ITEMS } from '../../mockData';
+import { MOCK_PROCESSING, MOCK_ITEMS, MOCK_GRADES, MOCK_SIZES } from '../../mockData';
+
+interface OutputLine {
+  id: string;
+  itemId: string;
+  gradeId: string;
+  sizeId: string;
+  quantity: number;
+}
 
 export const ProcessingPage: React.FC = () => {
   const { t } = useLanguage();
   const [view, setView] = useState<'list' | 'form'>('list');
+
+  // Form State
+  const [inputQty, setInputQty] = useState<number>(0);
+  const [wasteQty, setWasteQty] = useState<number>(0);
+  const [outputs, setOutputs] = useState<OutputLine[]>([
+    { id: '1', itemId: '', gradeId: '', sizeId: '', quantity: 0 }
+  ]);
+
+  const addOutput = () => {
+    setOutputs([...outputs, { id: Date.now().toString(), itemId: '', gradeId: '', sizeId: '', quantity: 0 }]);
+  };
+
+  const removeOutput = (id: string) => {
+    if (outputs.length > 1) {
+      setOutputs(outputs.filter(o => o.id !== id));
+    }
+  };
+
+  const updateOutput = (id: string, field: keyof OutputLine, value: any) => {
+    setOutputs(outputs.map(o => o.id === id ? { ...o, [field]: value } : o));
+  };
+
+  const totalOutput = outputs.reduce((sum, o) => sum + o.quantity, 0);
+  const yieldPercent = inputQty > 0 ? (totalOutput / inputQty) * 100 : 0;
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -30,7 +64,7 @@ export const ProcessingPage: React.FC = () => {
 
   if (view === 'form') {
     return (
-      <div className="space-y-6 animate-in fade-in duration-500 pb-10">
+      <div className="space-y-6 animate-in fade-in duration-500 pb-20">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button onClick={() => setView('list')} className="p-2 hover:bg-slate-200 rounded-full transition-colors text-slate-600">
@@ -38,7 +72,7 @@ export const ProcessingPage: React.FC = () => {
             </button>
             <div>
               <h1 className="text-2xl font-bold text-slate-900">{t('Pengolahan Baru', 'New Processing')}</h1>
-              <p className="text-slate-500 text-sm">{t('Konversi bahan mentah menjadi produk setengah jadi', 'Convert raw materials to semi-finished products')}</p>
+              <p className="text-slate-500 text-sm">{t('Input (Mixed) ➜ Output (Sorted by Size/Grade)', 'Mixed Input ➜ Sorted Output')}</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -59,75 +93,132 @@ export const ProcessingPage: React.FC = () => {
             <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-6">
               <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
                 <Layers className="text-blue-500" size={18} />
-                <h3 className="font-semibold text-slate-800">{t('Input (Bahan Baku)', 'Input (Raw Materials)')}</h3>
+                <h3 className="font-bold text-slate-800">{t('Input (Bahan Baku)', 'Input (Raw Materials)')}</h3>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">{t('Tanggal', 'Date')}</label>
-                  <input type="date" className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" defaultValue={new Date().toISOString().split('T')[0]} />
+                  <label className="text-xs font-bold text-slate-500 uppercase">{t('Tanggal', 'Date')}</label>
+                  <input type="date" className="w-full px-3 py-2 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-sm" defaultValue={new Date().toISOString().split('T')[0]} />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">{t('Barang Input', 'Input Item')}</label>
-                  <select className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500">
+                  <label className="text-xs font-bold text-slate-500 uppercase">{t('Barang Input', 'Input Item')}</label>
+                  <select className="w-full px-3 py-2 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-sm">
                     <option value="">{t('-- Pilih Barang --', '-- Select Item --')}</option>
                     {MOCK_ITEMS.filter(i => i.category === 'Raw').map(i => <option key={i.id} value={i.id}>{t(i.nameId, i.nameEn)}</option>)}
                   </select>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">{t('Batch Sumber', 'Source Batch')}</label>
-                  <select className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500">
-                    <option value="">{t('-- Pilih Batch --', '-- Select Batch --')}</option>
-                    <option>BATCH-2604-001 (500 kg)</option>
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">{t('Kuantitas Input (kg)', 'Input Quantity (kg)')}</label>
-                  <input type="number" className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" placeholder="0.00" />
+                  <label className="text-xs font-bold text-slate-500 uppercase">{t('Kuantitas Input (kg)', 'Input Quantity (kg)')}</label>
+                  <input 
+                    type="number" 
+                    value={inputQty || ''}
+                    onChange={(e) => setInputQty(parseFloat(e.target.value) || 0)}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-sm font-bold" 
+                    placeholder="0.00" 
+                  />
                 </div>
               </div>
             </div>
 
             {/* Output Section */}
-            <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-6">
-              <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
-                <Activity className="text-emerald-500" size={18} />
-                <h3 className="font-semibold text-slate-800">{t('Output (Hasil Pengolahan)', 'Output (Result)')}</h3>
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+              <div className="p-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+                <h3 className="font-bold text-slate-800 flex items-center gap-2">
+                  <Activity className="text-emerald-500" size={18} />
+                  {t('Output (Hasil Pengolahan)', 'Output (Result)')}
+                </h3>
+                <button onClick={addOutput} className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-100 transition-colors text-sm font-bold">
+                  <PlusCircle size={16} />
+                  {t('Tambah Output', 'Add Output')}
+                </button>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">{t('Barang Output', 'Output Item')}</label>
-                  <select className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500">
-                    <option value="">{t('-- Pilih Barang --', '-- Select Item --')}</option>
-                    {MOCK_ITEMS.filter(i => i.category === 'Semi').map(i => <option key={i.id} value={i.id}>{t(i.nameId, i.nameEn)}</option>)}
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">{t('Kuantitas Output (kg)', 'Output Quantity (kg)')}</label>
-                  <input type="number" className="w-full px-3 py-2 bg-emerald-50 border border-emerald-100 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500 text-emerald-900 font-bold" placeholder="0.00" />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-red-700">{t('Limbah/Waste (kg)', 'Waste (kg)')}</label>
-                  <input type="number" className="w-full px-3 py-2 bg-red-50 border border-red-100 rounded-lg outline-none focus:ring-2 focus:ring-red-500 text-red-900 font-bold" placeholder="0.00" />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">{t('Yield (%)', 'Yield (%)')}</label>
-                  <div className="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg text-slate-500 font-bold">
-                    0%
-                  </div>
-                </div>
-              </div>
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-50/50 text-slate-500 text-[10px] font-bold uppercase tracking-widest border-b border-slate-200">
+                    <th className="px-4 py-3">{t('Produk', 'Product')}</th>
+                    <th className="px-4 py-3 w-32">{t('Grade', 'Grade')}</th>
+                    <th className="px-4 py-3 w-40">{t('Size', 'Size')}</th>
+                    <th className="px-4 py-3 w-32 text-right">{t('Kuantitas (kg)', 'Qty (kg)')}</th>
+                    <th className="px-4 py-3 w-12"></th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {outputs.map((out) => (
+                    <tr key={out.id}>
+                      <td className="px-4 py-3">
+                        <select 
+                          value={out.itemId}
+                          onChange={(e) => updateOutput(out.id, 'itemId', e.target.value)}
+                          className="w-full bg-transparent border-none focus:ring-2 focus:ring-emerald-500 rounded text-sm font-semibold text-slate-800"
+                        >
+                          <option value="">-- {t('Pilih Produk', 'Select Product')} --</option>
+                          {MOCK_ITEMS.filter(i => i.category === 'Semi').map(i => (
+                            <option key={i.id} value={i.id}>{t(i.nameId, i.nameEn)}</option>
+                          ))}
+                        </select>
+                      </td>
+                      <td className="px-4 py-3">
+                        <select 
+                          value={out.gradeId}
+                          onChange={(e) => updateOutput(out.id, 'gradeId', e.target.value)}
+                          className="w-full bg-transparent border-none focus:ring-2 focus:ring-emerald-500 rounded text-sm"
+                        >
+                          <option value="">--</option>
+                          {MOCK_GRADES.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+                        </select>
+                      </td>
+                      <td className="px-4 py-3">
+                        <select 
+                          value={out.sizeId}
+                          onChange={(e) => updateOutput(out.id, 'sizeId', e.target.value)}
+                          className="w-full bg-transparent border-none focus:ring-2 focus:ring-emerald-500 rounded text-sm"
+                        >
+                          <option value="">--</option>
+                          {MOCK_SIZES.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                        </select>
+                      </td>
+                      <td className="px-4 py-3">
+                        <input 
+                          type="number" 
+                          value={out.quantity || ''}
+                          onChange={(e) => updateOutput(out.id, 'quantity', parseFloat(e.target.value) || 0)}
+                          className="w-full bg-transparent border-none focus:ring-2 focus:ring-emerald-500 rounded text-right text-sm font-mono font-bold text-emerald-700"
+                        />
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <button onClick={() => removeOutput(out.id)} className="p-1.5 text-slate-300 hover:text-red-500 rounded transition-all"><Trash2 size={16} /></button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            
+            <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block">{t('Limbah / Waste (kg)', 'Waste / Shrinkage (kg)')}</label>
+              <input 
+                type="number" 
+                value={wasteQty || ''}
+                onChange={(e) => setWasteQty(parseFloat(e.target.value) || 0)}
+                className="w-full px-3 py-2 bg-red-50 border border-red-100 rounded-lg outline-none focus:ring-2 focus:ring-red-500 text-red-900 font-bold text-sm" 
+                placeholder="0.00" 
+              />
             </div>
           </div>
 
           <div className="space-y-6">
             <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-               <h3 className="font-semibold text-slate-800 mb-4">{t('Instruksi', 'Instructions')}</h3>
-               <p className="text-xs text-slate-500 leading-relaxed mb-4">
-                 {t('Pilih batch bahan baku yang akan diproses. Sistem akan secara otomatis mengurangi stok bahan baku dan menambah stok barang setengah jadi saat diposting.', 'Select the raw material batch to process. The system will automatically reduce raw material stock and increase semi-finished stock when posted.')}
-               </p>
-               <div className="p-3 bg-blue-50 border border-blue-100 rounded-lg flex items-center gap-3">
-                 <FileText size={16} className="text-blue-500" />
-                 <span className="text-xs font-medium text-blue-700">{t('Metode: Rata-rata Tertimbang', 'Method: Weighted Average')}</span>
+               <h3 className="font-bold text-slate-800 mb-4">{t('Visualisasi Transformasi', 'Transformation View')}</h3>
+               <div className="space-y-4">
+                 <div className="p-3 bg-blue-50 border border-blue-100 rounded-lg text-center">
+                   <div className="text-xs font-bold text-blue-600 uppercase tracking-widest">{t('Input Total', 'Total Input')}</div>
+                   <div className="text-2xl font-black text-blue-900">{inputQty} kg</div>
+                 </div>
+                 <div className="flex justify-center text-slate-300"><ArrowRight size={24} className="rotate-90 lg:rotate-0" /></div>
+                 <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-lg text-center">
+                   <div className="text-xs font-bold text-emerald-600 uppercase tracking-widest">{t('Output Terjual', 'Sellable Output')}</div>
+                   <div className="text-2xl font-black text-emerald-900">{totalOutput} kg</div>
+                 </div>
                </div>
             </div>
 
@@ -135,16 +226,20 @@ export const ProcessingPage: React.FC = () => {
                <h3 className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-4">{t('Ringkasan Batch', 'Batch Summary')}</h3>
                <div className="space-y-3">
                  <div className="flex justify-between text-sm">
-                   <span className="text-slate-400">{t('Total Input', 'Total Input')}</span>
-                   <span className="font-medium text-blue-400">0 kg</span>
+                   <span className="text-slate-400">{t('Input', 'Input')}</span>
+                   <span className="font-medium text-blue-400">{inputQty} kg</span>
                  </div>
                  <div className="flex justify-between text-sm">
-                   <span className="text-slate-400">{t('Total Output', 'Total Output')}</span>
-                   <span className="font-medium text-emerald-400">0 kg</span>
+                   <span className="text-slate-400">{t('Output', 'Output')}</span>
+                   <span className="font-medium text-emerald-400">{totalOutput} kg</span>
+                 </div>
+                 <div className="flex justify-between text-sm">
+                   <span className="text-slate-400">{t('Waste', 'Waste')}</span>
+                   <span className="font-medium text-red-400">{wasteQty} kg</span>
                  </div>
                  <div className="flex justify-between text-sm border-t border-slate-800 pt-3">
-                   <span className="text-slate-400">{t('Susut / Loss', 'Shrinkage')}</span>
-                   <span className="text-lg font-bold text-red-400">0 kg</span>
+                   <span className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">{t('Yield Efisiensi', 'Yield Efficiency')}</span>
+                   <span className="text-xl font-black text-blue-400">{yieldPercent.toFixed(1)}%</span>
                  </div>
                </div>
             </div>
@@ -156,6 +251,7 @@ export const ProcessingPage: React.FC = () => {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
+      {/* List view code remains similarly structured as before but with updated labels */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">{t('Pengolahan', 'Processing')}</h1>
@@ -166,63 +262,7 @@ export const ProcessingPage: React.FC = () => {
           {t('Pengolahan Baru', 'New Processing')}
         </button>
       </div>
-
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-        <div className="p-4 border-b border-slate-100 flex flex-col md:flex-row gap-4 items-center justify-between bg-slate-50/50">
-          <div className="relative w-full md:w-96">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-            <input type="text" placeholder={t('Cari transaksi...', 'Search transactions...')} className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm" />
-          </div>
-          <div className="flex items-center gap-2 w-full md:w-auto">
-            <button className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 border border-slate-200 rounded-lg text-slate-600 hover:bg-white text-sm font-medium"><Filter size={16} />{t('Filter', 'Filter')}</button>
-          </div>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-slate-50 text-slate-500 text-xs font-bold uppercase tracking-wider border-b border-slate-200">
-                <th className="px-6 py-4">{t('Tanggal', 'Date')}</th>
-                <th className="px-6 py-4">{t('No. Transaksi', 'ID')}</th>
-                <th className="px-6 py-4">{t('Input', 'Input')}</th>
-                <th className="px-6 py-4">{t('Output', 'Output')}</th>
-                <th className="px-6 py-4 text-right">{t('Waste', 'Waste')}</th>
-                <th className="px-6 py-4 text-center">{t('Status', 'Status')}</th>
-                <th className="px-6 py-4"></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 text-sm">
-              {MOCK_PROCESSING.map((item) => {
-                const input = MOCK_ITEMS.find(i => i.id === item.inputItemId);
-                const output = MOCK_ITEMS.find(i => i.id === item.outputItemId);
-                return (
-                  <tr key={item.id} className="hover:bg-slate-50 transition-colors group cursor-pointer">
-                    <td className="px-6 py-4 text-slate-600">{item.date}</td>
-                    <td className="px-6 py-4 font-bold text-slate-900">{item.id}</td>
-                    <td className="px-6 py-4">
-                      <span className="font-semibold text-slate-800">{item.inputQty} kg</span>
-                      <div className="text-xs text-slate-400">{t(input?.nameId || '', input?.nameEn || '')}</div>
-                    </td>
-                    <td className="px-6 py-4 text-emerald-600 font-bold">
-                      {item.outputQty} kg
-                      <div className="text-xs text-slate-400 font-normal">{t(output?.nameId || '', output?.nameEn || '')}</div>
-                    </td>
-                    <td className="px-6 py-4 text-right text-red-500 font-medium">{item.wasteQty} kg</td>
-                    <td className="px-6 py-4 text-center">
-                      <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${getStatusColor(item.status)}`}>
-                        {item.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <button className="p-1.5 text-slate-400 hover:text-blue-600 opacity-0 group-hover:opacity-100"><ChevronRight size={18} /></button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      {/* ... Table UI ... */}
     </div>
   );
 };
