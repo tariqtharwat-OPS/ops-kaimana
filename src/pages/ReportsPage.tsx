@@ -19,7 +19,6 @@ import {
   UserCheck
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
-import { MOCK_ITEMS, MOCK_GRADES, MOCK_SIZES, MOCK_WORKERS } from '../mockData';
 
 type ReportCategory = 'operational' | 'financial' | 'payroll';
 
@@ -31,12 +30,12 @@ export const ReportsPage: React.FC = () => {
   const reports = {
     operational: [
       { id: 'rcv', label: t('Laporan Pembelian / Penerimaan', 'Purchasing / Receiving Report'), icon: ArrowDownCircle },
-      { id: 'proc', label: t('Laporan Pengolahan', 'Processing Report'), icon: RefreshCcwIcon },
+      { id: 'proc', label: t('Laporan Pengolahan', 'Processing Report'), icon: RefreshCcw },
       { id: 'stk', label: t('Laporan Stok', 'Stock Report'), icon: Database },
       { id: 'sls', label: t('Laporan Penjualan', 'Sales Report'), icon: TrendingUp },
       { id: 'exp', label: t('Laporan Biaya', 'Expense Report'), icon: DollarSign },
       { id: 'sup', label: t('Laporan Supplier', 'Supplier Report'), icon: Users },
-      { id: 'buy', label: t('Laporan Buyer / Customer', 'Buyer / Customer Report'), icon: UserCheckIcon },
+      { id: 'buy', label: t('Laporan Buyer / Customer', 'Buyer / Customer Report'), icon: UserCheck },
     ],
     financial: [
       { id: 'cin', label: t('Laporan Kas Masuk', 'Cash In Report'), icon: ArrowDownCircle },
@@ -50,7 +49,7 @@ export const ReportsPage: React.FC = () => {
       { id: 'mon', label: t('Laporan Karyawan Bulanan', 'Monthly Workers Report'), icon: Briefcase },
       { id: 'day', label: t('Laporan Karyawan Harian', 'Daily Workers Report'), icon: Clock },
       { id: 'pys', label: t('Ringkasan Payroll', 'Payroll Summary Report'), icon: DollarSign },
-      { id: 'wgp', label: t('Laporan Pembayaran Gaji', 'Wage Payment Report'), icon: UserCheckIcon },
+      { id: 'wgp', label: t('Laporan Pembayaran Gaji', 'Wage Payment Report'), icon: UserCheck },
     ]
   };
 
@@ -116,7 +115,7 @@ const ReportDetail: React.FC<{ id: string, onBack: () => void }> = ({ id, onBack
     <div className="space-y-6 animate-in slide-in-from-right duration-500">
        <div className="flex items-center gap-4">
          <button onClick={onBack} className="p-3 bg-white border border-slate-200 rounded-2xl hover:bg-slate-50 transition-all shadow-sm">
-           <ArrowLeftIcon size={20} className="text-slate-600" />
+           <ChevronLeft size={20} className="text-slate-600" />
          </button>
          <div>
            <h1 className="text-2xl font-black text-slate-900 tracking-tight">Report Detail: {id.toUpperCase()}</h1>
@@ -197,7 +196,3 @@ const ReportDetail: React.FC<{ id: string, onBack: () => void }> = ({ id, onBack
   );
 };
 
-// Simple Icon Components to avoid import errors
-const RefreshCcwIcon = (props: any) => <RefreshCcw {...props} />;
-const UserCheckIcon = (props: any) => <UserCheck {...props} />;
-const ArrowLeftIcon = (props: any) => <ChevronLeft {...props} />;
