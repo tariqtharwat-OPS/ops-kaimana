@@ -72,7 +72,7 @@ export const ExpensesPage: React.FC = () => {
           }
         />
 
-        <Card className="grid grid-cols-1 md:grid-cols-3 gap-10">
+        <Card className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <div className="space-y-2">
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('TANGGAL', 'DATE')}</label>
             <input type="date" className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-ocean-800/10 focus:border-ocean-800 outline-none transition-all font-bold" defaultValue={new Date().toISOString().split('T')[0]} />
@@ -80,6 +80,21 @@ export const ExpensesPage: React.FC = () => {
           <div className="space-y-2">
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('NO. REFERENSI', 'REF NO.')}</label>
             <input type="text" className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-ocean-800/10 focus:border-ocean-800 outline-none transition-all font-black" placeholder="e.g. INV/2024/001" />
+          </div>
+          <div className="space-y-2">
+            <div className="flex justify-between items-center">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('KATEGORI BIAYA', 'EXPENSE CATEGORY')}</label>
+              <Link to="/master" className="text-[10px] font-black text-ocean-800 hover:text-ocean-600 transition-colors flex items-center gap-1">
+                <Plus size={10} /> {t('Tambah', 'Add')}
+              </Link>
+            </div>
+            <select className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-ocean-800/10 focus:border-ocean-800 outline-none transition-all font-bold">
+              <option value="">-- {t('Pilih Kategori', 'Select Category')} --</option>
+              <option>Operational</option>
+              <option>Wages</option>
+              <option>Maintenance</option>
+              <option>Fuel</option>
+            </select>
           </div>
           <div className="space-y-2">
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('METODE PEMBAYARAN', 'PAYMENT METHOD')}</label>

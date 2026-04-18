@@ -79,7 +79,12 @@ export const ReceivingPage: React.FC = () => {
             <input type="date" className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-ocean-800/10 focus:border-ocean-800 outline-none transition-all font-bold" defaultValue={new Date().toISOString().split('T')[0]} />
           </div>
           <div className="space-y-2">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('SUPPLIER', 'SUPPLIER')}</label>
+            <div className="flex justify-between items-center">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('SUPPLIER', 'SUPPLIER')}</label>
+              <Link to="/master" className="text-[10px] font-black text-ocean-800 hover:text-ocean-600 transition-colors flex items-center gap-1">
+                <Plus size={10} /> {t('Tambah Pemasok', 'Add Supplier')}
+              </Link>
+            </div>
             <select className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-ocean-800/10 focus:border-ocean-800 outline-none transition-all font-bold">
               <option value="">-- {t('Pilih Supplier', 'Select Supplier')} --</option>
               {MOCK_SUPPLIERS.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
@@ -97,7 +102,12 @@ export const ReceivingPage: React.FC = () => {
         <Card noPadding className="overflow-hidden">
           <div className="px-8 py-6 border-b border-slate-50 flex items-center justify-between">
             <h3 className="font-black text-slate-900 tracking-tight">{t('Item Penerimaan', 'Receiving Items')}</h3>
-            <Button variant="secondary" onClick={addLine}><PlusCircle size={16} /> {t('Tambah Baris', 'Add Line')}</Button>
+            <div className="flex gap-4">
+              <Link to="/master" className="text-xs font-black text-ocean-800 hover:text-ocean-600 transition-colors flex items-center gap-1 bg-ocean-50 px-3 py-1.5 rounded-lg border border-ocean-100">
+                <Plus size={14} /> {t('Master Item', 'Master Item')}
+              </Link>
+              <Button variant="secondary" onClick={addLine}><PlusCircle size={16} /> {t('Tambah Baris', 'Add Line')}</Button>
+            </div>
           </div>
           <Table 
             data={lines}

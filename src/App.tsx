@@ -6,6 +6,7 @@ import { ProcessingPage } from './pages/transactions/ProcessingPage';
 import { PackingPage } from './pages/transactions/PackingPage';
 import { ExpensesPage } from './pages/transactions/ExpensesPage';
 import { StockPage } from './pages/Stock';
+import { MasterDataPage } from './pages/MasterData';
 import { BuyerView } from './pages/BuyerView';
 import { ReportsPage } from './pages/ReportsPage';
 import { PrintPage } from './pages/PrintPage';
@@ -32,7 +33,7 @@ function App() {
                 <Route path="/expenses" element={<ExpensesPage />} />
                 <Route path="/reports" element={<ReportsPage />} />
                 <Route path="/buyer" element={<BuyerView />} />
-                <Route path="/master" element={<div className="p-8 font-black text-slate-300">MASTER DATA UI</div>} />
+                <Route path="/master" element={<MasterDataPage />} />
                 <Route path="/settings" element={<div className="p-8 font-black text-slate-300">SETTINGS UI</div>} />
               </Routes>
             </AppShell>
