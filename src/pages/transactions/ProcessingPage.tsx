@@ -1,22 +1,17 @@
 import React, { useState } from 'react';
 import { 
   Plus, 
-  Search, 
-  ChevronRight, 
-  Filter, 
   Save, 
   Send,
   ArrowLeft,
-  Calendar,
   Layers,
   Activity,
   Trash2,
-  FileText,
   PlusCircle,
   ArrowRight
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
-import { MOCK_PROCESSING, MOCK_ITEMS, MOCK_GRADES, MOCK_SIZES } from '../../mockData';
+import { MOCK_ITEMS, MOCK_GRADES, MOCK_SIZES } from '../../mockData';
 
 interface OutputLine {
   id: string;
@@ -54,13 +49,6 @@ export const ProcessingPage: React.FC = () => {
   const totalOutput = outputs.reduce((sum, o) => sum + o.quantity, 0);
   const yieldPercent = inputQty > 0 ? (totalOutput / inputQty) * 100 : 0;
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Posted': return 'bg-emerald-100 text-emerald-700 border-emerald-200';
-      case 'Draft': return 'bg-amber-100 text-amber-700 border-amber-200';
-      default: return 'bg-slate-100 text-slate-700 border-slate-200';
-    }
-  };
 
   if (view === 'form') {
     return (

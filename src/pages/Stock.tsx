@@ -2,16 +2,14 @@ import React, { useState } from 'react';
 import { 
   Database, 
   Search, 
-  Filter, 
   UserPlus, 
   History, 
   TrendingUp, 
   AlertCircle,
-  Tag,
   ChevronRight,
   UserCheck
 } from 'lucide-react';
-import { useLanguage } from '../../context/LanguageContext';
+import { useLanguage } from '../context/LanguageContext';
 import { MOCK_ITEMS, MOCK_GRADES, MOCK_SIZES } from '../mockData';
 
 // Mock Stock Data expanded to include Grade, Size, and Buyer

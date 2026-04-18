@@ -4,19 +4,13 @@ import {
   ArrowDownCircle, 
   RefreshCcw, 
   Package, 
-  BarChart3, 
-  Truck, 
   CreditCard, 
   Database, 
   Users, 
   Settings, 
-  Printer,
-  Globe,
   LogOut,
   ChevronLeft,
   ChevronRight,
-  Menu,
-  X,
   User as UserIcon
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';

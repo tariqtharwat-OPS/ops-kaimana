@@ -8,12 +8,10 @@ import {
   Send,
   ArrowLeft,
   Package,
-  Box,
-  Hash,
-  FileText
+  Box
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
-import { MOCK_PACKING, MOCK_ITEMS, MOCK_GRADES, MOCK_SIZES } from '../../mockData';
+import { MOCK_PACKING, MOCK_ITEMS, MOCK_GRADES } from '../../mockData';
 
 export const PackingPage: React.FC = () => {
   const { t } = useLanguage();

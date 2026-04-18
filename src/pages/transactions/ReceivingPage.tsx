@@ -9,13 +9,8 @@ import {
   Send,
   Trash2,
   ArrowLeft,
-  Calendar,
-  User,
-  Hash,
-  FileText,
-  Package,
   PlusCircle,
-  MoreVertical
+  Package
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { MOCK_RECEIVING, MOCK_SUPPLIERS, MOCK_ITEMS, MOCK_GRADES, MOCK_SIZES } from '../../mockData';
@@ -173,7 +168,7 @@ export const ReceivingPage: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {lines.map((line, index) => (
+              {lines.map((line) => (
                 <tr key={line.id} className="hover:bg-slate-50/50 transition-colors">
                   <td className="px-4 py-3">
                     <select 

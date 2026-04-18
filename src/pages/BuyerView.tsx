@@ -1,7 +1,7 @@
 import React from 'react';
-import { useLanguage } from '../../context/LanguageContext';
-import { Package, Search, Filter, Database, UserCheck } from 'lucide-react';
-import { MOCK_ITEMS, MOCK_GRADES, MOCK_SIZES } from '../../mockData';
+import { useLanguage } from '../context/LanguageContext';
+import { Package, Search, Database } from 'lucide-react';
+import { MOCK_ITEMS, MOCK_GRADES, MOCK_SIZES } from '../mockData';
 
 const MOCK_BUYER_STOCK = [
   { id: 'st2', itemId: 'i2', gradeId: 'g1', sizeId: 'sz3', qty: 300, unit: 'kg' },
@@ -45,9 +45,9 @@ export const BuyerView: React.FC = () => {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {MOCK_BUYER_STOCK.map((item) => {
-                const product = MOCK_ITEMS.find(i => i.id === item.itemId);
-                const grade = MOCK_GRADES.find(g => g.id === item.gradeId);
-                const size = MOCK_SIZES.find(sz => sz.id === item.sizeId);
+                const product = MOCK_ITEMS.find((i: any) => i.id === item.itemId);
+                const grade = MOCK_GRADES.find((g: any) => g.id === item.gradeId);
+                const size = MOCK_SIZES.find((sz: any) => sz.id === item.sizeId);
                 return (
                   <tr key={item.id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-6 py-4 font-bold text-slate-900">{t(product?.nameId || '', product?.nameEn || '')}</td>
