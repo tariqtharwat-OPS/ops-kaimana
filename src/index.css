@@ -1,86 +1,63 @@
 @import "tailwindcss";
 
 @theme {
-  --color-primary-50: #eff6ff;
-  --color-primary-100: #dbeafe;
-  --color-primary-200: #bfdbfe;
-  --color-primary-300: #93c5fd;
-  --color-primary-400: #60a5fa;
-  --color-primary-50: #3b82f6;
-  --color-primary-600: #2563eb;
-  --color-primary-700: #1d4ed8;
-  --color-primary-800: #1e40af;
-  --color-primary-900: #1e3a8a;
-  --color-primary-950: #172554;
+  /* Deep Ocean Blue Palette */
+  --color-ocean-950: #001D3D;
+  --color-ocean-900: #003566;
+  --color-ocean-800: #003B73; /* Primary */
+  --color-ocean-700: #00509D;
+  --color-ocean-600: #0077B6;
+  --color-ocean-500: #0096C7;
+  --color-ocean-400: #00B4D8; /* Accent */
+  --color-ocean-300: #48CAE4;
+  --color-ocean-200: #90E0EF;
+  --color-ocean-100: #ADE8F4;
+  --color-ocean-50: #F0F7FF; /* Secondary */
 
-  --color-accent-50: #fdf2f8;
-  --color-accent-100: #fce7f3;
-  --color-accent-200: #fbcfe8;
-  --color-accent-300: #f9a8d4;
-  --color-accent-400: #f472b6;
-  --color-accent-500: #ec4899;
-  --color-accent-600: #db2777;
-  --color-accent-700: #be185d;
-  --color-accent-800: #9d174d;
-  --color-accent-900: #831843;
-  --color-accent-950: #500724;
+  --color-slate-50: #F8FAFC;
+  --color-slate-100: #F1F5F9;
+  --color-slate-200: #E2E8F0;
+  --color-slate-900: #0F172A;
 }
 
 @layer base {
   body {
-    @apply bg-[#f8fafc] text-slate-900 antialiased selection:bg-blue-100 selection:text-blue-900;
+    @apply bg-white text-slate-900 antialiased selection:bg-ocean-100 selection:text-ocean-900 font-sans;
   }
 }
 
 @layer components {
-  .premium-card {
-    @apply bg-white rounded-2xl border border-slate-200/60 shadow-sm shadow-slate-200/40 transition-all duration-300 hover:shadow-md hover:border-slate-300/60;
+  /* Reusable Component Classes */
+  .clean-container {
+    @apply max-w-7xl mx-auto px-6 py-12;
   }
 
-  .premium-input {
-    @apply w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl outline-none transition-all duration-200 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 focus:bg-white text-sm font-medium placeholder:text-slate-400;
-  }
-
-  .premium-button-primary {
-    @apply px-6 py-2.5 bg-blue-600 text-white rounded-xl font-bold text-sm shadow-lg shadow-blue-600/20 hover:bg-blue-700 active:scale-95 transition-all duration-200 flex items-center justify-center gap-2;
-  }
-
-  .premium-button-secondary {
-    @apply px-6 py-2.5 bg-white text-slate-700 border border-slate-200 rounded-xl font-bold text-sm hover:bg-slate-50 active:scale-95 transition-all duration-200 flex items-center justify-center gap-2;
-  }
-
-  .status-badge {
-    @apply px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border transition-all;
-  }
-
-  .status-posted {
-    @apply bg-emerald-50 text-emerald-600 border-emerald-100 ring-4 ring-emerald-500/5;
-  }
-
-  .status-draft {
-    @apply bg-amber-50 text-amber-600 border-amber-100 ring-4 ring-amber-500/5;
-  }
-
-  .glass-panel {
-    @apply bg-white/70 backdrop-blur-xl border border-white/40;
+  /* Interaction states */
+  .focus-ring {
+    @apply focus:ring-2 focus:ring-ocean-800/20 focus:border-ocean-800 outline-none transition-all duration-200;
   }
 }
 
 @media print {
-  .no-print {
-    display: none !important;
-  }
-  body {
-    background: white !important;
-  }
-  .print-only {
-    display: block !important;
-  }
+  .no-print { display: none !important; }
+  body { background: white !important; padding: 0 !important; }
   .A4-page {
     width: 210mm;
     min-height: 297mm;
-    padding: 20mm;
+    padding: 25mm;
     margin: 0 auto;
     background: white;
   }
+}
+
+/* Custom Scrollbar for a clean look */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-slate-200 rounded-full hover:bg-slate-300;
 }

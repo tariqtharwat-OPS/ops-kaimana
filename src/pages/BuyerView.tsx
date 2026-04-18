@@ -1,70 +1,103 @@
 import React from 'react';
+import { 
+  Package, 
+  Search, 
+  ChevronRight, 
+  Filter, 
+  ShoppingBag,
+  Clock,
+  CheckCircle2
+} from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
-import { Package, Search, Database } from 'lucide-react';
-import { MOCK_ITEMS, MOCK_GRADES, MOCK_SIZES } from '../mockData';
+import { MOCK_ITEMS } from '../mockData';
+import { Button, Card, Header, Badge } from '../components/ui/DesignSystem';
+import { Table } from '../components/ui/Table';
 
 const MOCK_BUYER_STOCK = [
-  { id: 'st2', itemId: 'i2', gradeId: 'g1', sizeId: 'sz3', qty: 300, unit: 'kg' },
+  { id: 'bs1', itemId: 'i2', qty: 300, unit: 'kg', status: 'Allocated' },
+  { id: 'bs2', itemId: 'i3', qty: 150, unit: 'kg', status: 'Ready' },
 ];
 
 export const BuyerView: React.FC = () => {
   const { t } = useLanguage();
-  const buyerName = "Buyer John";
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500 pb-10">
-      <div className="bg-blue-600 p-8 rounded-2xl text-white shadow-xl relative overflow-hidden">
-        <div className="relative z-10">
-          <h1 className="text-3xl font-black mb-2">{t(`Stok Alokasi: ${buyerName}`, `Assigned Stock: ${buyerName}`)}</h1>
-          <p className="text-blue-100 font-medium">{t('Berikut adalah daftar stok yang tersedia untuk dipesan', 'List of available stock for your orders')}</p>
-        </div>
-        <Database className="absolute -right-4 -bottom-4 text-blue-500 w-48 h-48 opacity-20 rotate-12" />
+    <div className="space-y-10 animate-in fade-in duration-500">
+      <Header 
+        title={t('Portal Buyer', 'Buyer Portal')} 
+        subtitle={t('Pantau alokasi stok dan pesanan Anda', 'Monitor your stock allocations and orders')}
+      />
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <Card className="border-l-4 border-ocean-800">
+          <div className="flex items-center gap-3 mb-2">
+            <Package className="text-ocean-800" size={16} />
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('ALOKASI ANDA', 'YOUR ALLOCATION')}</span>
+          </div>
+          <h3 className="text-2xl font-black text-ocean-800">450 kg</h3>
+        </Card>
+        <Card>
+          <div className="flex items-center gap-3 mb-2">
+            <Clock className="text-amber-500" size={16} />
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('DALAM PROSES', 'IN PROGRESS')}</span>
+          </div>
+          <h3 className="text-2xl font-black text-slate-900">1 Order</h3>
+        </Card>
+        <Card>
+          <div className="flex items-center gap-3 mb-2">
+            <CheckCircle2 className="text-emerald-500" size={16} />
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('SIAP KIRIM', 'READY TO SHIP')}</span>
+          </div>
+          <h3 className="text-2xl font-black text-slate-900">150 kg</h3>
+        </Card>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-        <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-           <h3 className="font-bold text-slate-800 flex items-center gap-2">
-             <Package size={18} className="text-blue-500" />
-             {t('Inventaris Anda', 'Your Inventory')}
-           </h3>
-           <div className="relative w-64">
-             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
-             <input type="text" placeholder={t('Cari...', 'Search...')} className="w-full pl-9 pr-4 py-1.5 border border-slate-200 rounded-lg text-xs outline-none focus:ring-2 focus:ring-blue-500" />
-           </div>
+      <Card noPadding>
+        <div className="p-8 border-b border-slate-50 flex items-center justify-between bg-slate-50/30">
+          <div className="relative w-96">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
+            <input type="text" placeholder={t('Cari stok alokasi...', 'Search allocations...')} className="w-full pl-12 pr-4 py-3 bg-white border border-slate-100 rounded-xl focus:ring-2 focus:ring-ocean-800/10 focus:border-ocean-800 outline-none transition-all text-sm font-medium" />
+          </div>
+          <Button variant="secondary"><Filter size={18} /> {t('Filter', 'Filter')}</Button>
         </div>
-        
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-slate-50 text-slate-500 text-[10px] font-bold uppercase tracking-widest border-b border-slate-200">
-                <th className="px-6 py-4">{t('Barang', 'Item')}</th>
-                <th className="px-6 py-4">{t('Grade', 'Grade')}</th>
-                <th className="px-6 py-4">{t('Size', 'Size')}</th>
-                <th className="px-6 py-4 text-right">{t('Kuantitas Tersedia', 'Available Qty')}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {MOCK_BUYER_STOCK.map((item) => {
-                const product = MOCK_ITEMS.find((i: any) => i.id === item.itemId);
-                const grade = MOCK_GRADES.find((g: any) => g.id === item.gradeId);
-                const size = MOCK_SIZES.find((sz: any) => sz.id === item.sizeId);
+
+        <Table 
+          data={MOCK_BUYER_STOCK}
+          columns={[
+            { 
+              header: t('PRODUK', 'PRODUCT'), 
+              accessor: (s: any) => {
+                const item = MOCK_ITEMS.find(i => i.id === s.itemId);
                 return (
-                  <tr key={item.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4 font-bold text-slate-900">{t(product?.nameId || '', product?.nameEn || '')}</td>
-                    <td className="px-6 py-4">
-                       <span className="text-xs font-black px-2 py-0.5 bg-slate-100 text-slate-600 rounded border border-slate-200">{grade?.name}</span>
-                    </td>
-                    <td className="px-6 py-4 text-xs font-bold text-slate-600">{size?.name}</td>
-                    <td className="px-6 py-4 text-right">
-                       <div className="text-lg font-black text-blue-600">{item.qty.toLocaleString('id-ID')} {item.unit}</div>
-                    </td>
-                  </tr>
+                  <div className="flex flex-col">
+                    <span className="font-black text-slate-900">{t(item?.nameId || '', item?.nameEn || '')}</span>
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">{item?.item_code}</span>
+                  </div>
                 );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
+              }
+            },
+            { header: t('KUANTITAS', 'QUANTITY'), accessor: (s: any) => <span className="font-black text-ocean-800">{s.qty} {s.unit}</span>, className: 'text-right' },
+            { 
+              header: t('STATUS', 'STATUS'), 
+              accessor: (s: any) => (
+                <Badge variant={s.status === 'Ready' ? 'posted' : 'pending'}>
+                  {s.status}
+                </Badge>
+              ), 
+              className: 'text-center' 
+            },
+            { 
+              header: '', 
+              accessor: () => (
+                <Button variant="secondary" className="py-1 px-3 text-xs">
+                  <ShoppingBag size={14} /> {t('Tarik Stok', 'Pull Stock')}
+                </Button>
+              ),
+              className: 'text-right'
+            }
+          ]}
+        />
+      </Card>
     </div>
   );
 };

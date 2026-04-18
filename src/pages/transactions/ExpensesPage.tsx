@@ -2,20 +2,19 @@ import React, { useState } from 'react';
 import { 
   Plus, 
   Search, 
-  Printer, 
-  Save, 
-  Send, 
-  ArrowLeft, 
-  CreditCard, 
-  PlusCircle, 
-  Trash2, 
   ChevronRight, 
-  Filter,
-  FileText
+  Filter, 
+  Trash2,
+  ArrowLeft,
+  PlusCircle,
+  FileText,
+  CreditCard
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../../context/LanguageContext';
 import { MOCK_EXPENSES } from '../../mockData';
+import { Button, Card, Header, Badge } from '../../components/ui/DesignSystem';
+import { Table } from '../../components/ui/Table';
 
 interface ExpenseLine {
   id: string;
@@ -57,190 +56,142 @@ export const ExpensesPage: React.FC = () => {
 
   if (view === 'form') {
     return (
-      <div className="space-y-8 animate-in fade-in duration-500 pb-20">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <button onClick={() => setView('list')} className="p-3 bg-white border border-slate-200 rounded-2xl hover:bg-slate-50 transition-all shadow-sm">
-              <ArrowLeft size={20} className="text-slate-600" />
-            </button>
-            <div>
-              <h1 className="text-3xl font-black text-slate-900 tracking-tight">{t('Biaya Baru', 'New Expense')}</h1>
-              <p className="text-slate-500 font-medium">{t('Input pengeluaran operasional multi-item', 'Input multi-item operational expenses')}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-             <button className="premium-button-secondary"><Save size={18} /> {t('Simpan Draft', 'Save Draft')}</button>
-             <button className="premium-button-primary"><Send size={18} /> {t('Post Biaya', 'Post Expense')}</button>
-          </div>
-        </div>
+      <div className="space-y-10 animate-in fade-in duration-500 pb-20">
+        <Header 
+          title={t('Biaya Baru', 'New Expense')} 
+          subtitle={t('Input pengeluaran operasional multi-item', 'Input multi-item operational expenses')}
+          action={
+            <>
+              <Button variant="secondary" onClick={() => setView('list')}><ArrowLeft size={18} /> {t('Kembali', 'Back')}</Button>
+              <Button variant="secondary">{t('Simpan Draft', 'Save Draft')}</Button>
+              <Button>{t('Post Biaya', 'Post Expense')}</Button>
+            </>
+          }
+        />
 
-        <div className="premium-card p-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('TANGGAL', 'DATE')}</label>
-              <input type="date" className="premium-input" defaultValue={new Date().toISOString().split('T')[0]} />
-            </div>
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('NO. REFERENSI', 'REF NO.')}</label>
-              <input type="text" className="premium-input font-black" placeholder="e.g. INV/2024/001" />
-            </div>
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('METODE PEMBAYARAN', 'PAYMENT METHOD')}</label>
-              <select className="premium-input font-bold">
-                <option>Cash</option>
-                <option>Bank Transfer</option>
-              </select>
-            </div>
+        <Card className="grid grid-cols-1 md:grid-cols-3 gap-10">
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('TANGGAL', 'DATE')}</label>
+            <input type="date" className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-ocean-800/10 focus:border-ocean-800 outline-none transition-all font-bold" defaultValue={new Date().toISOString().split('T')[0]} />
           </div>
-        </div>
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('NO. REFERENSI', 'REF NO.')}</label>
+            <input type="text" className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-ocean-800/10 focus:border-ocean-800 outline-none transition-all font-black" placeholder="e.g. INV/2024/001" />
+          </div>
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('METODE PEMBAYARAN', 'PAYMENT METHOD')}</label>
+            <select className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-ocean-800/10 focus:border-ocean-800 outline-none transition-all font-bold">
+              <option>Cash</option>
+              <option>Bank Transfer</option>
+            </select>
+          </div>
+        </Card>
 
-        <div className="premium-card overflow-hidden">
-          <div className="p-6 bg-slate-50/50 border-b border-slate-200 flex items-center justify-between">
-            <h3 className="font-black text-slate-900 flex items-center gap-2">
-              <CreditCard size={20} className="text-blue-500" />
-              {t('Rincian Biaya', 'Expense Details')}
-            </h3>
-            <button onClick={addLine} className="flex items-center gap-1.5 px-4 py-2 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-all text-xs font-black uppercase tracking-widest">
-              <PlusCircle size={16} />
-              {t('Tambah Baris', 'Add Line')}
-            </button>
+        <Card noPadding className="overflow-hidden">
+          <div className="px-8 py-6 border-b border-slate-50 flex items-center justify-between">
+            <h3 className="font-black text-slate-900 tracking-tight">{t('Rincian Biaya', 'Expense Details')}</h3>
+            <Button variant="secondary" onClick={addLine}><PlusCircle size={16} /> {t('Tambah Baris', 'Add Line')}</Button>
           </div>
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-slate-50/50 text-slate-400 text-[10px] font-black uppercase tracking-widest border-b border-slate-200">
-                <th className="px-6 py-4">{t('KATEGORI', 'CATEGORY')}</th>
-                <th className="px-6 py-4">{t('DESKRIPSI', 'DESCRIPTION')}</th>
-                <th className="px-6 py-4 w-24 text-right">{t('QTY', 'QTY')}</th>
-                <th className="px-6 py-4 w-32 text-right">{t('HARGA', 'PRICE')}</th>
-                <th className="px-6 py-4 w-40 text-right">{t('TOTAL', 'TOTAL')}</th>
-                <th className="px-6 py-4 w-12"></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {lines.map((line) => (
-                <tr key={line.id}>
-                  <td className="px-6 py-3">
-                    <select 
-                      value={line.category}
-                      onChange={(e) => updateLine(line.id, 'category', e.target.value)}
-                      className="w-full bg-transparent border-none focus:ring-0 text-sm font-bold text-slate-900"
-                    >
-                      <option value="">-- {t('Pilih Kategori', 'Category')} --</option>
-                      <option>Ice / Es</option>
-                      <option>Electricity / Listrik</option>
-                      <option>Fuel / BBM</option>
-                      <option>Salaries / Gaji</option>
-                      <option>Repair / Perbaikan</option>
-                    </select>
-                  </td>
-                  <td className="px-6 py-3">
-                    <input 
-                      type="text" 
-                      value={line.description}
-                      onChange={(e) => updateLine(line.id, 'description', e.target.value)}
-                      className="w-full bg-transparent border-none focus:ring-0 text-sm font-medium text-slate-600"
-                      placeholder={t('Keterangan...', 'Description...')}
-                    />
-                  </td>
-                  <td className="px-6 py-3">
-                    <input 
-                      type="number" 
-                      value={line.qty || ''}
-                      onChange={(e) => updateLine(line.id, 'qty', parseFloat(e.target.value) || 0)}
-                      className="w-full bg-transparent border-none focus:ring-0 text-right text-sm font-black text-slate-900"
-                    />
-                  </td>
-                  <td className="px-6 py-3 text-right">
-                    <input 
-                      type="number" 
-                      value={line.price || ''}
-                      onChange={(e) => updateLine(line.id, 'price', parseFloat(e.target.value) || 0)}
-                      className="w-full bg-transparent border-none focus:ring-0 text-right text-sm font-black text-slate-900"
-                    />
-                  </td>
-                  <td className="px-6 py-3 text-right text-sm font-black text-blue-600">
-                    Rp {line.total.toLocaleString('id-ID')}
-                  </td>
-                  <td className="px-6 py-3 text-center">
-                    <button onClick={() => removeLine(line.id)} className="p-2 text-slate-300 hover:text-red-500 transition-all"><Trash2 size={16} /></button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-            <tfoot>
-              <tr className="bg-[#0f172a] text-white">
-                <td colSpan={4} className="px-8 py-5 text-sm font-black text-right uppercase tracking-[0.2em]">{t('TOTAL PENGELUARAN', 'GRAND TOTAL')}</td>
-                <td className="px-6 py-5 text-right text-xl font-black text-blue-400">
-                  Rp {grandTotal.toLocaleString('id-ID')}
-                </td>
-                <td></td>
-              </tr>
-            </tfoot>
-          </table>
-        </div>
+          <Table 
+            data={lines}
+            columns={[
+              { 
+                header: t('KATEGORI', 'CATEGORY'), 
+                accessor: (line) => (
+                  <select 
+                    value={line.category}
+                    onChange={(e) => updateLine(line.id, 'category', e.target.value)}
+                    className="w-full bg-transparent border-none focus:ring-0 text-sm font-bold text-slate-900"
+                  >
+                    <option value="">-- {t('Pilih Kategori', 'Category')} --</option>
+                    <option>Ice / Es</option>
+                    <option>Electricity / Listrik</option>
+                    <option>Fuel / BBM</option>
+                    <option>Salaries / Gaji</option>
+                    <option>Repair / Perbaikan</option>
+                  </select>
+                )
+              },
+              { 
+                header: t('DESKRIPSI', 'DESCRIPTION'), 
+                accessor: (line) => (
+                  <input type="text" value={line.description} onChange={(e) => updateLine(line.id, 'description', e.target.value)} className="w-full bg-transparent border-none focus:ring-0 text-sm font-medium" placeholder={t('Keterangan...', 'Description...')} />
+                )
+              },
+              { 
+                header: 'QTY', 
+                accessor: (line) => (
+                  <input type="number" value={line.qty || ''} onChange={(e) => updateLine(line.id, 'qty', parseFloat(e.target.value) || 0)} className="w-full bg-transparent border-none focus:ring-0 text-right font-black text-slate-900" />
+                ),
+                className: 'w-24 text-right'
+              },
+              { 
+                header: 'PRICE', 
+                accessor: (line) => (
+                  <input type="number" value={line.price || ''} onChange={(e) => updateLine(line.id, 'price', parseFloat(e.target.value) || 0)} className="w-full bg-transparent border-none focus:ring-0 text-right font-black text-slate-900" />
+                ),
+                className: 'w-40 text-right'
+              },
+              { 
+                header: 'TOTAL', 
+                accessor: (line) => <span className="font-black text-ocean-800">Rp {line.total.toLocaleString('id-ID')}</span>,
+                className: 'w-40 text-right'
+              },
+              {
+                header: '',
+                accessor: (line) => <button onClick={() => removeLine(line.id)} className="p-2 text-slate-300 hover:text-red-500 transition-all"><Trash2 size={16} /></button>,
+                className: 'w-12 text-center'
+              }
+            ]}
+          />
+          <div className="bg-ocean-800 px-8 py-6 flex justify-between items-center text-white">
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60">{t('TOTAL PENGELUARAN', 'GRAND TOTAL')}</span>
+            <span className="text-2xl font-black">Rp {grandTotal.toLocaleString('id-ID')}</span>
+          </div>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight">{t('Biaya Operasional', 'Expenses')}</h1>
-          <p className="text-slate-500 font-medium">{t('Kelola pengeluaran harian plant', 'Manage daily plant expenses')}</p>
-        </div>
-        <button onClick={() => setView('form')} className="premium-button-primary">
-          <Plus size={20} />
-          {t('Input Biaya', 'Input Expense')}
-        </button>
-      </div>
+    <div className="space-y-10 animate-in fade-in duration-500">
+      <Header 
+        title={t('Biaya Operasional', 'Expenses')} 
+        subtitle={t('Kelola pengeluaran harian plant', 'Manage daily plant expenses')}
+        action={<Button onClick={() => setView('form')}><Plus size={20} /> {t('Input Biaya', 'Input Expense')}</Button>}
+      />
 
-      <div className="premium-card overflow-hidden">
-        <div className="p-6 border-b border-slate-100 flex flex-col md:flex-row gap-4 items-center justify-between bg-slate-50/50">
-          <div className="relative w-full md:w-96">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-            <input type="text" placeholder={t('Cari pengeluaran...', 'Search expenses...')} className="premium-input pl-12" />
+      <Card noPadding>
+        <div className="p-8 border-b border-slate-50 flex items-center justify-between bg-slate-50/30">
+          <div className="relative w-96">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
+            <input type="text" placeholder={t('Cari pengeluaran...', 'Search expenses...')} className="w-full pl-12 pr-4 py-3 bg-white border border-slate-100 rounded-xl focus:ring-2 focus:ring-ocean-800/10 focus:border-ocean-800 outline-none transition-all text-sm font-medium" />
           </div>
-          <div className="flex items-center gap-3 w-full md:w-auto">
-            <button className="premium-button-secondary flex-1 md:flex-none"><Filter size={18} /> {t('Filter', 'Filter')}</button>
-            <button className="premium-button-secondary flex-1 md:flex-none"><Printer size={18} /> {t('Cetak', 'Print')}</button>
-          </div>
+          <Button variant="secondary"><Filter size={18} /> {t('Filter', 'Filter')}</Button>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-slate-50 text-slate-400 text-[10px] font-black uppercase tracking-widest border-b border-slate-200">
-                <th className="px-8 py-5">{t('TANGGAL', 'DATE')}</th>
-                <th className="px-8 py-5">{t('NO. REFERENSI', 'REF NO.')}</th>
-                <th className="px-8 py-5 text-right">{t('TOTAL', 'TOTAL')}</th>
-                <th className="px-8 py-5 text-center">{t('STATUS', 'STATUS')}</th>
-                <th className="px-8 py-5"></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {MOCK_EXPENSES.map((exp) => (
-                <tr key={exp.id} className="hover:bg-slate-50/50 transition-colors group cursor-pointer">
-                  <td className="px-8 py-5 text-sm font-bold text-slate-600">{exp.date}</td>
-                  <td className="px-8 py-5 text-sm font-black text-slate-900">{exp.id}</td>
-                  <td className="px-8 py-5 text-sm font-black text-blue-600 text-right">Rp {exp.grandTotal.toLocaleString('id-ID')}</td>
-                  <td className="px-8 py-5 text-center">
-                    <span className={`status-badge ${exp.status === 'Posted' ? 'status-posted' : 'status-draft'}`}>
-                      {exp.status}
-                    </span>
-                  </td>
-                  <td className="px-8 py-5 text-right space-x-2">
-                    <Link to={`/print/expense/${exp.id}`} target="_blank" className="p-2 text-slate-400 hover:text-blue-600 inline-block">
-                      <FileText size={18} />
-                    </Link>
-                    <button className="p-2 text-slate-400 hover:text-blue-600 opacity-0 group-hover:opacity-100 transition-all"><ChevronRight size={20} /></button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+        <Table 
+          data={MOCK_EXPENSES}
+          columns={[
+            { header: t('TANGGAL', 'DATE'), accessor: 'date', className: 'font-bold text-slate-500' },
+            { header: t('NO. REFERENSI', 'REF NO.'), accessor: 'id', className: 'font-black text-slate-900' },
+            { header: t('TOTAL', 'TOTAL'), accessor: (exp) => <span className="font-black text-ocean-800">Rp {exp.grandTotal.toLocaleString('id-ID')}</span>, className: 'text-right' },
+            { header: t('STATUS', 'STATUS'), accessor: (exp) => <Badge variant={exp.status === 'Posted' ? 'posted' : 'draft'}>{exp.status}</Badge>, className: 'text-center' },
+            { 
+              header: '', 
+              accessor: (exp) => (
+                <div className="flex items-center justify-end gap-2">
+                  <Link to={`/print/expense/${exp.id}`} target="_blank" className="p-2 text-slate-300 hover:text-ocean-800 transition-all">
+                    <FileText size={18} />
+                  </Link>
+                  <ChevronRight size={18} className="text-slate-200" />
+                </div>
+              ),
+              className: 'text-right'
+            }
+          ]}
+        />
+      </Card>
     </div>
   );
 };
