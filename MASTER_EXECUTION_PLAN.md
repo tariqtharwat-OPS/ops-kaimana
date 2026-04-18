@@ -2,266 +2,109 @@
 
 ---
 
-# 0. EXECUTION MODE
+# 1. EXECUTION PRINCIPLES
 
-You are building a **real production plant operations system**.
-
-STRICT RULE:
-- Do NOT assume
-- Do NOT simplify
-- Do NOT invent
-
-If anything is unclear → STOP & ASK
+- **Simplicity**: Minimal, clean, and beautiful UI. Calm colors and easy for operators.
+- **Operational Focus**: Designed for real plant workflows, not generic ERP.
+- **UI-First Validation**: Build → Show → Wait for approval before any backend/database locking.
 
 ---
 
-# 1. SYSTEM OVERVIEW
+# 2. USER MODEL & ROLES
 
-Single plant system to manage:
+## User Fields
+- `user_id`
+- `full_name`
+- `position` (Job Title, e.g., "Plant Manager")
+- `role`
+- `language` (ID / EN)
 
-- Receiving
-- Processing
-- Packing
-- Stock
-- Expenses
-- Sales
-- Dispatch
-- Reporting
-
----
-
-# 2. CORE PRINCIPLE
-
-Every physical movement MUST create:
-- stock movement
-- audit trail
+## Roles & Permissions
+- **Admin**: Full system access.
+- **Manager**: Operations management and posting permissions.
+- **Operator**: Daily data entry (Receiving, Processing, Packing, Dispatch).
+- **Finance**: Sales and Expenses management.
+- **Buyer (NEW)**: Read-only access. Can **ONLY** see stock assigned specifically to them.
 
 ---
 
-# 3. LANGUAGE SYSTEM
+# 3. CORE MODULE SPECIFICATIONS
 
-## Supported Languages
-- Bahasa Indonesia (default)
-- English
+## 3.1 RECEIVING (Multi-line Document)
+**Header**:
+- `receiving_number` (Auto-gen)
+- `date` (Default today, editable)
+- `supplier` (Select from Master or Inline Add)
+- `notes`
+- `status` (Draft / Posted)
 
-## Implementation
-Each UI text must support:
-- label_id
-- label_en
+**Line Items Table**:
+- `fish_type` (Select from Item Master)
+- `name_id` / `name_en` (Auto-filled)
+- `grade` (Select from Grade Master)
+- `size` (Select from Size Master)
+- `quantity`
+- `unit`
+- `unit_price`
+- `total` (Auto-calc)
 
----
-
-# 4. ROLES & PERMISSIONS
-
-## Roles
-- Admin
-- Manager
-- Operator
-- Finance
-
-## Permissions Matrix
-
-| Action | Admin | Manager | Operator | Finance |
-|--------|------|--------|---------|---------|
-| View All | ✔ | ✔ | ✔ | ✔ |
-| Create Receiving | ✔ | ✔ | ✔ | ✖ |
-| Post Receiving | ✔ | ✔ | ✖ | ✖ |
-| Processing | ✔ | ✔ | ✔ | ✖ |
-| Packing | ✔ | ✔ | ✔ | ✖ |
-| Sales | ✔ | ✔ | ✖ | ✔ |
-| Dispatch | ✔ | ✔ | ✔ | ✖ |
-| Expenses | ✔ | ✔ | ✖ | ✔ |
-| Adjustments | ✔ | ✔ | ✖ | ✖ |
-| Reports | ✔ | ✔ | ✔ | ✔ |
+**Rules**:
+- Supports multiple lines per document.
+- Grand totals calculated automatically.
+- No free-text for Grade/Size.
 
 ---
 
-# 5. DATABASE (FIRESTORE STRUCTURE)
+## 3.2 PROCESSING (Transformation Logic)
+**Logic**: Input (Mixed) → Output (Sorted by Size/Grade).
+**Example**: Input 1000kg Mixed Fish → Output 200kg S, 500kg M, 250kg L, 50kg Waste.
 
-## users
-- user_id
-- name
-- role
-- email
-- is_active
-
-## items
-- item_id
-- name_id
-- name_en
-- category (raw / semi / finished / packaging)
-- unit
-- is_active
-
-## stock_balances
-- item_id
-- qty
-- avg_cost
-- updated_at
-
-## stock_movements
-- movement_id
-- item_id
-- type (IN / OUT)
-- qty
-- cost
-- reference_type
-- reference_id
-- created_at
-
-## stock_batches
-- batch_id
-- item_id
-- qty
-- cost
-- source
-- created_at
+**UI View**:
+- **Input Section**: Select Batch/Item, Grade, and Quantity.
+- **Output Table**: Add multiple rows for different sizes/grades.
+- **Comparison Area**: Total Input vs Total Output + Waste, showing Yield %.
 
 ---
 
-# 6. SCREEN SPECIFICATIONS
-
-## RECEIVING
-
-Fields:
-- date (required)
-- supplier (required)
-- item (required)
-- quantity (required, >0)
-- unit_price (required)
-- total_price (auto)
-- notes
-- status (draft / posted)
-
-Actions:
-- Save Draft
-- Post
-- Print
-
-Rules:
-- On post: stock IN, batch created
+## 3.3 PACKING
+- Process semi-finished items into finished products.
+- Must include a **Stock Sidebar** showing available semi-finished items and packaging materials.
 
 ---
 
-## PROCESSING
-
-Fields:
-- date
-- input_item
-- input_batch
-- input_qty
-
-Outputs:
-- output_item
-- output_qty
-
-Waste:
-- waste_qty
-
-Rules:
-- On post: consume input, create output
+## 3.4 STOCK STRUCTURE (Selling Focus)
+- Stock is tracked by **(Item + Grade + Size)**.
+- Reflects the structure used for **Sales**, not just receiving.
+- **Buyer Assignment**: Stock can be assigned to a specific Buyer or left unassigned. Buyers only see their assigned stock.
 
 ---
 
-## PACKING
-
-Fields:
-- source_item
-- source_qty
-- packaging_item
-- packaging_qty
-- output_item
-- output_qty
+## 3.5 EXPENSES (Multi-line Document)
+- Header: Doc No, Date, Category.
+- Lines Table: Item/Description, Qty, Price, Total.
+- Printable A4 layout required.
 
 ---
 
-## SALES
-
-Fields:
-- date
-- customer
-- item
-- qty
-- price
-- total
-
-Rule:
-- No stock movement
+## 3.6 SALES & MONEY FLOW
+- Sell to Buyers.
+- Track money received from Buyers (AR).
+- Track money paid to Suppliers (AP).
 
 ---
 
-## DISPATCH
+# 4. TECHNICAL STANDARDS
 
-Fields:
-- sales_id
-- item
-- qty
-
-Rule:
-- Reduces stock
+- **Dropdown Rule**: All Fish, Grades, and Sizes MUST come from Master Data. No free text.
+- **Bilingual**: Indonesia-first wording with English toggle support throughout.
+- **Top Bar**: Must show "Welcome, {Name}" and {Name} + {Position}.
+- **Printing**: All documents must be clean, A4, invoice-style.
 
 ---
 
-## EXPENSES
+# 5. WORKFLOW PHASE: UI VALIDATION
 
-Fields:
-- date
-- category
-- amount
-- notes
-
----
-
-# 7. STOCK RULES
-
-- No negative stock
-- All movements tracked
-
----
-
-# 8. COST
-
-Weighted average cost
-
----
-
-# 9. WORKFLOW
-
-Receiving → Processing → Packing → Sales → Dispatch
-
----
-
-# 10. PRINT
-
-Documents:
-- Receiving
-- Expense
-- Sales
-- Dispatch
-
-A4 format required
-
----
-
-# 11. REPORTS
-
-- Receiving
-- Processing
-- Stock
-- Sales
-- Expenses
-
----
-
-# 12. VALIDATION
-
-Block:
-- negative stock
-- invalid processing
-- invalid dispatch
-
----
-
-# 🔴 FINAL RULE
-
-If anything unclear → STOP
+1.  **Rebuild UI according to this blueprint**.
+2.  **Use Mock Data** only.
+3.  **Present screenshots and walkthrough for approval**.
+4.  **DO NOT** proceed to backend or final DB design until UI is approved.
