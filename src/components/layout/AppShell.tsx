@@ -43,7 +43,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
     <div className="flex min-h-screen bg-white">
       {/* Sidebar */}
       <aside 
-        className={`${collapsed ? 'w-20' : 'w-72'} bg-slate-50 border-r border-slate-100 transition-all duration-300 flex flex-col fixed inset-y-0 z-50`}
+        className={`${collapsed ? 'w-20' : 'w-72'} bg-[#f8fafc] border-r border-slate-100 transition-all duration-300 flex flex-col fixed inset-y-0 z-50`}
       >
         <div className="p-8 flex items-center justify-center">
           <img 
