@@ -19,14 +19,14 @@ export const masterDataService = {
     });
   },
 
-  // Generic Create
-  create: async (collectionName: string, data: any) => {
-    return await addDoc(collection(db, collectionName), {
+  create: async (collectionName: string, data: any): Promise<string> => {
+    const docRef = await addDoc(collection(db, collectionName), {
       ...data,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
       active_status: true
     });
+    return docRef.id;
   },
 
   // Generic Update

@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   LayoutDashboard, ArrowDownCircle, RefreshCcw, Package, CreditCard, 
   Database, Users, Settings, LogOut, ChevronLeft, ChevronRight,
-  User as UserIcon, BarChart, UserCheck, Loader2, Globe
+  User as UserIcon, BarChart, UserCheck, Loader2
 } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useLanguage } from '../../context/LanguageContext';
