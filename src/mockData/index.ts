@@ -20,21 +20,19 @@ export const MOCK_ITEMS = [
 ];
 
 export const MOCK_SUPPLIERS = [
-  { id: 's1', name: 'Nelayan A', phone: '081234567890', address: 'Pelabuhan 1' },
-  { id: 's2', name: 'Nelayan B', phone: '081234567891', address: 'Pelabuhan 2' },
+  { id: 's1', name: 'Nelayan Andi', phone: '081234567890', address: 'Pelabuhan Kaimana' },
+  { id: 's2', name: 'Nelayan Budi', phone: '081234567891', address: 'Teluk Arguni' },
 ];
 
 export const MOCK_CUSTOMERS = [
-  { id: 'c1', name: 'Restoran Seafood', phone: '021-555-1234', address: 'Jakarta' },
-  { id: 'c2', name: 'Supermarket Segar', phone: '021-555-9876', address: 'Surabaya' },
+  { id: 'c1', name: 'Seafood Export Co', phone: '021-555-1234', address: 'Jakarta' },
+  { id: 'c2', name: 'Local Market Kaimana', phone: '021-555-9876', address: 'Kaimana Town' },
 ];
 
-export const MOCK_STOCK = [
-  { itemId: 'i1', qty: 1500, avgCost: 35000, updatedAt: '2026-04-17T08:00:00Z' },
-  { itemId: 'i2', qty: 500, avgCost: 55000, updatedAt: '2026-04-17T08:00:00Z' },
-  { itemId: 'i3', qty: 200, avgCost: 75000, updatedAt: '2026-04-17T08:00:00Z' },
-  { itemId: 'i4', qty: 5000, avgCost: 500, updatedAt: '2026-04-17T08:00:00Z' },
-  { itemId: 'i5', qty: 1000, avgCost: 2000, updatedAt: '2026-04-17T08:00:00Z' },
+export const MOCK_WORKERS = [
+  { id: 'w1', name: 'Rahmat Hidayat', position: 'Operator', type: 'Monthly', salary: 4500000 },
+  { id: 'w2', name: 'Siti Aminah', position: 'Processing', type: 'Daily', rate: 150000 },
+  { id: 'w3', name: 'Fajar Pratama', position: 'Security', type: 'Monthly', salary: 3500000 },
 ];
 
 export const MOCK_RECEIVING = [
@@ -44,44 +42,22 @@ export const MOCK_RECEIVING = [
     supplierId: 's1', 
     sourceType: 'Local',
     status: 'Posted',
-    notes: 'Morning catch',
+    notes: 'Kualitas sangat baik',
     grandTotal: 17500000,
-    createdBy: 'u1',
+    createdBy: 'Tariq Tharwat',
     lines: [
       { itemId: 'i1', gradeId: 'g1', sizeId: 'sz3', quantity: 500, unit: 'kg', unitPrice: 35000, total: 17500000 }
     ]
   },
-  { 
-    id: 'RCV-2604-002', 
-    date: '2026-04-17', 
-    supplierId: 's2', 
-    sourceType: 'Local',
-    status: 'Draft',
-    notes: 'Afternoon catch',
-    grandTotal: 7000000,
-    createdBy: 'u1',
-    lines: [
-      { itemId: 'i1', gradeId: 'g2', sizeId: 'sz2', quantity: 200, unit: 'kg', unitPrice: 35000, total: 7000000 }
-    ]
-  },
-];
-
-export const MOCK_PROCESSING = [
-  { id: 'PRC-2604-001', date: '2026-04-17', inputItemId: 'i1', inputQty: 100, outputItemId: 'i2', outputQty: 60, wasteQty: 40, status: 'Posted' },
-];
-
-export const MOCK_PACKING = [
-  { id: 'PCK-2604-001', date: '2026-04-17', sourceItemId: 'i2', sourceQty: 50, packagingItemId: 'i4', packagingQty: 50, outputItemId: 'i3', outputQty: 50, status: 'Posted' },
-];
-
-export const MOCK_SALES = [
-  { id: 'INV-2604-001', date: '2026-04-17', customerId: 'c1', itemId: 'i3', qty: 20, price: 90000, total: 1800000, status: 'Posted' },
-];
-
-export const MOCK_DISPATCH = [
-  { id: 'DSP-2604-001', salesId: 'INV-2604-001', date: '2026-04-17', itemId: 'i3', qty: 20, status: 'Posted' },
 ];
 
 export const MOCK_EXPENSES = [
-  { id: 'EXP-2604-001', date: '2026-04-17', category: 'Operational', amount: 500000, notes: 'Ice blocks', status: 'Posted' },
+  { id: 'EXP-2604-001', date: '2026-04-18', category: 'Operational', status: 'Posted', grandTotal: 500000, notes: 'Pembelian Es Balok', lines: [
+    { category: 'Ice', description: 'Es Balok 20 pcs', qty: 20, price: 25000, total: 500000 }
+  ]},
+];
+
+export const MOCK_CASH_MOVEMENTS = [
+  { id: 'CSH-001', date: '2026-04-18', type: 'IN', source: 'Customer Payment', amount: 5000000, status: 'Posted' },
+  { id: 'CSH-002', date: '2026-04-18', type: 'OUT', source: 'Supplier Payment', amount: 10000000, status: 'Posted' },
 ];

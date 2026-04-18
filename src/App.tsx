@@ -7,27 +7,72 @@ import { PackingPage } from './pages/transactions/PackingPage';
 import { ExpensesPage } from './pages/transactions/ExpensesPage';
 import { StockPage } from './pages/Stock';
 import { BuyerView } from './pages/BuyerView';
+import { ReportsPage } from './pages/ReportsPage';
+import { PrintPage } from './pages/PrintPage';
 
 // Placeholder Dashboard
-const Dashboard = () => <div className="p-4 bg-white rounded-xl shadow-sm border border-slate-200"><h1 className="text-2xl font-bold mb-4">Dashboard</h1><div className="grid grid-cols-1 md:grid-cols-4 gap-4"><div className="p-6 bg-blue-50 border border-blue-100 rounded-lg"><p className="text-sm text-blue-600 font-medium uppercase tracking-wider mb-1">Total Stok</p><h3 className="text-3xl font-bold text-blue-900">2,100 kg</h3></div><div className="p-6 bg-emerald-50 border border-emerald-100 rounded-lg"><p className="text-sm text-emerald-600 font-medium uppercase tracking-wider mb-1">Penerimaan Hari Ini</p><h3 className="text-3xl font-bold text-emerald-900">450 kg</h3></div><div className="p-6 bg-orange-50 border border-orange-100 rounded-lg"><p className="text-sm text-orange-600 font-medium uppercase tracking-wider mb-1">Draft Pending</p><h3 className="text-3xl font-bold text-orange-900">3</h3></div><div className="p-6 bg-purple-50 border border-purple-100 rounded-lg"><p className="text-sm text-purple-600 font-medium uppercase tracking-wider mb-1">Pengeluaran</p><h3 className="text-3xl font-bold text-purple-900">Rp 4.5M</h3></div></div></div>;
+const Dashboard = () => (
+  <div className="space-y-8 animate-in fade-in duration-700">
+    <div className="flex items-center justify-between">
+      <h1 className="text-3xl font-black text-slate-900 tracking-tight">Executive Dashboard</h1>
+      <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">April 2026</p>
+    </div>
+    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="premium-card p-8 bg-blue-600 text-white border-none shadow-xl shadow-blue-500/20">
+        <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-70 mb-2">Total Inventory</p>
+        <h3 className="text-4xl font-black tracking-tighter">12,540 kg</h3>
+      </div>
+      <div className="premium-card p-8">
+        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">Today's Receiving</p>
+        <h3 className="text-4xl font-black text-slate-900 tracking-tighter">450 kg</h3>
+      </div>
+      <div className="premium-card p-8">
+        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">Pending Drafts</p>
+        <h3 className="text-4xl font-black text-orange-500 tracking-tighter">3</h3>
+      </div>
+      <div className="premium-card p-8 bg-[#0f172a] text-white border-none shadow-xl">
+        <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-50 mb-2">Operational Cost</p>
+        <h3 className="text-3xl font-black text-blue-400 tracking-tighter">Rp 4.5M</h3>
+      </div>
+    </div>
+    
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
+      <div className="premium-card p-8 h-80 flex items-center justify-center border-dashed border-2">
+        <span className="text-slate-300 font-bold uppercase tracking-widest">Production Chart Placeholder</span>
+      </div>
+      <div className="premium-card p-8 h-80 flex items-center justify-center border-dashed border-2">
+        <span className="text-slate-300 font-bold uppercase tracking-widest">Financial Flow Placeholder</span>
+      </div>
+    </div>
+  </div>
+);
 
 function App() {
   return (
     <LanguageProvider>
       <Router>
-        <AppShell>
-          <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/receiving" element={<ReceivingPage />} />
-            <Route path="/processing" element={<ProcessingPage />} />
-            <Route path="/packing" element={<PackingPage />} />
-            <Route path="/stock" element={<StockPage />} />
-            <Route path="/expenses" element={<ExpensesPage />} />
-            <Route path="/buyer" element={<BuyerView />} />
-            <Route path="/master" element={<div className="p-8">Master Data Management UI</div>} />
-            <Route path="/settings" element={<div className="p-8">Settings UI</div>} />
-          </Routes>
-        </AppShell>
+        <Routes>
+          {/* Print route without AppShell wrapper */}
+          <Route path="/print/:type/:id" element={<PrintPage />} />
+          
+          {/* Standard routes with AppShell */}
+          <Route path="/*" element={
+            <AppShell>
+              <Routes>
+                <Route path="/" element={<Dashboard />} />
+                <Route path="/receiving" element={<ReceivingPage />} />
+                <Route path="/processing" element={<ProcessingPage />} />
+                <Route path="/packing" element={<PackingPage />} />
+                <Route path="/stock" element={<StockPage />} />
+                <Route path="/expenses" element={<ExpensesPage />} />
+                <Route path="/reports" element={<ReportsPage />} />
+                <Route path="/buyer" element={<BuyerView />} />
+                <Route path="/master" element={<div className="p-8 font-black text-slate-300">MASTER DATA UI</div>} />
+                <Route path="/settings" element={<div className="p-8 font-black text-slate-300">SETTINGS UI</div>} />
+              </Routes>
+            </AppShell>
+          } />
+        </Routes>
       </Router>
     </LanguageProvider>
   );
