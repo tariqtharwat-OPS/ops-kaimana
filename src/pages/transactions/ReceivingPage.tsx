@@ -7,7 +7,8 @@ import {
   Trash2,
   ArrowLeft,
   PlusCircle,
-  FileText
+  FileText,
+  Printer
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../../context/LanguageContext';
@@ -65,6 +66,9 @@ export const ReceivingPage: React.FC = () => {
               <Button variant="secondary" onClick={() => setView('list')}><ArrowLeft size={18} /> {t('Kembali', 'Back')}</Button>
               <Button variant="secondary">{t('Simpan Draft', 'Save Draft')}</Button>
               <Button>{t('Post Dokumen', 'Post Document')}</Button>
+              <Link to="/print/receiving/RCV-2604-001" target="_blank">
+                <Button variant="secondary" className="border-ocean-200 text-ocean-800"><Printer size={18} /> {t('Cetak', 'Print')}</Button>
+              </Link>
             </>
           }
         />
