@@ -12,13 +12,14 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../../context/LanguageContext';
-import { MOCK_EXPENSES } from '../../mockData';
+import { useMasterData } from '../../hooks/useMasterData';
 import { Button, Card, Header, Badge } from '../../components/ui/DesignSystem';
 import { Table } from '../../components/ui/Table';
+import { transactionService } from '../../services/transactionService';
 
 interface ExpenseLine {
   id: string;
-  category: string;
+  categoryId: string;
   description: string;
   qty: number;
   price: number;
@@ -27,14 +28,50 @@ interface ExpenseLine {
 
 export const ExpensesPage: React.FC = () => {
   const { t } = useLanguage();
-  const [view, setView] = useState<'list' | 'form'>('list');
+  const [view, setView] = useState<'list' | 'form' | 'view'>('list');
+  const [selectedDoc, setSelectedDoc] = useState<any>(null);
   
   const [lines, setLines] = useState<ExpenseLine[]>([
-    { id: '1', category: '', description: '', qty: 1, price: 0, total: 0 }
+    { id: '1', categoryId: '', description: '', qty: 1, price: 0, total: 0 }
   ]);
+  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [refNo, setRefNo] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('Cash');
+
+  // Real data from Firestore
+  const { data: expenseCategories } = useMasterData('expense_categories');
+  const { data: expensesHistory } = useMasterData('expenses');
+
+  const handlePostExpense = async () => {
+    if (lines.some(l => !l.categoryId || l.total <= 0)) {
+      alert(t('Harap lengkapi semua kategori dan jumlah!', 'Please complete all categories and amounts!'));
+      return;
+    }
+
+    try {
+      await transactionService.postExpense(
+        { date, refNo, paymentMethod },
+        lines
+      );
+      alert(t('Biaya berhasil diposting!', 'Expense posted successfully!'));
+      setView('list');
+      resetForm();
+    } catch (err) {
+      console.error('Expense error:', err);
+      alert('Failed to post expense.');
+    }
+  };
+
+  const resetForm = () => {
+    setLines([{ id: '1', categoryId: '', description: '', qty: 1, price: 0, total: 0 }]);
+    setRefNo('');
+    setDate(new Date().toISOString().split('T')[0]);
+    setPaymentMethod('Cash');
+    setSelectedDoc(null);
+  };
 
   const addLine = () => {
-    setLines([...lines, { id: Date.now().toString(), category: '', description: '', qty: 1, price: 0, total: 0 }]);
+    setLines([...lines, { id: Date.now().toString(), categoryId: '', description: '', qty: 1, price: 0, total: 0 }]);
   };
 
   const removeLine = (id: string) => {
@@ -52,20 +89,38 @@ export const ExpensesPage: React.FC = () => {
     }));
   };
 
+  const handleViewDoc = (doc: any) => {
+    setSelectedDoc(doc);
+    setLines(doc.lines || []);
+    setDate(doc.date);
+    setRefNo(doc.refNo);
+    setPaymentMethod(doc.paymentMethod);
+    setView('view');
+  };
+
   const grandTotal = lines.reduce((sum, line) => sum + line.total, 0);
 
-  if (view === 'form') {
+  if (view === 'form' || view === 'view') {
+    const isReadOnly = view === 'view' && selectedDoc?.status === 'Posted';
+
     return (
       <div className="space-y-10 animate-in fade-in duration-500 pb-20">
         <Header 
-          title={t('Biaya Baru', 'New Expense')} 
-          subtitle={t('Input pengeluaran operasional multi-item', 'Input multi-item operational expenses')}
+          title={view === 'form' ? t('Biaya Baru', 'New Expense') : t('Detail Biaya', 'Expense Detail')} 
+          subtitle={selectedDoc?.id || t('Input pengeluaran operasional multi-item', 'Input multi-item operational expenses')}
           action={
             <>
-              <Button variant="secondary" onClick={() => setView('list')}><ArrowLeft size={18} /> {t('Kembali', 'Back')}</Button>
-              <Button variant="secondary">{t('Simpan Draft', 'Save Draft')}</Button>
-              <Button>{t('Post Biaya', 'Post Expense')}</Button>
-              <Link to="/print/expense/EXP-2024-001" target="_blank">
+              <Button variant="secondary" onClick={() => { setView('list'); resetForm(); }}><ArrowLeft size={18} /> {t('Kembali', 'Back')}</Button>
+              {!isReadOnly && (
+                <>
+                  <Button variant="secondary">{t('Simpan Draft', 'Save Draft')}</Button>
+                  <Button onClick={handlePostExpense}>{t('Post Biaya', 'Post Expense')}</Button>
+                </>
+              )}
+              {isReadOnly && (
+                <Badge variant="posted" className="px-6 py-3 text-sm">{t('TERPOSTING', 'POSTED')}</Badge>
+              )}
+              <Link to={`/print/expense/${selectedDoc?.id || 'new'}`} target="_blank">
                 <Button variant="secondary" className="border-ocean-200 text-ocean-800"><Printer size={18} /> {t('Cetak', 'Print')}</Button>
               </Link>
             </>
@@ -75,30 +130,33 @@ export const ExpensesPage: React.FC = () => {
         <Card className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <div className="space-y-2">
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('TANGGAL', 'DATE')}</label>
-            <input type="date" className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-ocean-800/10 focus:border-ocean-800 outline-none transition-all font-bold" defaultValue={new Date().toISOString().split('T')[0]} />
+            <input 
+              type="date" 
+              disabled={isReadOnly}
+              className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-ocean-800/10 focus:border-ocean-800 outline-none transition-all font-bold disabled:opacity-50" 
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+            />
           </div>
           <div className="space-y-2">
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('NO. REFERENSI', 'REF NO.')}</label>
-            <input type="text" className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-ocean-800/10 focus:border-ocean-800 outline-none transition-all font-black" placeholder="e.g. INV/2024/001" />
+            <input 
+              type="text" 
+              disabled={isReadOnly}
+              className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-ocean-800/10 focus:border-ocean-800 outline-none transition-all font-black disabled:opacity-50" 
+              placeholder="e.g. INV/2024/001" 
+              value={refNo}
+              onChange={(e) => setRefNo(e.target.value)}
+            />
           </div>
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('KATEGORI BIAYA', 'EXPENSE CATEGORY')}</label>
-              <Link to="/master" className="text-[10px] font-black text-ocean-800 hover:text-ocean-600 transition-colors flex items-center gap-1">
-                <Plus size={10} /> {t('Tambah', 'Add')}
-              </Link>
-            </div>
-            <select className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-ocean-800/10 focus:border-ocean-800 outline-none transition-all font-bold">
-              <option value="">-- {t('Pilih Kategori', 'Select Category')} --</option>
-              <option>Operational</option>
-              <option>Wages</option>
-              <option>Maintenance</option>
-              <option>Fuel</option>
-            </select>
-          </div>
-          <div className="space-y-2">
+          <div className="space-y-2 md:col-span-2">
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('METODE PEMBAYARAN', 'PAYMENT METHOD')}</label>
-            <select className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-ocean-800/10 focus:border-ocean-800 outline-none transition-all font-bold">
+            <select 
+              disabled={isReadOnly}
+              className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-ocean-800/10 focus:border-ocean-800 outline-none transition-all font-bold disabled:opacity-50"
+              value={paymentMethod}
+              onChange={(e) => setPaymentMethod(e.target.value)}
+            >
               <option>Cash</option>
               <option>Bank Transfer</option>
             </select>
@@ -108,7 +166,7 @@ export const ExpensesPage: React.FC = () => {
         <Card noPadding className="overflow-hidden">
           <div className="px-8 py-6 border-b border-slate-50 flex items-center justify-between">
             <h3 className="font-black text-slate-900 tracking-tight">{t('Rincian Biaya', 'Expense Details')}</h3>
-            <Button variant="secondary" onClick={addLine}><PlusCircle size={16} /> {t('Tambah Baris', 'Add Line')}</Button>
+            {!isReadOnly && <Button variant="secondary" onClick={addLine}><PlusCircle size={16} /> {t('Tambah Baris', 'Add Line')}</Button>}
           </div>
           <Table 
             data={lines}
@@ -117,36 +175,33 @@ export const ExpensesPage: React.FC = () => {
                 header: t('KATEGORI', 'CATEGORY'), 
                 accessor: (line) => (
                   <select 
-                    value={line.category}
-                    onChange={(e) => updateLine(line.id, 'category', e.target.value)}
-                    className="w-full bg-transparent border-none focus:ring-0 text-sm font-bold text-slate-900"
+                    disabled={isReadOnly}
+                    value={line.categoryId}
+                    onChange={(e) => updateLine(line.id, 'categoryId', e.target.value)}
+                    className="w-full bg-transparent border-none focus:ring-0 text-sm font-bold text-slate-900 disabled:opacity-50"
                   >
                     <option value="">-- {t('Pilih Kategori', 'Category')} --</option>
-                    <option>Ice / Es</option>
-                    <option>Electricity / Listrik</option>
-                    <option>Fuel / BBM</option>
-                    <option>Salaries / Gaji</option>
-                    <option>Repair / Perbaikan</option>
+                    {expenseCategories.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
                   </select>
                 )
               },
               { 
                 header: t('DESKRIPSI', 'DESCRIPTION'), 
                 accessor: (line) => (
-                  <input type="text" value={line.description} onChange={(e) => updateLine(line.id, 'description', e.target.value)} className="w-full bg-transparent border-none focus:ring-0 text-sm font-medium" placeholder={t('Keterangan...', 'Description...')} />
+                  <input type="text" disabled={isReadOnly} value={line.description} onChange={(e) => updateLine(line.id, 'description', e.target.value)} className="w-full bg-transparent border-none focus:ring-0 text-sm font-medium disabled:opacity-50" placeholder={t('Keterangan...', 'Description...')} />
                 )
               },
               { 
                 header: 'QTY', 
                 accessor: (line) => (
-                  <input type="number" value={line.qty || ''} onChange={(e) => updateLine(line.id, 'qty', parseFloat(e.target.value) || 0)} className="w-full bg-transparent border-none focus:ring-0 text-right font-black text-slate-900" />
+                  <input type="number" disabled={isReadOnly} value={line.qty || ''} onChange={(e) => updateLine(line.id, 'qty', parseFloat(e.target.value) || 0)} className="w-full bg-transparent border-none focus:ring-0 text-right font-black text-slate-900 disabled:opacity-50" />
                 ),
                 className: 'w-24 text-right'
               },
               { 
                 header: 'PRICE', 
                 accessor: (line) => (
-                  <input type="number" value={line.price || ''} onChange={(e) => updateLine(line.id, 'price', parseFloat(e.target.value) || 0)} className="w-full bg-transparent border-none focus:ring-0 text-right font-black text-slate-900" />
+                  <input type="number" disabled={isReadOnly} value={line.price || ''} onChange={(e) => updateLine(line.id, 'price', parseFloat(e.target.value) || 0)} className="w-full bg-transparent border-none focus:ring-0 text-right font-black text-slate-900 disabled:opacity-50" />
                 ),
                 className: 'w-40 text-right'
               },
@@ -157,7 +212,7 @@ export const ExpensesPage: React.FC = () => {
               },
               {
                 header: '',
-                accessor: (line) => <button onClick={() => removeLine(line.id)} className="p-2 text-slate-300 hover:text-red-500 transition-all"><Trash2 size={16} /></button>,
+                accessor: (line) => !isReadOnly && <button onClick={() => removeLine(line.id)} className="p-2 text-slate-300 hover:text-red-500 transition-all"><Trash2 size={16} /></button>,
                 className: 'w-12 text-center'
               }
             ]}
@@ -176,7 +231,7 @@ export const ExpensesPage: React.FC = () => {
       <Header 
         title={t('Biaya Operasional', 'Expenses')} 
         subtitle={t('Kelola pengeluaran harian plant', 'Manage daily plant expenses')}
-        action={<Button onClick={() => setView('form')}><Plus size={20} /> {t('Input Biaya', 'Input Expense')}</Button>}
+        action={<Button onClick={() => { setView('form'); resetForm(); }}><Plus size={20} /> {t('Input Biaya', 'Input Expense')}</Button>}
       />
 
       <Card noPadding>
@@ -189,20 +244,27 @@ export const ExpensesPage: React.FC = () => {
         </div>
 
         <Table 
-          data={MOCK_EXPENSES}
+          data={expensesHistory}
           columns={[
             { header: t('TANGGAL', 'DATE'), accessor: 'date', className: 'font-bold text-slate-500' },
-            { header: t('NO. REFERENSI', 'REF NO.'), accessor: 'id', className: 'font-black text-slate-900' },
-            { header: t('TOTAL', 'TOTAL'), accessor: (exp) => <span className="font-black text-ocean-800">Rp {exp.grandTotal.toLocaleString('id-ID')}</span>, className: 'text-right' },
-            { header: t('STATUS', 'STATUS'), accessor: (exp) => <Badge variant={exp.status === 'Posted' ? 'posted' : 'draft'}>{exp.status}</Badge>, className: 'text-center' },
+            { header: t('NO. REFERENSI', 'REF NO.'), accessor: 'refNo', className: 'font-black text-slate-900' },
+            { 
+              header: t('TOTAL', 'TOTAL'), 
+              accessor: (exp: any) => {
+                const total = (exp.lines || []).reduce((s: number, l: any) => s + (l.total || 0), 0);
+                return <span className="font-black text-ocean-800">Rp {total.toLocaleString('id-ID')}</span>;
+              }, 
+              className: 'text-right' 
+            },
+            { header: t('STATUS', 'STATUS'), accessor: (exp: any) => <Badge variant={exp.status === 'Posted' ? 'posted' : 'draft'}>{exp.status}</Badge>, className: 'text-center' },
             { 
               header: '', 
-              accessor: (exp) => (
+              accessor: (exp: any) => (
                 <div className="flex items-center justify-end gap-2">
-                  <Link to={`/print/expense/${exp.id}`} target="_blank" className="p-2 text-slate-300 hover:text-ocean-800 transition-all">
+                  <button onClick={() => handleViewDoc(exp)} className="p-2 text-slate-300 hover:text-ocean-800 transition-all">
                     <FileText size={18} />
-                  </Link>
-                  <ChevronRight size={18} className="text-slate-200" />
+                  </button>
+                  <ChevronRight size={18} className="text-slate-200 cursor-pointer" onClick={() => handleViewDoc(exp)} />
                 </div>
               ),
               className: 'text-right'

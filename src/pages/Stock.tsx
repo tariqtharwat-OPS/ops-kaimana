@@ -10,18 +10,23 @@ import {
   UserCheck
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
-import { MOCK_ITEMS, MOCK_GRADES, MOCK_SIZES } from '../mockData';
+import { useMasterData } from '../hooks/useMasterData';
 import { Button, Card, Header, Badge } from '../components/ui/DesignSystem';
 import { Table } from '../components/ui/Table';
-
-const MOCK_STOCK = [
-  { id: 'st1', itemId: 'i1', gradeId: 'g1', sizeId: 'sz2', qty: 1200, unit: 'kg', buyerId: null },
-  { id: 'st2', itemId: 'i2', gradeId: 'g1', sizeId: 'sz3', qty: 300, unit: 'kg', buyerId: 'b1' },
-];
 
 export const StockPage: React.FC = () => {
   const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<'available' | 'assigned'>('available');
+
+  // Real data from Firestore
+  const { data: stock } = useMasterData('stock');
+  const { data: items } = useMasterData('items');
+  const { data: grades } = useMasterData('grades');
+  const { data: sizes } = useMasterData('sizes');
+  const { data: movements } = useMasterData('stock_movements');
+
+  const totalVolume = stock.reduce((sum: number, s: any) => sum + (s.quantity || 0), 0);
+  const reservedVolume = stock.filter((s: any) => s.buyer_id).reduce((sum: number, s: any) => sum + (s.quantity || 0), 0);
 
   return (
     <div className="space-y-10 animate-in fade-in duration-500">
@@ -52,28 +57,28 @@ export const StockPage: React.FC = () => {
             <Database className="text-ocean-800" size={16} />
             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('TOTAL VOLUME', 'TOTAL VOLUME')}</span>
           </div>
-          <h3 className="text-2xl font-black text-ocean-800">1,500 kg</h3>
+          <h3 className="text-2xl font-black text-ocean-800">{totalVolume.toLocaleString()} kg</h3>
         </Card>
         <Card>
           <div className="flex items-center gap-3 mb-2">
             <TrendingUp className="text-emerald-500" size={16} />
             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('PUTARAN STOK', 'STOCK TURNOVER')}</span>
           </div>
-          <h3 className="text-2xl font-black text-slate-900">4.2x</h3>
+          <h3 className="text-2xl font-black text-slate-900">--</h3>
         </Card>
         <Card>
           <div className="flex items-center gap-3 mb-2">
             <AlertCircle className="text-amber-500" size={16} />
             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('STOK RENDAH', 'LOW STOCK')}</span>
           </div>
-          <h3 className="text-2xl font-black text-slate-900">2 Items</h3>
+          <h3 className="text-2xl font-black text-slate-900">{stock.filter(s => s.quantity < 100).length} Items</h3>
         </Card>
         <Card>
           <div className="flex items-center gap-3 mb-2">
             <UserCheck className="text-blue-500" size={16} />
             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('TERPESAN', 'RESERVED')}</span>
           </div>
-          <h3 className="text-2xl font-black text-slate-900">300 kg</h3>
+          <h3 className="text-2xl font-black text-slate-900">{reservedVolume.toLocaleString()} kg</h3>
         </Card>
       </div>
 
@@ -90,28 +95,28 @@ export const StockPage: React.FC = () => {
         </div>
 
         <Table 
-          data={MOCK_STOCK.filter(s => activeTab === 'available' ? !s.buyerId : s.buyerId)}
+          data={stock.filter(s => activeTab === 'available' ? !s.buyer_id : s.buyer_id)}
           columns={[
             { 
               header: t('BARANG', 'ITEM'), 
               accessor: (s: any) => {
-                const item = MOCK_ITEMS.find(i => i.id === s.itemId);
+                const item = items.find((i: any) => i.id === s.item_id);
                 return (
                   <div className="flex flex-col">
-                    <span className="font-black text-slate-900">{t(item?.nameId || '', item?.nameEn || '')}</span>
-                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">{item?.item_code}</span>
+                    <span className="font-black text-slate-900">{t(item?.nameId || '-', item?.nameEn || '-')}</span>
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">{item?.item_code || '-'}</span>
                   </div>
                 );
               }
             },
-            { header: 'GRADE', accessor: (s: any) => MOCK_GRADES.find(g => g.id === s.gradeId)?.name },
-            { header: 'SIZE', accessor: (s: any) => MOCK_SIZES.find(sz => sz.id === s.sizeId)?.name },
-            { header: t('KUANTITAS', 'QUANTITY'), accessor: (s: any) => <span className="font-black text-ocean-800">{s.qty} {s.unit}</span>, className: 'text-right' },
+            { header: 'GRADE', accessor: (s: any) => grades.find((g: any) => g.id === s.grade_id)?.name || '-' },
+            { header: 'SIZE', accessor: (s: any) => sizes.find((sz: any) => sz.id === s.size_id)?.name || '-' },
+            { header: t('KUANTITAS', 'QUANTITY'), accessor: (s: any) => <span className="font-black text-ocean-800">{s.quantity.toLocaleString()} kg</span>, className: 'text-right' },
             { 
               header: t('STATUS', 'STATUS'), 
               accessor: (s: any) => (
-                <Badge variant={s.qty > 500 ? 'posted' : 'pending'}>
-                  {s.qty > 500 ? t('Stok Aman', 'Good Stock') : t('Stok Rendah', 'Low Stock')}
+                <Badge variant={s.quantity > 500 ? 'posted' : 'pending'}>
+                  {s.quantity > 500 ? t('Stok Aman', 'Good Stock') : t('Stok Rendah', 'Low Stock')}
                 </Badge>
               ), 
               className: 'text-center' 
@@ -124,6 +129,33 @@ export const StockPage: React.FC = () => {
           ]}
         />
       </Card>
+      <div className="mt-20 space-y-6">
+        <div className="flex items-center gap-4">
+          <History className="text-slate-400" size={24} />
+          <h3 className="text-xl font-black text-slate-900 tracking-tight">{t('Log Pergerakan Stok', 'Stock Movement Log')}</h3>
+        </div>
+        
+        <Card noPadding>
+          <Table 
+            data={movements.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 10)}
+            columns={[
+              { header: t('WAKTU', 'TIME'), accessor: (m: any) => new Date(m.created_at).toLocaleString('id-ID'), className: 'text-xs text-slate-400 font-bold' },
+              { header: t('TIPE', 'TYPE'), accessor: (m: any) => <Badge variant={m.type === 'IN' ? 'posted' : 'pending'}>{m.type}</Badge> },
+              { header: t('SUMBER', 'SOURCE'), accessor: 'source', className: 'font-black text-slate-900 text-xs uppercase' },
+              { 
+                header: t('BARANG', 'ITEM'), 
+                accessor: (m: any) => {
+                  const item = items.find((i: any) => i.id === m.item_id);
+                  return <span className="font-bold text-slate-600">{t(item?.nameId || '-', item?.nameEn || '-')}</span>;
+                }
+              },
+              { header: 'GRADE', accessor: (m: any) => grades.find((g: any) => g.id === m.grade_id)?.name || '-' },
+              { header: 'SIZE', accessor: (m: any) => sizes.find((sz: any) => sz.id === m.size_id)?.name || '-' },
+              { header: t('JUMLAH', 'QTY'), accessor: (m: any) => <span className={`font-black ${m.type === 'IN' ? 'text-emerald-600' : 'text-amber-600'}`}>{m.type === 'IN' ? '+' : '-'}{m.quantity} kg</span>, className: 'text-right' }
+            ]}
+          />
+        </Card>
+      </div>
     </div>
   );
 };

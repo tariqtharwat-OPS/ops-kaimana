@@ -28,8 +28,8 @@ export const Card: React.FC<{ children: React.ReactNode, className?: string, noP
 );
 
 // Badge Component
-export const Badge: React.FC<{ children: React.ReactNode, variant?: 'posted' | 'draft' | 'pending' }> = ({ 
-  children, variant = 'draft' 
+export const Badge: React.FC<{ children: React.ReactNode, variant?: 'posted' | 'draft' | 'pending', className?: string }> = ({ 
+  children, variant = 'draft', className = '' 
 }) => {
   const styles = {
     posted: "bg-emerald-50 text-emerald-600 border-emerald-100",
@@ -37,7 +37,7 @@ export const Badge: React.FC<{ children: React.ReactNode, variant?: 'posted' | '
     pending: "bg-amber-50 text-amber-600 border-amber-100",
   };
   return (
-    <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border ${styles[variant]}`}>
+    <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border ${styles[variant]} ${className}`}>
       {children}
     </span>
   );
