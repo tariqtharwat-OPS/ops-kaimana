@@ -65,3 +65,7 @@ export const MOCK_CASH_MOVEMENTS = [
 export const MOCK_PACKING = [
   { id: 'PCK-2604-001', date: '2026-04-18', sourceItemId: 'i2', sourceQty: 100, packagingItemId: 'i4', packagingQty: 100, outputItemId: 'i3', outputQty: 98, status: 'Posted' }
 ];
+export const MOCK_USERS = [
+  { id: 'u1', name: 'Tariq Tharwat', role: 'Plant Manager', position: 'Administrator', active: true },
+  { id: 'u2', name: 'Andi Jaya', role: 'Operator', position: 'Production', active: true },
+];

@@ -1,15 +1,11 @@
 import React, { useState } from 'react';
 import { 
   Plus, 
-  Search, 
-  ChevronRight, 
-  Filter, 
   Package, 
   Users, 
   Truck, 
   ShoppingBag, 
   CreditCard,
-  UserPlus,
   Edit2,
   Trash2,
   X
@@ -18,10 +14,8 @@ import { useLanguage } from '../context/LanguageContext';
 import { 
   MOCK_ITEMS, 
   MOCK_SUPPLIERS, 
-  MOCK_USERS, 
-  MOCK_EXPENSES,
-  MOCK_GRADES,
-  MOCK_SIZES 
+  MOCK_USERS,
+  MOCK_CUSTOMERS
 } from '../mockData';
 import { Button, Card, Header, Badge } from '../components/ui/DesignSystem';
 import { Table } from '../components/ui/Table';
@@ -233,12 +227,33 @@ export const MasterDataPage: React.FC = () => {
           />
         )}
 
+        {activeTab === 'buyers' && (
+          <Table 
+            data={MOCK_CUSTOMERS}
+            columns={[
+              { header: t('ID', 'ID'), accessor: 'id', className: 'font-black text-slate-900' },
+              { header: t('NAMA PEMBELI', 'BUYER NAME'), accessor: 'name', className: 'font-bold text-slate-900' },
+              { header: t('KONTAK', 'CONTACT'), accessor: 'phone', className: 'text-slate-400' },
+              { 
+                header: '', 
+                accessor: () => (
+                  <div className="flex gap-2 justify-end opacity-0 group-hover:opacity-100 transition-all">
+                    <button className="p-2 text-slate-300 hover:text-ocean-800"><Edit2 size={16} /></button>
+                    <button className="p-2 text-slate-300 hover:text-red-500"><Trash2 size={16} /></button>
+                  </div>
+                ),
+                className: 'text-right'
+              }
+            ]}
+          />
+        )}
+
         {activeTab === 'users' && (
           <Table 
-            data={MOCK_USERS}
+            data={MOCK_USERS as any[]}
             columns={[
               { header: t('NAMA', 'NAME'), accessor: 'name', className: 'font-black text-slate-900' },
-              { header: t('ROLE', 'ROLE'), accessor: (u) => <Badge variant="posted">{u.role}</Badge> },
+              { header: t('ROLE', 'ROLE'), accessor: (u: any) => <Badge variant="posted">{u.role}</Badge> },
               { header: t('JABATAN', 'POSITION'), accessor: 'position', className: 'font-bold text-slate-400' },
               { 
                 header: '', 
@@ -254,7 +269,7 @@ export const MasterDataPage: React.FC = () => {
           />
         )}
 
-        {(activeTab === 'buyers' || activeTab === 'expenses') && (
+        {activeTab === 'expenses' && (
           <div className="p-20 text-center space-y-4">
             <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto">
               <Plus size={32} className="text-slate-200" />
