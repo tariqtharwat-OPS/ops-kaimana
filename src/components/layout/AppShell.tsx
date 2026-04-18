@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useLanguage } from '../../context/LanguageContext';
+import logo from '../../assets/logo.png';
 
 export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [collapsed, setCollapsed] = useState(false);
@@ -47,7 +48,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
       >
         <div className="p-8 flex items-center justify-center">
           <img 
-            src="/images/logo.png" 
+            src={logo} 
             alt="OPS Kaimana" 
             className={`${collapsed ? 'h-8' : 'h-16'} transition-all object-contain`}
           />
