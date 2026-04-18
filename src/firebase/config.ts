@@ -2,14 +2,14 @@ import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 
-// Real project credentials for oceanpearl-ops
-const firebaseConfig = {
-  apiKey: "AIzaSyBmHSr7huWpMZa9RnKNBgV6fnXltmvsxcc",
-  authDomain: "oceanpearl-ops.firebaseapp.com",
-  projectId: "oceanpearl-ops",
-  storageBucket: "oceanpearl-ops.firebasestorage.app",
-  messagingSenderId: "784571080866",
-  appId: "1:784571080866:web:61bacaf38ea90f81d1f7fb"
+// Project: ops-kaimana (unified — hosting + Firestore + Auth)
+export const firebaseConfig = {
+  apiKey: "AIzaSyDSZbFxBNRNpHRxzS3sz_mQruBlfAtMO3I",
+  authDomain: "ops-kaimana.firebaseapp.com",
+  projectId: "ops-kaimana",
+  storageBucket: "ops-kaimana.firebasestorage.app",
+  messagingSenderId: "398690919178",
+  appId: "1:398690919178:web:24bd08477d72b6b68410f3"
 };
 
 const app = initializeApp(firebaseConfig);
