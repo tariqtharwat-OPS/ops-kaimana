@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Trash2, Send, Save, CreditCard, ChevronRight } from 'lucide-react';
+import { Plus, Trash2, Send, Save, ChevronRight } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { useMasterData } from '../../hooks/useMasterData';
 import { masterDataService } from '../../services/masterDataService';
@@ -177,3 +177,4 @@ export const ExpensesPage: React.FC = () => {
     </div>
   );
 };
+

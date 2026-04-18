@@ -2,9 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { 
   onAuthStateChanged, 
   signInWithEmailAndPassword, 
-  signOut as firebaseSignOut,
-  User as FirebaseUser
-} from 'firebase/auth';
+  signOut as firebaseSignOut } from 'firebase/auth';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { auth, db } from '../firebase/config';
 
@@ -106,3 +104,5 @@ export const useAuth = () => {
   if (!context) throw new Error('useAuth must be used within AuthProvider');
   return context;
 };
+
+

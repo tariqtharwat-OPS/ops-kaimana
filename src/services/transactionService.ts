@@ -3,9 +3,7 @@ import {
   doc, 
   runTransaction, 
   serverTimestamp, 
-  increment,
-  getDoc,
-  setDoc
+  increment
 } from 'firebase/firestore';
 import { db } from '../firebase/config';
 
@@ -152,3 +150,5 @@ export const transactionService = {
     });
   }
 };
+
+

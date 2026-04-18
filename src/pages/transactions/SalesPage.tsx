@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Trash2, Send, Save, Truck, Search, ChevronRight } from 'lucide-react';
+import { Plus, Trash2, Save, Truck, ChevronRight } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { useMasterData } from '../../hooks/useMasterData';
 import { masterDataService } from '../../services/masterDataService';
@@ -207,3 +207,4 @@ export const SalesPage: React.FC = () => {
     </div>
   );
 };
+

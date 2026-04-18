@@ -1,8 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { 
-  BarChart, PieChart, TrendingUp, TrendingDown, 
-  Users, Package, DollarSign, Download, Filter, 
-  ChevronRight, Calendar, UserCheck
+  TrendingUp, TrendingDown, 
+  Users, Package, DollarSign, Download, 
+  UserCheck
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useMasterData } from '../hooks/useMasterData';
@@ -14,7 +14,7 @@ type ReportType = 'operational' | 'financial' | 'labor';
 export const ReportsPage: React.FC = () => {
   const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<ReportType>('operational');
-  const [dateRange, setDateRange] = useState({ start: '', end: '' });
+  
 
   // Data
   const { data: receivings } = useMasterData('receivings', true);
@@ -23,7 +23,7 @@ export const ReportsPage: React.FC = () => {
   const { data: sales } = useMasterData('sales', true);
   const { data: expenses } = useMasterData('expenses', true);
   const { data: items } = useMasterData('items', true);
-  const { data: suppliers } = useMasterData('suppliers', true);
+  
   const { data: buyers } = useMasterData('buyers', true);
   const { data: workers } = useMasterData('workers', true);
 
@@ -171,3 +171,4 @@ export const ReportsPage: React.FC = () => {
     </div>
   );
 };
+

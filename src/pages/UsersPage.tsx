@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Edit2, X, User as UserIcon, Loader2, Key } from 'lucide-react';
+import { Plus, Edit2, X, Loader2, Key } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useMasterData } from '../hooks/useMasterData';
 import { masterDataService } from '../services/masterDataService';
@@ -201,3 +201,4 @@ export const UsersPage: React.FC = () => {
     </div>
   );
 };
+

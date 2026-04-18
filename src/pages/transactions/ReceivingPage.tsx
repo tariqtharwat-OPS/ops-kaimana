@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Trash2, Send, Save, Search, Printer, ChevronRight } from 'lucide-react';
+import { Plus, Trash2, Send, Save, Printer, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../../context/LanguageContext';
 import { useMasterData } from '../../hooks/useMasterData';
@@ -13,8 +13,8 @@ export const ReceivingPage: React.FC = () => {
   const { data: items } = useMasterData('items', true);
   const { data: grades } = useMasterData('grades', true);
   const { data: sizes } = useMasterData('sizes', true);
-  const { data: gradeProfiles } = useMasterData('grade_profiles', true);
-  const { data: sizeProfiles } = useMasterData('size_profiles', true);
+  
+  
   const { data: suppliers } = useMasterData('suppliers', true);
   const { data: receivings } = useMasterData('receivings', true);
 
@@ -204,3 +204,4 @@ export const ReceivingPage: React.FC = () => {
     </div>
   );
 };
+

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useMasterData } from '../hooks/useMasterData';
-import { Badge } from '../components/ui/DesignSystem';
+
 import { Loader2, Printer, ChevronLeft } from 'lucide-react';
 
 export const PrintPage: React.FC = () => {
@@ -129,3 +129,4 @@ export const PrintPage: React.FC = () => {
     </div>
   );
 };
+
