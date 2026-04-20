@@ -19,6 +19,7 @@ export const ExpensesPage: React.FC = () => {
     reference: '',
     supplierId: '',
     notes: '',
+    transactionType: 'Money Out',
     lines: []
   });
 
@@ -76,10 +77,26 @@ export const ExpensesPage: React.FC = () => {
     return (
       <div className="space-y-8 pb-20">
         <Header 
-          title={t('Biaya Baru', 'New Expense')} 
-          subtitle={t('Catat pengeluaran operasional atau pembelian', 'Record operational expenses or purchases')}
+          title={t('Jurnal Baru', 'New Journal Entry')} 
+          subtitle={t('Catat arus kas masuk atau keluar', 'Record cash inflow or outflow')}
           action={<Button variant="secondary" onClick={() => setIsCreating(false)}>{t('Batal', 'Cancel')}</Button>}
         />
+
+        {/* Transaction Type Toggle */}
+        <div className="flex gap-4 p-1 bg-slate-100 rounded-xl w-fit">
+          <button 
+            className={`px-6 py-2 rounded-lg font-bold transition-all ${formData.transactionType === 'Money Out' ? 'bg-white text-red-600 shadow' : 'text-slate-400 hover:text-slate-600'}`}
+            onClick={() => setFormData((p: any) => ({ ...p, transactionType: 'Money Out' }))}
+          >
+            {t('Uang Keluar', 'Money Out')}
+          </button>
+          <button 
+            className={`px-6 py-2 rounded-lg font-bold transition-all ${formData.transactionType === 'Money In' ? 'bg-white text-emerald-600 shadow' : 'text-slate-400 hover:text-slate-600'}`}
+            onClick={() => setFormData((p: any) => ({ ...p, transactionType: 'Money In' }))}
+          >
+            {t('Uang Masuk', 'Money In')}
+          </button>
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           <div className="lg:col-span-3 space-y-8">
@@ -119,7 +136,14 @@ export const ExpensesPage: React.FC = () => {
                         <select className="w-full bg-white border border-slate-200 rounded-lg p-2 text-sm font-bold"
                           value={line.categoryId} onChange={e => updateLine(idx, 'categoryId', e.target.value)}>
                           <option value="">--</option>
-                          {categories.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                          <optgroup label="System">
+                            <option value="sales_receipt">Sales Receipt</option>
+                            <option value="supplier_payment">Supplier Payment</option>
+                            <option value="adjustment">Adjustment</option>
+                          </optgroup>
+                          <optgroup label="Operational Expenses">
+                            {categories.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                          </optgroup>
                         </select>
                       </div>
                       <div className="col-span-2 space-y-1">
@@ -134,12 +158,12 @@ export const ExpensesPage: React.FC = () => {
                       </div>
                       <div className="col-span-2 space-y-1">
                         <label className="text-[10px] font-black text-slate-400 uppercase">{t('HARGA SATUAN', 'PRICE')}</label>
-                        <input type="number" className="w-full bg-white border border-slate-200 rounded-lg p-2 text-sm font-bold text-red-700 text-right"
+                        <input type="number" className={`w-full bg-white border border-slate-200 rounded-lg p-2 text-sm font-bold text-right ${formData.transactionType === 'Money In' ? 'text-emerald-700' : 'text-red-700'}`}
                           value={line.amount} onChange={e => updateLine(idx, 'amount', Number(e.target.value))} />
                       </div>
                       <div className="col-span-2 space-y-1">
                         <label className="text-[10px] font-black text-slate-400 uppercase text-right block">TOTAL</label>
-                        <div className="w-full bg-slate-100/50 border border-transparent rounded-lg p-2 text-sm font-black text-right text-red-700">
+                        <div className={`w-full bg-slate-100/50 border border-transparent rounded-lg p-2 text-sm font-black text-right ${formData.transactionType === 'Money In' ? 'text-emerald-700' : 'text-red-700'}`}>
                           Rp {((line.qty || 0) * (line.amount || 0)).toLocaleString()}
                         </div>
                       </div>
@@ -153,8 +177,8 @@ export const ExpensesPage: React.FC = () => {
           </div>
 
           <div className="space-y-8">
-              <Card className="bg-red-800 text-white border-none shadow-2xl">
-                <h3 className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60 mb-6">{t('RINGKASAN BIAYA', 'EXPENSE SUMMARY')}</h3>
+              <Card className={`${formData.transactionType === 'Money In' ? 'bg-emerald-800 shadow-emerald-800/20' : 'bg-red-800 shadow-red-800/20'} text-white border-none shadow-2xl`}>
+                <h3 className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60 mb-6">{t('RINGKASAN TRANSAKSI', 'TRANSACTION SUMMARY')}</h3>
                 <div className="space-y-4">
                   <div className="flex justify-between items-end border-b border-white/10 pb-4">
                     <span className="text-[10px] font-black uppercase opacity-60">{t('TOTAL KUANTITAS', 'TOTAL QUANTITY')}</span>
@@ -168,7 +192,9 @@ export const ExpensesPage: React.FC = () => {
               </Card>
 
               <div className="space-y-4">
-                <Button className="w-full py-4 bg-red-800 hover:bg-red-900 shadow-red-800/20" onClick={() => handleSave(true)}><Send size={18} /> {t('POST BIAYA', 'POST EXPENSE')}</Button>
+                <Button className={`w-full py-4 ${formData.transactionType === 'Money In' ? 'bg-emerald-800 hover:bg-emerald-900 shadow-emerald-800/20' : 'bg-red-800 hover:bg-red-900 shadow-red-800/20'}`} onClick={() => handleSave(true)}>
+                  <Send size={18} /> {formData.transactionType === 'Money In' ? t('POST PENERIMAAN KAS', 'POST MONEY IN') : t('POST BIAYA', 'POST MONEY OUT')}
+                </Button>
                 <div className="grid grid-cols-2 gap-4">
                   <Button variant="secondary" className="w-full py-4" onClick={() => handleSave(false)}><Save size={18} /> {t('SIMPAN', 'SAVE')}</Button>
                   <Button variant="secondary" className="w-full py-4" onClick={() => handleSave(false, true)}><Printer size={18} /> {t('CETAK', 'PRINT')}</Button>
@@ -183,9 +209,9 @@ export const ExpensesPage: React.FC = () => {
   return (
     <div className="space-y-10 animate-in fade-in duration-500">
       <Header 
-        title={t('Log Biaya', 'Expense Logs')} 
-        subtitle={t('Daftar seluruh pengeluaran operasional', 'List of all operational expenses')}
-        action={<Button onClick={() => setIsCreating(true)}><Plus size={20} /> {t('Biaya Baru', 'New Expense')}</Button>}
+        title={t('Jurnal Keuangan', 'Money Journal')} 
+        subtitle={t('Daftar seluruh arus kas', 'List of all cash flows')}
+        action={<Button onClick={() => setIsCreating(true)}><Plus size={20} /> {t('Entri Baru', 'New Entry')}</Button>}
       />
       
       <Card noPadding>
@@ -195,12 +221,27 @@ export const ExpensesPage: React.FC = () => {
           columns={[
             { header: t('TANGGAL', 'DATE'), accessor: 'date', className: 'font-bold' },
             { header: t('KATEGORI', 'CATEGORY'), accessor: (e: any) => {
+              if (e.category) {
+                return e.category.replace('_', ' ').toUpperCase();
+              }
               const catIds = (e.lines || []).map((l: any) => l.categoryId);
-              const names = categories.filter(c => catIds.includes(c.id)).map(c => c.name);
+              const names = catIds.map((id: string) => {
+                if (['sales_receipt', 'supplier_payment', 'adjustment'].includes(id)) {
+                  return id.replace('_', ' ').toUpperCase();
+                }
+                const customCat = categories.find((c: any) => c.id === id);
+                return customCat ? customCat.name : id;
+              });
               return names.join(', ') || '--';
             }},
-            { header: t('TOTAL QTY', 'TOTAL QTY'), accessor: (e: any) => (e.totalQty || (e.lines || []).reduce((s: number, l: any) => s + (l.qty || 0), 0))?.toLocaleString(), className: 'text-right' },
-            { header: t('TOTAL NILAI', 'TOTAL VALUE'), accessor: (e: any) => `Rp ${e.totalAmount?.toLocaleString()}`, className: 'font-bold text-red-600 text-right' },
+            { header: t('TIPE', 'TYPE'), accessor: (e: any) => {
+              const type = e.transactionType || 'Money Out';
+              return <span className={`font-bold text-[10px] uppercase tracking-wider ${type === 'Money In' ? 'text-emerald-600' : 'text-red-600'}`}>{type}</span>;
+            }},
+            { header: t('TOTAL NILAI', 'TOTAL VALUE'), accessor: (e: any) => {
+              const isOut = !e.transactionType || e.transactionType === 'Money Out';
+              return <span className={`font-bold ${isOut ? 'text-red-600' : 'text-emerald-600'}`}>Rp {e.totalAmount?.toLocaleString()}</span>;
+            }, className: 'text-right' },
             { header: 'STATUS', accessor: (e: any) => <Badge variant={e.status === 'Posted' ? 'posted' : 'draft'}>{e.status}</Badge> },
             { header: '', accessor: (e: any) => (
               <div className="flex justify-end gap-2">
