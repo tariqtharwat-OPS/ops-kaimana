@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useMasterData } from '../hooks/useMasterData';
 import { Loader2, Printer, ChevronLeft } from 'lucide-react';
+import { companyConfig } from '../config/company';
 
 export const PrintPage: React.FC = () => {
   const { type, id } = useParams();
@@ -24,14 +25,7 @@ export const PrintPage: React.FC = () => {
     }
   }, [sourceData, id]);
 
-  useEffect(() => {
-    if (data) {
-      const timer = setTimeout(() => {
-        window.print();
-      }, 1200);
-      return () => clearTimeout(timer);
-    }
-  }, [data]);
+  // Removed auto print as requested
 
   if (!data) return <div className="p-20 text-center"><Loader2 className="animate-spin mx-auto text-ocean-600" /></div>;
 
@@ -62,15 +56,16 @@ export const PrintPage: React.FC = () => {
       </div>
 
       {/* Professional Invoice Container */}
-      <div className="max-w-[210mm] mx-auto bg-white shadow-2xl print:shadow-none print:max-w-none print:w-full min-h-[297mm] p-[15mm] flex flex-col box-border border border-slate-200 print:border-none">
+      <div className="max-w-[210mm] mx-auto bg-white shadow-2xl print:shadow-none print:max-w-none print:w-full min-h-[297mm] print:min-h-0 p-[15mm] flex flex-col box-border border border-slate-200 print:border-none print:p-0">
         
         <style dangerouslySetInnerHTML={{ __html: `
           @media print {
-            @page { size: A4; margin: 0; }
-            body { background: white !important; margin: 0; padding: 0; -webkit-print-color-adjust: exact; }
+            @page { size: auto; margin: 5mm; }
+            body, html { background: white !important; margin: 0; padding: 0; -webkit-print-color-adjust: exact; height: auto; }
             .print-hidden { display: none !important; }
             tr { page-break-inside: avoid; }
             td, th { page-break-inside: avoid; }
+            .invoice-table { width: 100%; border-collapse: collapse; }
           }
           .invoice-table th { border-bottom: 2px solid #000; border-top: 2px solid #000; }
           .invoice-table td { border-bottom: 1px solid #eee; }
@@ -81,12 +76,12 @@ export const PrintPage: React.FC = () => {
           <div className="space-y-4">
             <img src="/images/logo.png" alt="Logo" className="h-20 w-auto" />
             <div className="space-y-1">
-              <h1 className="text-2xl font-black tracking-tighter text-slate-900">PT. KAIMANA PLANT</h1>
+              <h1 className="text-2xl font-black tracking-tighter text-slate-900">{companyConfig.name}</h1>
               <p className="text-xs font-bold text-slate-500 max-w-[250px]">
-                Jl. Pelabuhan Baru No. 88, Kaimana<br/>
-                Papua Barat, Indonesia 98654<br/>
-                Telp: +62 957 1234 5678<br/>
-                Email: operations@kaimana.com
+                {companyConfig.addressLine1}<br/>
+                {companyConfig.addressLine2}<br/>
+                Telp: {companyConfig.phone}<br/>
+                Email: {companyConfig.email}
               </p>
             </div>
           </div>
@@ -228,7 +223,7 @@ export const PrintPage: React.FC = () => {
 
         {/* 6. Legal Footer */}
         <div className="mt-16 text-center border-t border-slate-100 pt-8">
-          <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.4em]">PT. KAIMANA PLANT • OPERATIONAL EXCELLENCE SYSTEM • 2026</p>
+          <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.4em]">{companyConfig.name.toUpperCase()} • OPERATIONAL EXCELLENCE SYSTEM • {new Date().getFullYear()}</p>
         </div>
       </div>
     </div>
