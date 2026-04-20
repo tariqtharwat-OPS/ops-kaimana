@@ -227,7 +227,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
   return (
     <div className="flex min-h-screen bg-[#f8fafc]">
       {/* Sidebar Refinement */}
-      <aside className={`${collapsed ? 'w-24' : 'w-80'} bg-white border-r border-slate-100 transition-all duration-500 ease-in-out flex flex-col fixed inset-y-0 z-50 shadow-[4px_0_24px_rgba(0,0,0,0.02)]`}>
+      <aside className={`print:hidden ${collapsed ? 'w-24' : 'w-80'} bg-white border-r border-slate-100 transition-all duration-500 ease-in-out flex flex-col fixed inset-y-0 z-50 shadow-[4px_0_24px_rgba(0,0,0,0.02)]`}>
         <div className="p-10 flex items-center justify-center">
           <div className="relative group">
             <div className="absolute -inset-2 bg-gradient-to-br from-ocean-500/10 to-accent-500/10 rounded-2xl blur opacity-0 group-hover:opacity-100 transition duration-500"></div>
@@ -273,9 +273,9 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
         </div>
       </aside>
 
-      <main className={`flex-1 ${collapsed ? 'ml-24' : 'ml-80'} transition-all duration-500`}>
+      <main className={`flex-1 print:ml-0 ${collapsed ? 'ml-24' : 'ml-80'} transition-all duration-500`}>
         {/* Glass Header */}
-        <header className="h-24 sticky top-0 z-40 px-6 md:px-12 flex items-center justify-between glass-effect border-b border-slate-100/50">
+        <header className="print:hidden h-24 sticky top-0 z-40 px-6 md:px-12 flex items-center justify-between glass-effect border-b border-slate-100/50">
           <div className="animate-slide-up">
             <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">{t('Sistem Operasional', 'Operational System')}</h2>
             <div className="flex items-center gap-3 mt-1">
@@ -309,7 +309,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
           </div>
         </header>
 
-        <div className="p-6 md:p-12 max-w-[1600px] mx-auto animate-slide-up">
+        <div className="p-6 md:p-12 print:p-0 max-w-[1600px] mx-auto animate-slide-up">
           {children}
         </div>
       </main>
