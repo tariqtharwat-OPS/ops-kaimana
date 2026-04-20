@@ -5,6 +5,7 @@ import {
   doc, 
   query, 
   onSnapshot,
+  deleteDoc,
   QueryConstraint
 } from 'firebase/firestore';
 import { db } from '../firebase/config';
@@ -54,5 +55,11 @@ export const masterDataService = {
       active_status: !currentStatus,
       updated_at: new Date().toISOString()
     });
+  },
+
+  // Generic Delete
+  delete: async (collectionName: string, id: string) => {
+    const docRef = doc(db, collectionName, id);
+    return await deleteDoc(docRef);
   }
 };

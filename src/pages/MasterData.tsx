@@ -9,7 +9,8 @@ import {
   X,
   Layers,
   Maximize,
-  HardHat
+  HardHat,
+  Trash2
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useMasterData } from '../hooks/useMasterData';
@@ -136,9 +137,20 @@ export const MasterDataPage: React.FC = () => {
     const opt = editingOptions[idx];
     if (opt.id) {
       const optionCollection = activeTab === 'grading' ? 'grades' : 'sizes';
-      await masterDataService.deactivate(optionCollection, opt.id);
+      await masterDataService.delete(optionCollection, opt.id);
     }
     setEditingOptions(p => p.filter((_, i) => i !== idx));
+  };
+
+  const handleDelete = async (collectionName: string, id: string) => {
+    if (window.confirm(t('Hapus data ini secara permanen?', 'Delete this data permanently?'))) {
+      try {
+        await masterDataService.delete(collectionName, id);
+      } catch (err) {
+        console.error('Delete error:', err);
+        alert('Failed to delete. It might be referenced by other data.');
+      }
+    }
   };
 
   // Real data from Firestore
@@ -593,12 +605,13 @@ export const MasterDataPage: React.FC = () => {
     <div className="flex gap-2 justify-end opacity-0 group-hover:opacity-100 transition-all">
       <button 
         onClick={() => masterDataService.toggleStatus(collectionName, item.id, item.active_status)}
-        className={`p-2 transition-colors ${item.active_status ? 'text-slate-300 hover:text-red-500' : 'text-slate-300 hover:text-emerald-500'}`}
+        className={`p-2 transition-colors ${item.active_status ? 'text-slate-300 hover:text-amber-500' : 'text-slate-300 hover:text-emerald-500'}`}
         title={item.active_status ? t('Nonaktifkan', 'Deactivate') : t('Aktifkan', 'Activate')}
       >
-        <X size={16} />
+        <div className={`w-2 h-2 rounded-full ${item.active_status ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]' : 'bg-slate-300'}`} />
       </button>
       <button className="p-2 text-slate-300 hover:text-ocean-800" onClick={() => handleEdit(item)}><Edit2 size={16} /></button>
+      <button className="p-2 text-slate-300 hover:text-red-500" onClick={() => handleDelete(collectionName, item.id)}><Trash2 size={16} /></button>
     </div>
   );
 
