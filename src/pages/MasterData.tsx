@@ -152,18 +152,30 @@ export const MasterDataPage: React.FC = () => {
   const { data: grades } = useMasterData('grades', true);
   const { data: sizes } = useMasterData('sizes', true);
   const { data: sales } = useMasterData('sales', true);
+  const { data: receivings } = useMasterData('receivings', true);
 
-  // Derived calculations for Buyers
+  // Derived calculations for Buyers (Accounts Receivable)
   const getBuyerStats = (buyerId: string) => {
-    const buyerSales = sales.filter(s => s.buyerId === buyerId);
-    const balance = buyerSales.reduce((sum, s) => sum + (s.totalValue || 0), 0);
-    // Stock is harder to derive without an explicit allocation system. 
-    // For now, we'll show "Allocated" if there are Draft sales.
+    const buyerSales = sales.filter((s: any) => s.buyerId === buyerId);
+    const balance = buyerSales
+      .filter((s: any) => s.status === 'Posted')
+      .reduce((sum, s: any) => sum + (s.balanceDue !== undefined ? s.balanceDue : s.totalValue), 0);
+      
     const allocatedStock = buyerSales
-      .filter(s => s.status === 'Draft')
-      .reduce((sum, s) => sum + (s.totalQty || 0), 0);
+      .filter((s: any) => s.status === 'Draft')
+      .reduce((sum, s: any) => sum + (s.totalQty || 0), 0);
     
     return { balance, allocatedStock };
+  };
+
+  // Derived calculations for Suppliers (Accounts Payable)
+  const getSupplierStats = (supplierId: string) => {
+    const supplierReceivings = receivings.filter((r: any) => r.supplierId === supplierId);
+    const balance = supplierReceivings
+      .filter((r: any) => r.status === 'Posted')
+      .reduce((sum, r: any) => sum + (r.balanceDue !== undefined ? r.balanceDue : r.totalAmount), 0);
+      
+    return { balance };
   };
 
   const tabs = [
@@ -697,6 +709,14 @@ export const MasterDataPage: React.FC = () => {
               { header: t('ID', 'ID'), accessor: 'id', className: 'font-black text-slate-900' },
               { header: t('NAMA PEMASOK', 'SUPPLIER NAME'), accessor: 'name', className: 'font-bold text-slate-900' },
               { header: t('ALAMAT', 'ADDRESS'), accessor: (s) => s.address || '-', className: 'text-slate-400 truncate max-w-xs' },
+              { 
+                header: t('SISA HUTANG', 'OUTSTANDING PAYABLE'), 
+                accessor: (s: any) => {
+                  const stats = getSupplierStats(s.id);
+                  return <span className="font-bold text-red-600">Rp {stats.balance.toLocaleString()}</span>;
+                },
+                className: 'text-right'
+              },
               { header: t('STATUS', 'STATUS'), accessor: (item) => renderStatusBadge(item.active_status) },
               { 
                 header: '', 
@@ -714,11 +734,10 @@ export const MasterDataPage: React.FC = () => {
               { header: t('NAMA PEMBELI / PARTNER', 'BUYER / PARTNER NAME'), accessor: 'name', className: 'font-bold text-slate-900' },
               { header: t('KONTAK', 'CONTACT'), accessor: 'phone', className: 'text-slate-400' },
               { 
-                header: t('TOTAL PENJUALAN', 'SALES VOLUME'), 
-
+                header: t('SISA PIUTANG', 'OUTSTANDING RECEIVABLE'), 
                 accessor: (b: any) => {
                   const stats = getBuyerStats(b.id);
-                  return <span className="font-bold text-red-600">Rp {stats.balance.toLocaleString()}</span>;
+                  return <span className="font-bold text-emerald-600">Rp {stats.balance.toLocaleString()}</span>;
                 },
                 className: 'text-right'
               },

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Trash2, Send, Save, Printer, ChevronRight } from 'lucide-react';
+import { Plus, Trash2, Send, Save, Printer, ChevronRight, DollarSign, X, RotateCcw, History } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../../context/LanguageContext';
 import { useMasterData } from '../../hooks/useMasterData';
@@ -26,6 +26,11 @@ export const ReceivingPage: React.FC = () => {
     notes: '',
     lines: []
   });
+
+  const [paymentModal, setPaymentModal] = useState<{isOpen: boolean, receivingId: string, balanceDue: number}>({isOpen: false, receivingId: '', balanceDue: 0});
+  const [paymentAmount, setPaymentAmount] = useState<number>(0);
+  
+  const [historyModal, setHistoryModal] = useState<{isOpen: boolean, receiving: any}>({isOpen: false, receiving: null});
 
   const addLine = () => {
     setFormData((p: any) => ({
@@ -79,11 +84,16 @@ export const ReceivingPage: React.FC = () => {
         return;
       }
 
+      const totalAmount = calculateTotalAmount();
       const docData = { 
         ...formData, 
         status: isPost ? 'Posted' : 'Draft',
         totalQty: calculateTotalQty(),
-        totalAmount: calculateTotalAmount()
+        totalAmount,
+        paymentStatus: isPost ? 'Unpaid' : 'Draft',
+        amountPaid: 0,
+        balanceDue: totalAmount,
+        paymentHistory: []
       };
       const id = await masterDataService.create('receivings', docData);
       if (isPost) {
@@ -96,6 +106,30 @@ export const ReceivingPage: React.FC = () => {
 
       setIsCreating(false);
       setFormData({ date: new Date().toISOString().split('T')[0], supplierId: '', vehicleNo: '', notes: '', lines: [] });
+    } catch (e: any) {
+      alert(e.message);
+    }
+  };
+
+  const handlePayment = async () => {
+    try {
+      if (paymentAmount <= 0 || paymentAmount > paymentModal.balanceDue) {
+        alert("Nominal pembayaran tidak valid");
+        return;
+      }
+      await transactionService.recordPayment(paymentModal.receivingId, 'receivings', paymentAmount);
+      setPaymentModal({isOpen: false, receivingId: '', balanceDue: 0});
+      setPaymentAmount(0);
+    } catch (e: any) {
+      alert(e.message);
+    }
+  };
+
+  const handleReverse = async (paymentId: string) => {
+    if (!window.confirm(t('Apakah Anda yakin ingin me-reverse pembayaran ini?', 'Are you sure you want to reverse this payment?'))) return;
+    try {
+      await transactionService.reversePayment(historyModal.receiving.id, 'receivings', paymentId);
+      setHistoryModal({isOpen: false, receiving: null}); // Close after reversal to refresh
     } catch (e: any) {
       alert(e.message);
     }
@@ -253,9 +287,32 @@ export const ReceivingPage: React.FC = () => {
             { header: t('SUPPLIER', 'SUPPLIER'), accessor: (r: any) => suppliers.find(s => s.id === r.supplierId)?.name || 'Unknown' },
             { header: t('TOTAL QTY', 'TOTAL QTY'), accessor: (r: any) => `${(r.totalQty || r.lines?.reduce((sum: number, l: any) => sum + l.quantity, 0))?.toLocaleString()} kg`, className: 'text-right' },
             { header: t('TOTAL NILAI', 'TOTAL VALUE'), accessor: (r: any) => `Rp ${(r.totalAmount || r.lines?.reduce((sum: number, l: any) => sum + (l.quantity * l.pricePerKg), 0))?.toLocaleString()}`, className: 'text-right font-bold text-ocean-700' },
-            { header: 'STATUS', accessor: (r: any) => <Badge variant={r.status === 'Posted' ? 'posted' : 'draft'}>{r.status}</Badge> },
+            { header: 'STATUS', accessor: (r: any) => (
+              <div className="flex gap-2">
+                <Badge variant={r.status === 'Posted' ? 'posted' : 'draft'}>{r.status}</Badge>
+                {r.status === 'Posted' && (
+                  <Badge variant={r.paymentStatus === 'Paid' ? 'posted' : r.paymentStatus === 'Partial' ? 'draft' : 'pending'}>
+                    {r.paymentStatus || 'Unpaid'}
+                  </Badge>
+                )}
+              </div>
+            ) },
             { header: '', accessor: (r: any) => (
               <div className="flex gap-2 justify-end">
+                {r.status === 'Posted' && (
+                  <Button variant="ghost" size="sm" onClick={() => setHistoryModal({isOpen: true, receiving: r})} title="Payment History">
+                    <History size={16} />
+                  </Button>
+                )}
+                {r.status === 'Posted' && (!r.paymentStatus || r.paymentStatus !== 'Paid') && (
+                  <Button variant="secondary" size="sm" onClick={() => {
+                    const bal = r.balanceDue !== undefined ? r.balanceDue : r.totalAmount;
+                    setPaymentModal({isOpen: true, receivingId: r.id, balanceDue: bal});
+                    setPaymentAmount(bal);
+                  }}>
+                    <DollarSign size={16} className="text-ocean-600" />
+                  </Button>
+                )}
                 <Link to={`/print/receivings/${r.id}`}>
                   <Button variant="secondary" size="sm"><Printer size={16} /></Button>
                 </Link>
@@ -265,6 +322,87 @@ export const ReceivingPage: React.FC = () => {
           ]}
         />
       </Card>
+
+      {/* Payment Modal */}
+      {paymentModal.isOpen && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex justify-between items-center mb-8">
+              <div>
+                <h3 className="text-xl font-black text-slate-900">{t('Bayar Tagihan', 'Pay Invoice')}</h3>
+                <p className="text-sm font-bold text-slate-500">Invoice: #{paymentModal.receivingId.substring(0,8).toUpperCase()}</p>
+              </div>
+              <button onClick={() => setPaymentModal({isOpen: false, receivingId: '', balanceDue: 0})} className="p-2 text-slate-400 hover:text-slate-600 bg-slate-100 rounded-full transition-colors"><X size={20}/></button>
+            </div>
+            
+            <div className="space-y-6">
+              <div className="p-4 bg-red-50 text-red-900 rounded-2xl flex justify-between items-center border border-red-100">
+                <span className="text-xs font-black uppercase tracking-widest">{t('Sisa Tagihan', 'Balance Due')}</span>
+                <span className="text-lg font-black">Rp {paymentModal.balanceDue.toLocaleString()}</span>
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('NOMINAL PEMBAYARAN', 'PAYMENT AMOUNT')}</label>
+                <input 
+                  type="number" 
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 text-2xl font-black text-red-600 focus:ring-4 ring-red-500/20 outline-none transition-all"
+                  value={paymentAmount}
+                  onChange={e => setPaymentAmount(Number(e.target.value))}
+                  autoFocus
+                />
+              </div>
+
+              <Button 
+                className="w-full py-4 text-sm bg-red-600 hover:bg-red-700 shadow-red-600/20" 
+                onClick={handlePayment}
+              >
+                {t('KONFIRMASI PEMBAYARAN', 'CONFIRM PAYMENT')}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* History Modal */}
+      {historyModal.isOpen && historyModal.receiving && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[80vh]">
+            <div className="p-6 border-b border-slate-100 flex justify-between items-center">
+              <div>
+                <h3 className="text-xl font-black text-slate-900">{t('Riwayat Pembayaran', 'Payment History')}</h3>
+                <p className="text-sm font-bold text-slate-500">Invoice: #{historyModal.receiving.id.substring(0,8).toUpperCase()}</p>
+              </div>
+              <button onClick={() => setHistoryModal({isOpen: false, receiving: null})} className="p-2 text-slate-400 hover:text-slate-600 bg-slate-100 rounded-full transition-colors"><X size={20}/></button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto space-y-4 flex-1">
+              {(!historyModal.receiving.paymentHistory || historyModal.receiving.paymentHistory.length === 0) ? (
+                <div className="text-center py-10">
+                  <p className="text-slate-400 font-bold">{t('Belum ada riwayat pembayaran.', 'No payment history yet.')}</p>
+                </div>
+              ) : (
+                historyModal.receiving.paymentHistory.map((p: any) => (
+                  <div key={p.id} className={`p-4 rounded-2xl border flex items-center justify-between ${p.reversed ? 'bg-slate-50 border-slate-100 opacity-60' : 'bg-red-50/50 border-red-100'}`}>
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-xs font-black text-slate-400">{p.date}</span>
+                        {p.reversed && <Badge variant="draft">Reversed</Badge>}
+                      </div>
+                      <p className={`font-black text-lg ${p.reversed ? 'text-slate-500 line-through' : 'text-red-700'}`}>Rp {p.amount.toLocaleString()}</p>
+                      <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase">Ref: {p.id}</p>
+                    </div>
+                    {!p.reversed && (
+                      <button onClick={() => handleReverse(p.id)} className="p-2 text-red-400 hover:bg-red-50 hover:text-red-600 rounded-xl transition-all" title="Reverse Entry">
+                        <RotateCcw size={18} />
+                      </button>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
