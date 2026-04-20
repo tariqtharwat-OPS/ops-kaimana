@@ -77,12 +77,10 @@ export const PrintPage: React.FC = () => {
           <div className="space-y-2">
             <img src="/images/logo.png" alt="Logo" className="h-16 w-auto" />
             <div className="space-y-0.5">
-              <h1 className="text-xl font-black tracking-tighter text-slate-900">{companyConfig.name}</h1>
+              <h1 className="text-xl font-black tracking-tighter text-slate-900">OPS - Kaimana Plant</h1>
               <p className="text-[10px] font-bold text-slate-500 max-w-[250px]">
-                {companyConfig.addressLine1}<br/>
-                {companyConfig.addressLine2}<br/>
-                Telp: {companyConfig.phone}<br/>
-                Email: {companyConfig.email}
+                Phone: +6282144434743<br/>
+                Email: info@OceanPearlSeafood.com
               </p>
             </div>
           </div>
