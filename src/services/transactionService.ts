@@ -20,7 +20,8 @@ export const transactionService = {
       // Update status
       transaction.update(docRef, { 
         status: 'Posted', 
-        postedAt: serverTimestamp() 
+        postedAt: serverTimestamp(),
+        paymentStatus: 'Unpaid'
       });
 
       // Update Stock & Logs
@@ -146,7 +147,11 @@ export const transactionService = {
         });
       }
 
-      transaction.update(docRef, { status: 'Posted', postedAt: serverTimestamp() });
+      transaction.update(docRef, { 
+        status: 'Posted', 
+        postedAt: serverTimestamp(),
+        paymentStatus: 'Unpaid'
+      });
     });
   },
 

@@ -87,16 +87,19 @@ export const ReceivingPage: React.FC = () => {
       const totalAmount = calculateTotalAmount();
       const docData = { 
         ...formData, 
-        status: isPost ? 'Posted' : 'Draft',
+        status: 'Draft', // Always create as Draft first to allow transaction to transition it correctly
         totalQty: calculateTotalQty(),
         totalAmount,
-        paymentStatus: isPost ? 'Unpaid' : 'Draft',
+        paymentStatus: 'Draft',
         amountPaid: 0,
         balanceDue: totalAmount,
         paymentHistory: []
       };
+      
       const id = await masterDataService.create('receivings', docData);
+      
       if (isPost) {
+        // Transition from Draft to Posted and update stock atomically
         await transactionService.postReceiving(id, docData);
       }
 
@@ -104,10 +107,12 @@ export const ReceivingPage: React.FC = () => {
         window.open(`/print/receivings/${id}`, '_blank');
       }
 
+      // Only cleanup state after full success
       setIsCreating(false);
       setFormData({ date: new Date().toISOString().split('T')[0], supplierId: '', vehicleNo: '', notes: '', lines: [] });
     } catch (e: any) {
-      alert(e.message);
+      console.error("Save/Post error:", e);
+      alert(t('Gagal menyimpan: ', 'Failed to save: ') + e.message);
     }
   };
 

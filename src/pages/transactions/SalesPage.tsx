@@ -92,10 +92,10 @@ export const SalesPage: React.FC = () => {
       const totalValue = calculateTotal();
       const docData = { 
         ...formData, 
-        status: isPost ? 'Posted' : 'Draft', 
+        status: 'Draft',
         totalValue,
         totalQty: calculateTotalQty(),
-        paymentStatus: isPost ? 'Unpaid' : 'Draft',
+        paymentStatus: 'Draft',
         amountPaid: 0,
         balanceDue: totalValue,
         paymentHistory: []
@@ -112,7 +112,8 @@ export const SalesPage: React.FC = () => {
       setIsCreating(false);
       setFormData({ date: new Date().toISOString().split('T')[0], buyerId: '', vehicleNo: '', notes: '', lines: [] });
     } catch (e: any) {
-      alert(e.message);
+      console.error("Sales Save/Post error:", e);
+      alert(t('Gagal menyimpan: ', 'Failed to save: ') + e.message);
     }
   };
 

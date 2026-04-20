@@ -105,7 +105,7 @@ export const ProcessingPage: React.FC = () => {
       const docData = { 
         ...formData, 
         summary,
-        status: isPost ? 'Posted' : 'Draft',
+        status: 'Draft',
         totalInput: formData.lines.reduce((acc, l) => acc + l.invoiceQty, 0),
         totalOutput: formData.lines.reduce((acc, l) => acc + l.actualQty, 0)
       };
@@ -123,7 +123,8 @@ export const ProcessingPage: React.FC = () => {
       setIsCreating(false);
       setFormData({ date: new Date().toISOString().split('T')[0], notes: '', selectedReceivings: [], lines: [] });
     } catch (e: any) {
-      alert(e.message);
+      console.error("Processing Save/Post error:", e);
+      alert(t('Gagal menyimpan: ', 'Failed to save: ') + e.message);
     }
   };
 
