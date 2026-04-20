@@ -60,12 +60,13 @@ export const PrintPage: React.FC = () => {
         
         <style dangerouslySetInnerHTML={{ __html: `
           @media print {
-            @page { size: auto; margin: 5mm; }
+            @page { size: A4; margin: 8mm; }
             body, html { background: white !important; margin: 0; padding: 0; -webkit-print-color-adjust: exact; height: auto; }
             .print-hidden { display: none !important; }
-            tr { page-break-inside: avoid; }
-            td, th { page-break-inside: avoid; }
+            tr, td, th { page-break-inside: avoid; }
+            thead { display: table-header-group; }
             .invoice-table { width: 100%; border-collapse: collapse; }
+            .summary-section { page-break-inside: avoid; }
           }
           .invoice-table th { border-bottom: 2px solid #000; border-top: 2px solid #000; }
           .invoice-table td { border-bottom: 1px solid #eee; }
@@ -163,7 +164,7 @@ export const PrintPage: React.FC = () => {
         </div>
 
         {/* 4. Footer Summary Section */}
-        <div className="mt-12 grid grid-cols-12 gap-12">
+        <div className="mt-12 grid grid-cols-12 gap-12 summary-section">
           <div className="col-span-7 space-y-8">
             <div className="space-y-2">
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">NOTES / REMARKS</p>
