@@ -17,23 +17,30 @@ import { masterDataService } from '../services/masterDataService';
 import { Button, Card, Header, Badge } from '../components/ui/DesignSystem';
 import { Table } from '../components/ui/Table';
 
-type TabType = 'items' | 'suppliers' | 'buyers' | 'expenses' | 'workers' | 'grades' | 'sizes' | 'grade_profiles' | 'size_profiles';
+type TabType = 'items' | 'suppliers' | 'buyers' | 'expenses' | 'workers' | 'grading' | 'sizing';
 
 export const MasterDataPage: React.FC = () => {
   const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<TabType>('items');
   const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState<any>({});
-
   const [isEdit, setIsEdit] = useState(false);
+
+  // For nested options management
+  const [editingOptions, setEditingOptions] = useState<any[]>([]);
 
   // Reset form when modal opens
   React.useEffect(() => {
     if (showModal && !isEdit) {
       setFormData({});
+      setEditingOptions([]);
     }
     if (!showModal) {
-      setTimeout(() => { setFormData({}); setIsEdit(false); }, 300);
+      setTimeout(() => { 
+        setFormData({}); 
+        setIsEdit(false); 
+        setEditingOptions([]);
+      }, 300);
     }
   }, [showModal]);
 
@@ -41,21 +48,34 @@ export const MasterDataPage: React.FC = () => {
     try {
       const collectionMapping: Record<TabType, string> = {
         items: 'items',
-        grades: 'grades',
-        sizes: 'sizes',
-        grade_profiles: 'grade_profiles',
-        size_profiles: 'size_profiles',
+        grading: 'grade_profiles',
+        sizing: 'size_profiles',
         suppliers: 'suppliers',
         buyers: 'buyers',
         expenses: 'expense_categories',
         workers: 'workers'
       };
 
+      let docId = formData.id;
       if (isEdit) {
         await masterDataService.update(collectionMapping[activeTab], formData.id, formData);
       } else {
-        await masterDataService.create(collectionMapping[activeTab], formData);
+        docId = await masterDataService.create(collectionMapping[activeTab], formData);
       }
+
+      // Handle nested options for grading/sizing
+      if (activeTab === 'grading' || activeTab === 'sizing') {
+        const optionCollection = activeTab === 'grading' ? 'grades' : 'sizes';
+        for (const opt of editingOptions) {
+          const optData = { ...opt, profileId: docId };
+          if (opt.id) {
+            await masterDataService.update(optionCollection, opt.id, optData);
+          } else {
+            await masterDataService.create(optionCollection, optData);
+          }
+        }
+      }
+
       setShowModal(false);
     } catch (err) {
       console.error('Error saving:', err);
@@ -66,11 +86,38 @@ export const MasterDataPage: React.FC = () => {
   const handleEdit = (item: any) => {
     setFormData(item);
     setIsEdit(true);
+    
+    // Load options if grading/sizing
+    if (activeTab === 'grading') {
+      setEditingOptions(grades.filter(g => g.profileId === item.id));
+    } else if (activeTab === 'sizing') {
+      setEditingOptions(sizes.filter(s => s.profileId === item.id));
+    }
+    
     setShowModal(true);
   };
 
   const updateForm = (field: string, value: any) => {
     setFormData((prev: any) => ({ ...prev, [field]: value }));
+  };
+
+  const addOption = () => {
+    setEditingOptions(p => [...p, { name: '', active_status: true }]);
+  };
+
+  const updateOption = (idx: number, field: string, value: any) => {
+    const next = [...editingOptions];
+    next[idx] = { ...next[idx], [field]: value };
+    setEditingOptions(next);
+  };
+
+  const removeOption = async (idx: number) => {
+    const opt = editingOptions[idx];
+    if (opt.id) {
+      const optionCollection = activeTab === 'grading' ? 'grades' : 'sizes';
+      await masterDataService.deactivate(optionCollection, opt.id);
+    }
+    setEditingOptions(p => p.filter((_, i) => i !== idx));
   };
 
   // Real data from Firestore
@@ -83,15 +130,27 @@ export const MasterDataPage: React.FC = () => {
   const { data: size_profiles } = useMasterData('size_profiles', true);
   const { data: grades } = useMasterData('grades', true);
   const { data: sizes } = useMasterData('sizes', true);
+  const { data: sales } = useMasterData('sales', true);
+
+  // Derived calculations for Buyers
+  const getBuyerStats = (buyerId: string) => {
+    const buyerSales = sales.filter(s => s.buyerId === buyerId);
+    const balance = buyerSales.reduce((sum, s) => sum + (s.totalValue || 0), 0);
+    // Stock is harder to derive without an explicit allocation system. 
+    // For now, we'll show "Allocated" if there are Draft sales.
+    const allocatedStock = buyerSales
+      .filter(s => s.status === 'Draft')
+      .reduce((sum, s) => sum + (s.totalQty || 0), 0);
+    
+    return { balance, allocatedStock };
+  };
 
   const tabs = [
     { id: 'items', label: t('Barang', 'Items'), icon: Package },
-    { id: 'grade_profiles', label: t('Grade Profile', 'Grade Profiles'), icon: Layers },
-    { id: 'grades', label: t('Grade Options', 'Grade Options'), icon: Layers },
-    { id: 'size_profiles', label: t('Size Profile', 'Size Profiles'), icon: Maximize },
-    { id: 'sizes', label: t('Size Options', 'Size Options'), icon: Maximize },
+    { id: 'grading', label: t('Grading', 'Grading'), icon: Layers },
+    { id: 'sizing', label: t('Sizing', 'Sizing'), icon: Maximize },
     { id: 'suppliers', label: t('Pemasok', 'Suppliers'), icon: Truck },
-    { id: 'buyers', label: t('Pembeli', 'Buyers'), icon: ShoppingBag },
+    { id: 'buyers', label: t('Pembeli / Partner', 'Buyers / Partners'), icon: ShoppingBag },
     { id: 'expenses', label: t('Kategori Biaya', 'Expense Cat.'), icon: CreditCard },
     { id: 'workers', label: t('Pekerja', 'Workers'), icon: HardHat },
   ];
@@ -101,12 +160,10 @@ export const MasterDataPage: React.FC = () => {
 
     const titles = {
       items: isEdit ? t('Edit Barang', 'Edit Item') : t('Tambah Barang', 'Add New Item'),
-      grade_profiles: isEdit ? t('Edit Grade Profile', 'Edit Grade Profile') : t('Tambah Grade Profile', 'Add Grade Profile'),
-      size_profiles: isEdit ? t('Edit Size Profile', 'Edit Size Profile') : t('Tambah Size Profile', 'Add Size Profile'),
-      grades: isEdit ? t('Edit Grade', 'Edit Grade') : t('Tambah Grade Option', 'Add New Grade Option'),
-      sizes: isEdit ? t('Edit Size', 'Edit Size') : t('Tambah Size Option', 'Add New Size Option'),
+      grading: isEdit ? t('Edit Grading Group', 'Edit Grading Group') : t('Tambah Grading Group', 'Add Grading Group'),
+      sizing: isEdit ? t('Edit Sizing Group', 'Edit Sizing Group') : t('Tambah Sizing Group', 'Add Sizing Group'),
       suppliers: isEdit ? t('Edit Pemasok', 'Edit Supplier') : t('Tambah Pemasok', 'Add New Supplier'),
-      buyers: isEdit ? t('Edit Pembeli', 'Edit Buyer') : t('Tambah Pembeli', 'Add New Buyer'),
+      buyers: isEdit ? t('Edit Pembeli / Partner', 'Edit Buyer / Partner') : t('Tambah Pembeli / Partner', 'Add New Buyer / Partner'),
       expenses: isEdit ? t('Edit Kategori Biaya', 'Edit Expense Category') : t('Tambah Kategori Biaya', 'Add Expense Category'),
       workers: isEdit ? t('Edit Pekerja', 'Edit Worker') : t('Tambah Pekerja', 'Add New Worker'),
     };
@@ -115,7 +172,7 @@ export const MasterDataPage: React.FC = () => {
       <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
         <div className="bg-white rounded-3xl w-full max-w-xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
           <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-            <h3 className="text-xl font-black text-slate-900 tracking-tight">{titles[activeTab]}</h3>
+            <h3 className="text-xl font-black text-slate-900 tracking-tight">{titles[activeTab as keyof typeof titles]}</h3>
             <button onClick={() => setShowModal(false)} className="p-2 hover:bg-white rounded-xl transition-all text-slate-400 hover:text-slate-900 shadow-sm border border-transparent hover:border-slate-100">
               <X size={20} />
             </button>
@@ -211,6 +268,88 @@ export const MasterDataPage: React.FC = () => {
                         {size_profiles.map((p: any) => <option key={p.id} value={p.id}>{p.name}</option>)}
                       </select>
                     </div>
+
+                    {/* Pricing Matrix Section */}
+                    {(formData.gradeProfileId || formData.sizeProfileId) && (
+                      <div className="pt-6 border-t border-slate-100">
+                        <h4 className="text-sm font-black text-slate-900 mb-4 flex items-center gap-2">
+                          <CreditCard size={16} className="text-ocean-800" />
+                          {t('Matriks Harga (Standard)', 'Pricing Matrix (Standard)')}
+                        </h4>
+                        <div className="overflow-x-auto border border-slate-100 rounded-2xl">
+                          <table className="w-full text-xs">
+                            <thead className="bg-slate-50 border-b border-slate-100">
+                              <tr>
+                                <th className="p-3 text-left font-black text-slate-400">GRADE \ SIZE</th>
+                                {sizes.filter(s => s.profileId === formData.sizeProfileId).map((sz: any) => (
+                                  <th key={sz.id} className="p-3 text-center font-black text-slate-700">{sz.name}</th>
+                                ))}
+                                {sizes.filter(s => s.profileId === formData.sizeProfileId).length === 0 && (
+                                   <th className="p-3 text-center font-black text-slate-700">-</th>
+                                )}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {grades.filter(g => g.profileId === formData.gradeProfileId).length > 0 ? (
+                                grades.filter(g => g.profileId === formData.gradeProfileId).map((gr: any) => (
+                                  <tr key={gr.id} className="border-b border-slate-50 last:border-0">
+                                    <td className="p-3 font-bold text-slate-600 bg-slate-50/50">{gr.name}</td>
+                                    {sizes.filter(s => s.profileId === formData.sizeProfileId).map((sz: any) => {
+                                      const currentPrice = formData.pricingMatrix?.[gr.id]?.[sz.id] || '';
+                                      return (
+                                        <td key={sz.id} className="p-1">
+                                          <input 
+                                            type="number" 
+                                            className="w-full px-2 py-2 bg-transparent text-center font-black text-ocean-800 placeholder:text-slate-200 outline-none focus:bg-white"
+                                            placeholder="0"
+                                            value={currentPrice}
+                                            onChange={(e) => {
+                                              const matrix = { ...(formData.pricingMatrix || {}) };
+                                              if (!matrix[gr.id]) matrix[gr.id] = {};
+                                              matrix[gr.id][sz.id] = Number(e.target.value);
+                                              updateForm('pricingMatrix', matrix);
+                                            }}
+                                          />
+                                        </td>
+                                      );
+                                    })}
+                                    {sizes.filter(s => s.profileId === formData.sizeProfileId).length === 0 && (
+                                       <td className="p-1 text-center text-slate-300 italic">No Sizes</td>
+                                    )}
+                                  </tr>
+                                ))
+                              ) : (
+                                <tr className="border-b border-slate-50 last:border-0">
+                                   <td className="p-3 font-bold text-slate-600 bg-slate-50/50">Standard</td>
+                                   {sizes.filter(s => s.profileId === formData.sizeProfileId).map((sz: any) => {
+                                      const currentPrice = formData.pricingMatrix?.['standard']?.[sz.id] || '';
+                                      return (
+                                        <td key={sz.id} className="p-1">
+                                          <input 
+                                            type="number" 
+                                            className="w-full px-2 py-2 bg-transparent text-center font-black text-ocean-800 placeholder:text-slate-200 outline-none focus:bg-white"
+                                            placeholder="0"
+                                            value={currentPrice}
+                                            onChange={(e) => {
+                                              const matrix = { ...(formData.pricingMatrix || {}) };
+                                              if (!matrix['standard']) matrix['standard'] = {};
+                                              matrix['standard'][sz.id] = Number(e.target.value);
+                                              updateForm('pricingMatrix', matrix);
+                                            }}
+                                          />
+                                        </td>
+                                      );
+                                    })}
+                                    {sizes.filter(s => s.profileId === formData.sizeProfileId).length === 0 && (
+                                       <td className="p-1 text-center text-slate-300 italic">Select Profiles</td>
+                                    )}
+                                </tr>
+                              )}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -251,84 +390,47 @@ export const MasterDataPage: React.FC = () => {
               </div>
             )}
 
-            {activeTab === 'grade_profiles' && (
-              <div className="space-y-4">
+            {(activeTab === 'grading' || activeTab === 'sizing') && (
+              <div className="space-y-6">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('NAMA PROFILE', 'PROFILE NAME')}</label>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                    {activeTab === 'grading' ? t('NAMA GRADING GROUP', 'GRADING GROUP NAME') : t('NAMA SIZING GROUP', 'SIZING GROUP NAME')}
+                  </label>
                   <input 
                     type="text" 
-                    placeholder="Tuna Grades" 
+                    placeholder={activeTab === 'grading' ? "Tuna Grading" : "Tuna Sizing"}
                     className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-ocean-800/10 focus:border-ocean-800 outline-none transition-all font-bold"
                     value={formData.name || ''}
                     onChange={(e) => updateForm('name', e.target.value)}
                   />
                 </div>
-              </div>
-            )}
 
-            {activeTab === 'size_profiles' && (
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('NAMA PROFILE', 'PROFILE NAME')}</label>
-                  <input 
-                    type="text" 
-                    placeholder="Tuna Sizes" 
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-ocean-800/10 focus:border-ocean-800 outline-none transition-all font-bold"
-                    value={formData.name || ''}
-                    onChange={(e) => updateForm('name', e.target.value)}
-                  />
-                </div>
-              </div>
-            )}
-
-            {activeTab === 'grades' && (
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('GRADE PROFILE', 'GRADE PROFILE')}</label>
-                  <select 
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-ocean-800/10 focus:border-ocean-800 outline-none transition-all font-bold"
-                    value={formData.profileId || ''}
-                    onChange={(e) => updateForm('profileId', e.target.value)}
-                  >
-                    <option value="">-- {t('Pilih Profile', 'Select Profile')} --</option>
-                    {grade_profiles.map((p: any) => <option key={p.id} value={p.id}>{p.name}</option>)}
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('NAMA OPTION', 'OPTION NAME')}</label>
-                  <input 
-                    type="text" 
-                    placeholder="Grade A" 
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-ocean-800/10 focus:border-ocean-800 outline-none transition-all font-bold"
-                    value={formData.name || ''}
-                    onChange={(e) => updateForm('name', e.target.value)}
-                  />
-                </div>
-              </div>
-            )}
-
-            {activeTab === 'sizes' && (
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('SIZE PROFILE', 'SIZE PROFILE')}</label>
-                  <select 
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-ocean-800/10 focus:border-ocean-800 outline-none transition-all font-bold"
-                    value={formData.profileId || ''}
-                    onChange={(e) => updateForm('profileId', e.target.value)}
-                  >
-                    <option value="">-- {t('Pilih Profile', 'Select Profile')} --</option>
-                    {size_profiles.map((p: any) => <option key={p.id} value={p.id}>{p.name}</option>)}
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('NAMA OPTION', 'OPTION NAME')}</label>
-                  <input 
-                    type="text" 
-                    placeholder="3kg - 5kg" 
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-ocean-800/10 focus:border-ocean-800 outline-none transition-all font-bold"
-                    value={formData.name || ''}
-                    onChange={(e) => updateForm('name', e.target.value)}
-                  />
+                <div className="pt-4 border-t border-slate-100">
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className="text-sm font-black text-slate-900">{t('Daftar Opsi', 'Options List')}</h4>
+                    <Button variant="secondary" size="sm" onClick={addOption}><Plus size={16} /> {t('Tambah Opsi', 'Add Option')}</Button>
+                  </div>
+                  <div className="space-y-2">
+                    {editingOptions.map((opt, idx) => (
+                      <div key={idx} className="flex gap-2 items-center bg-slate-50 p-2 rounded-xl border border-slate-100">
+                        <input 
+                          type="text" 
+                          placeholder={activeTab === 'grading' ? "Grade A" : "200-300g"}
+                          className="flex-1 px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm font-bold"
+                          value={opt.name || ''}
+                          onChange={(e) => updateOption(idx, 'name', e.target.value)}
+                        />
+                        <button onClick={() => removeOption(idx)} className="p-2 text-red-300 hover:text-red-500 transition-colors">
+                          <X size={16} />
+                        </button>
+                      </div>
+                    ))}
+                    {editingOptions.length === 0 && (
+                      <div className="text-center py-8 text-slate-400 text-xs font-bold bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
+                        {t('Belum ada opsi', 'No options added yet')}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
@@ -336,7 +438,7 @@ export const MasterDataPage: React.FC = () => {
             {activeTab === 'buyers' && (
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('NAMA PEMBELI', 'BUYER NAME')}</label>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('NAMA PEMBELI / PARTNER', 'BUYER / PARTNER NAME')}</label>
                   <input 
                     type="text" 
                     placeholder="PT. Export Maju" 
@@ -493,11 +595,20 @@ export const MasterDataPage: React.FC = () => {
           />
         )}
 
-        {activeTab === 'grade_profiles' && (
+        {activeTab === 'grading' && (
           <Table 
             data={grade_profiles}
             columns={[
-              { header: t('NAMA PROFILE', 'PROFILE NAME'), accessor: 'name', className: 'font-bold text-slate-900' },
+              { header: t('NAMA GROUP', 'GROUP NAME'), accessor: 'name', className: 'font-bold text-slate-900' },
+              { header: t('OPSI', 'OPTIONS'), accessor: (p) => {
+                const opts = grades.filter(g => g.profileId === p.id);
+                return (
+                  <div className="flex flex-wrap gap-1">
+                    {opts.map((o: any) => <Badge key={o.id} variant="draft">{o.name}</Badge>)}
+                    {opts.length === 0 && <span className="text-slate-300 italic text-[10px]">No options</span>}
+                  </div>
+                );
+              }},
               { header: t('STATUS', 'STATUS'), accessor: (item) => renderStatusBadge(item.active_status) },
               { 
                 header: '', 
@@ -508,47 +619,24 @@ export const MasterDataPage: React.FC = () => {
           />
         )}
 
-        {activeTab === 'size_profiles' && (
+        {activeTab === 'sizing' && (
           <Table 
             data={size_profiles}
             columns={[
-              { header: t('NAMA PROFILE', 'PROFILE NAME'), accessor: 'name', className: 'font-bold text-slate-900' },
+              { header: t('NAMA GROUP', 'GROUP NAME'), accessor: 'name', className: 'font-bold text-slate-900' },
+              { header: t('OPSI', 'OPTIONS'), accessor: (p) => {
+                const opts = sizes.filter(s => s.profileId === p.id);
+                return (
+                  <div className="flex flex-wrap gap-1">
+                    {opts.map((o: any) => <Badge key={o.id} variant="draft">{o.name}</Badge>)}
+                    {opts.length === 0 && <span className="text-slate-300 italic text-[10px]">No options</span>}
+                  </div>
+                );
+              }},
               { header: t('STATUS', 'STATUS'), accessor: (item) => renderStatusBadge(item.active_status) },
               { 
                 header: '', 
                 accessor: (item) => renderActions('size_profiles', item),
-                className: 'text-right'
-              }
-            ]}
-          />
-        )}
-
-        {activeTab === 'grades' && (
-          <Table 
-            data={grades}
-            columns={[
-              { header: t('PROFILE', 'PROFILE'), accessor: (item) => grade_profiles.find(p => p.id === item.profileId)?.name || '-', className: 'text-slate-500' },
-              { header: t('NAMA OPTION', 'OPTION NAME'), accessor: 'name', className: 'font-bold text-slate-900' },
-              { header: t('STATUS', 'STATUS'), accessor: (item) => renderStatusBadge(item.active_status) },
-              { 
-                header: '', 
-                accessor: (item) => renderActions('grades', item),
-                className: 'text-right'
-              }
-            ]}
-          />
-        )}
-
-        {activeTab === 'sizes' && (
-          <Table 
-            data={sizes}
-            columns={[
-              { header: t('PROFILE', 'PROFILE'), accessor: (item) => size_profiles.find(p => p.id === item.profileId)?.name || '-', className: 'text-slate-500' },
-              { header: t('NAMA OPTION', 'OPTION NAME'), accessor: 'name', className: 'font-bold text-slate-900' },
-              { header: t('STATUS', 'STATUS'), accessor: (item) => renderStatusBadge(item.active_status) },
-              { 
-                header: '', 
-                accessor: (item) => renderActions('sizes', item),
                 className: 'text-right'
               }
             ]}
@@ -576,9 +664,24 @@ export const MasterDataPage: React.FC = () => {
           <Table 
             data={buyers}
             columns={[
-              { header: t('ID', 'ID'), accessor: 'id', className: 'font-black text-slate-900' },
-              { header: t('NAMA PEMBELI', 'BUYER NAME'), accessor: 'name', className: 'font-bold text-slate-900' },
+              { header: t('NAMA PEMBELI / PARTNER', 'BUYER / PARTNER NAME'), accessor: 'name', className: 'font-bold text-slate-900' },
               { header: t('KONTAK', 'CONTACT'), accessor: 'phone', className: 'text-slate-400' },
+              { 
+                header: t('SALDO', 'BALANCE'), 
+                accessor: (b: any) => {
+                  const stats = getBuyerStats(b.id);
+                  return <span className="font-bold text-red-600">Rp {stats.balance.toLocaleString()}</span>;
+                },
+                className: 'text-right'
+              },
+              { 
+                header: t('STOK ALOKASI', 'ALLOCATED STOCK'), 
+                accessor: (b: any) => {
+                  const stats = getBuyerStats(b.id);
+                  return <span className="font-bold text-ocean-700">{stats.allocatedStock.toLocaleString()} kg</span>;
+                },
+                className: 'text-right'
+              },
               { header: t('STATUS', 'STATUS'), accessor: (item) => renderStatusBadge(item.active_status) },
               { 
                 header: '', 
@@ -624,8 +727,8 @@ export const MasterDataPage: React.FC = () => {
 
         {/* Empty State */}
         {((activeTab === 'items' && items.length === 0) || 
-          (activeTab === 'grades' && grades.length === 0) || 
-          (activeTab === 'sizes' && sizes.length === 0) || 
+          (activeTab === 'grading' && grade_profiles.length === 0) || 
+          (activeTab === 'sizing' && size_profiles.length === 0) || 
           (activeTab === 'suppliers' && suppliers.length === 0) || 
           (activeTab === 'buyers' && buyers.length === 0) || 
           (activeTab === 'workers' && workers.length === 0) || 

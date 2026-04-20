@@ -1,0 +1,41 @@
+{"users": [
+{
+  "localId": "4JQZPhkKDNS1DDwNugxadVLhwxa2",
+  "email": "admin@ops.com",
+  "emailVerified": false,
+  "passwordHash": "f5UJrOgboJi/ADRatVnpS1pycP0+g0nfdUv/okRwGDwsPMF2x36YPaCH30WMdDKt1J2sPkthGEVyx/QTsWtZ/Q==",
+  "salt": "ABRvLROGl9usPA==",
+  "lastSignedInAt": "1776546548938",
+  "createdAt": "1776511895679",
+  "providerUserInfo": []
+},
+{
+  "localId": "ERZwQ5iiAWRdtIZnwRDf4X3ZRDH3",
+  "email": "buyer@ops.com",
+  "emailVerified": false,
+  "passwordHash": "j8LgG2VDyO28lmeOMBjng1o8Yoa9z+HKAF9t4MUmMmEKE9JJarV2hsI/R9gl7FCB6t7F2TVbDZKRVZ3zFZyFmQ==",
+  "salt": "16160unV1pCe6g==",
+  "lastSignedInAt": "1776512345488",
+  "createdAt": "1776512345488",
+  "providerUserInfo": []
+},
+{
+  "localId": "HvVGchfd9PM7fydWbgVQ5ZomNfg1",
+  "email": "admin_qa@ops.com",
+  "emailVerified": false,
+  "passwordHash": "AcDsHlx6CC7+G3bTl3DypzODftIeEapOl1auGZcVVDvMYfVXKKbYsLA6wI1WrEDm7l9/rXUgUOTf5XwMv5C7EQ==",
+  "salt": "/pVLyDsK0KdbIw==",
+  "lastSignedInAt": "1776514735553",
+  "createdAt": "1776514735553",
+  "providerUserInfo": []
+},
+{
+  "localId": "fetGPkitV5Q0biqWalvWZkyoqe43",
+  "email": "operator@ops.com",
+  "emailVerified": false,
+  "passwordHash": "8cAHgbVEWGHWPcyU7eu+VgIzyEERrigl4yg53uGWnJHNcDDm47p+LcG46pcDTrWhR/ka9hHJY7zZU5AYEcStPg==",
+  "salt": "ySM6wA6W+zWqlg==",
+  "lastSignedInAt": "1776512406837",
+  "createdAt": "1776512283845",
+  "providerUserInfo": []
+}]}

@@ -7,16 +7,16 @@ export const Button: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement> & {
 }> = ({ 
   children, variant = 'primary', size = 'md', className = '', ...props 
 }) => {
-  const base = "rounded-xl font-bold transition-all duration-200 active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed";
+  const base = "rounded-xl font-bold transition-all duration-300 active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed";
   const variants = {
-    primary: "bg-ocean-800 text-white hover:bg-ocean-900 shadow-sm",
-    secondary: "bg-ocean-50 text-ocean-800 border border-ocean-100 hover:bg-ocean-100",
-    ghost: "bg-transparent text-slate-500 hover:bg-slate-50 hover:text-slate-900",
-    danger: "bg-red-50 text-red-600 border border-red-100 hover:bg-red-100",
+    primary: "bg-gradient-to-r from-ocean-600 to-ocean-500 text-white shadow-lg shadow-ocean-500/20 hover:shadow-xl hover:shadow-ocean-500/30 hover:-translate-y-0.5",
+    secondary: "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 hover:border-slate-300",
+    ghost: "bg-transparent text-slate-500 hover:bg-slate-50 hover:text-ocean-600",
+    danger: "bg-rose-50 text-rose-600 border border-rose-100 hover:bg-rose-100 shadow-sm",
   };
   const sizes = {
-    sm: "px-3 py-1.5 text-xs",
-    md: "px-5 py-2.5 text-sm",
+    sm: "px-4 py-2 text-[10px] tracking-widest uppercase",
+    md: "px-6 py-3 text-sm",
     lg: "px-8 py-4 text-base"
   };
   return (
@@ -30,7 +30,7 @@ export const Button: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement> & {
 export const Card: React.FC<{ children: React.ReactNode, className?: string, noPadding?: boolean }> = ({ 
   children, className = '', noPadding = false 
 }) => (
-  <div className={`bg-white rounded-2xl border border-slate-100 ${noPadding ? '' : 'p-6'} ${className}`}>
+  <div className={`bg-white rounded-[2rem] border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)] transition-all duration-500 hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)] ${noPadding ? '' : 'p-8'} ${className}`}>
     {children}
   </div>
 );
@@ -40,12 +40,12 @@ export const Badge: React.FC<{ children: React.ReactNode, variant?: 'posted' | '
   children, variant = 'draft', className = '' 
 }) => {
   const styles = {
-    posted: "bg-emerald-50 text-emerald-600 border-emerald-100",
+    posted: "bg-emerald-50 text-emerald-600 border-emerald-100 shadow-sm shadow-emerald-500/10",
     draft: "bg-slate-50 text-slate-500 border-slate-200",
-    pending: "bg-amber-50 text-amber-600 border-amber-100",
+    pending: "bg-amber-50 text-amber-600 border-amber-100 shadow-sm shadow-amber-500/10",
   };
   return (
-    <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border ${styles[variant]} ${className}`}>
+    <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.15em] border ${styles[variant]} ${className}`}>
       {children}
     </span>
   );
@@ -55,11 +55,11 @@ export const Badge: React.FC<{ children: React.ReactNode, variant?: 'posted' | '
 export const Header: React.FC<{ title: string, subtitle?: string, action?: React.ReactNode }> = ({ 
   title, subtitle, action 
 }) => (
-  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-    <div>
-      <h1 className="text-3xl font-black text-slate-900 tracking-tight">{title}</h1>
-      {subtitle && <p className="text-slate-500 font-medium text-sm mt-1">{subtitle}</p>}
+  <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12 animate-slide-up">
+    <div className="space-y-1">
+      <h1 className="text-4xl font-black text-slate-900 tracking-tighter italic uppercase leading-tight">{title}</h1>
+      {subtitle && <p className="text-slate-500 font-medium text-base">{subtitle}</p>}
     </div>
-    {action && <div className="flex items-center gap-3">{action}</div>}
+    {action && <div className="flex items-center gap-4">{action}</div>}
   </div>
 );

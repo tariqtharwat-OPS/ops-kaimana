@@ -35,49 +35,65 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     let unsubProfile: (() => void) | null = null;
+    let resolved = false;
 
-    const unsubAuth = onAuthStateChanged(auth, (firebaseUser) => {
+    // Safety timeout: if state doesn't resolve in 10s, force stop loading
+    const timeout = setTimeout(() => {
+      if (!resolved) {
+        console.warn("Auth resolution timed out. Forcing stop loading.");
+        setIsAuthLoading(false);
+      }
+    }, 10000);
+
+    const unsubAuth = onAuthStateChanged(auth, async (firebaseUser) => {
       if (unsubProfile) { unsubProfile(); unsubProfile = null; }
 
       if (firebaseUser) {
-        // Real user found, load Firestore profile
-        const userDocRef = doc(db, 'users', firebaseUser.uid);
-        unsubProfile = onSnapshot(userDocRef, (snap) => {
-          if (snap.exists()) {
-            const d = snap.data();
-            // Strict check: if deactivated, force logout
-            if (d.isActive === false || d.active_status === false) {
-              firebaseSignOut(auth);
-              setCurrentUser(null);
+        try {
+          const userDocRef = doc(db, 'users', firebaseUser.uid);
+          unsubProfile = onSnapshot(userDocRef, (snap) => {
+            if (snap.exists()) {
+              const d = snap.data();
+              if (d.isActive === false || d.active_status === false) {
+                firebaseSignOut(auth);
+                setCurrentUser(null);
+              } else {
+                setCurrentUser({
+                  id: firebaseUser.uid,
+                  fullName: d.fullName || '',
+                  position: d.position || '',
+                  email: d.email || firebaseUser.email || '',
+                  role: d.role || 'Operator',
+                  languagePreference: d.languagePreference || 'id',
+                  isActive: d.isActive !== false,
+                  linkedBuyerId: d.linkedBuyerId,
+                  active_status: d.active_status,
+                });
+              }
             } else {
-              setCurrentUser({
-                id: firebaseUser.uid,
-                fullName: d.fullName || '',
-                position: d.position || '',
-                email: d.email || firebaseUser.email || '',
-                role: d.role || 'Operator',
-                languagePreference: d.languagePreference || 'id',
-                isActive: d.isActive !== false,
-                linkedBuyerId: d.linkedBuyerId,
-                active_status: d.active_status,
-              });
+              setCurrentUser(null);
             }
-          } else {
-            // Profile missing - might be a new setup or error
-            setCurrentUser(null);
-          }
+            resolved = true;
+            setIsAuthLoading(false);
+          }, (err) => {
+            console.error("Profile snapshot error:", err);
+            resolved = true;
+            setIsAuthLoading(false);
+          });
+        } catch (err) {
+          console.error("Profile setup error:", err);
+          resolved = true;
           setIsAuthLoading(false);
-        }, (err) => {
-          console.error("Profile snapshot error:", err);
-          setIsAuthLoading(false);
-        });
+        }
       } else {
         setCurrentUser(null);
+        resolved = true;
         setIsAuthLoading(false);
       }
     });
 
     return () => {
+      clearTimeout(timeout);
       unsubAuth();
       if (unsubProfile) unsubProfile();
     };

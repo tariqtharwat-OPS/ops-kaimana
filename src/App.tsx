@@ -16,35 +16,90 @@ import { UsersPage } from './pages/UsersPage';
 
 import { SalesPage } from './pages/transactions/SalesPage';
 
+import { ProtectedRoute } from './components/ProtectedRoute';
+
 function App() {
   return (
     <AuthProvider>
       <LanguageProvider>
         <Router>
           <Routes>
-            {/* Print route without AppShell wrapper */}
+            {/* 1. Public / Login Route (Root) */}
+            <Route path="/" element={<AppShell children={null} />} />
+
+            {/* 2. Print route (Outside Shell) */}
             <Route path="/print/:type/:id" element={<PrintPage />} />
             
-            {/* Standard routes with AppShell */}
-            <Route path="/*" element={
-              <AppShell>
-                <Routes>
-                  <Route path="/" element={<Dashboard />} />
-                  <Route path="/receiving" element={<ReceivingPage />} />
-                  <Route path="/processing" element={<ProcessingPage />} />
-                  <Route path="/packing" element={<PackingPage />} />
-                  <Route path="/sales" element={<SalesPage />} />
-                  <Route path="/stock" element={<StockPage />} />
-                  <Route path="/expenses" element={<ExpensesPage />} />
-                  <Route path="/reports" element={<ReportsPage />} />
-                  <Route path="/buyer" element={<BuyerView />} />
-                  <Route path="/master" element={<MasterDataPage />} />
-                  <Route path="/users" element={<UsersPage />} />
-                  <Route path="/settings" element={<div className="p-8 font-black text-slate-300">SETTINGS UI</div>} />
-                  <Route path="*" element={<Navigate to="/" replace />} />
-                </Routes>
-              </AppShell>
+            {/* 3. Protected Dashboard (Home) */}
+            <Route path="/dashboard" element={
+              <ProtectedRoute allowedRoles={['Admin', 'Operator']}>
+                <AppShell><Dashboard /></AppShell>
+              </ProtectedRoute>
             } />
+
+            {/* 4. Operator/Admin Restricted Routes */}
+            <Route path="/receiving" element={
+              <ProtectedRoute allowedRoles={['Admin', 'Operator']}>
+                <AppShell><ReceivingPage /></AppShell>
+              </ProtectedRoute>
+            } />
+            <Route path="/processing" element={
+              <ProtectedRoute allowedRoles={['Admin', 'Operator']}>
+                <AppShell><ProcessingPage /></AppShell>
+              </ProtectedRoute>
+            } />
+            <Route path="/packing" element={
+              <ProtectedRoute allowedRoles={['Admin', 'Operator']}>
+                <AppShell><PackingPage /></AppShell>
+              </ProtectedRoute>
+            } />
+            <Route path="/sales" element={
+              <ProtectedRoute allowedRoles={['Admin', 'Operator']}>
+                <AppShell><SalesPage /></AppShell>
+              </ProtectedRoute>
+            } />
+            <Route path="/stock" element={
+              <ProtectedRoute allowedRoles={['Admin', 'Operator']}>
+                <AppShell><StockPage /></AppShell>
+              </ProtectedRoute>
+            } />
+            <Route path="/expenses" element={
+              <ProtectedRoute allowedRoles={['Admin', 'Operator']}>
+                <AppShell><ExpensesPage /></AppShell>
+              </ProtectedRoute>
+            } />
+            <Route path="/reports" element={
+              <ProtectedRoute allowedRoles={['Admin', 'Operator']}>
+                <AppShell><ReportsPage /></AppShell>
+              </ProtectedRoute>
+            } />
+
+            {/* 5. Buyer Restricted Routes */}
+            <Route path="/buyer" element={
+              <ProtectedRoute allowedRoles={['Admin', 'Buyer']}>
+                <AppShell><BuyerView /></AppShell>
+              </ProtectedRoute>
+            } />
+
+            {/* 6. Admin ONLY Routes */}
+            <Route path="/master" element={
+              <ProtectedRoute allowedRoles={['Admin']}>
+                <AppShell><MasterDataPage /></AppShell>
+              </ProtectedRoute>
+            } />
+            <Route path="/users" element={
+              <ProtectedRoute allowedRoles={['Admin']}>
+                <AppShell><UsersPage /></AppShell>
+              </ProtectedRoute>
+            } />
+            <Route path="/settings" element={
+              <ProtectedRoute allowedRoles={['Admin']}>
+                <AppShell><div className="p-8 font-black text-slate-300">SETTINGS UI</div></AppShell>
+              </ProtectedRoute>
+            } />
+
+            {/* Fallback */}
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Router>
       </LanguageProvider>

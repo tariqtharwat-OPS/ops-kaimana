@@ -1,0 +1,40 @@
+import React, { useState, useEffect } from 'react';
+import { 
+  LayoutDashboard, ArrowDownCircle, RefreshCcw, Package, CreditCard, 
+  Database, Users, Settings, LogOut, ChevronLeft, ChevronRight,
+  User as UserIcon, BarChart, UserCheck, Loader2
+} from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
+import { useLanguage } from '../../context/LanguageContext';
+import { useAuth } from '../../context/AuthContext';
+import { doc, setDoc } from 'firebase/firestore';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { db, auth } from '../../firebase/config';
+
+export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [collapsed, setCollapsed] = useState(false);
+  const location = useLocation();
+  const { t, language, setLanguage } = useLanguage();
+  const { currentUser, isAuthLoading, login, logout } = useAuth();
+
+  // Login form state
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [loginError, setLoginError] = useState('');
+  const [loginLoading, setLoginLoading] = useState(false);
+
+  // Setup state (first admin creation)
+  const [needsSetup] = useState<boolean | null>(false); // DEFAULT TO FALSE TO AVOID HANG
+  const [setupName, setSetupName] = useState('');
+  const [setupEmail, setSetupEmail] = useState('');
+  const [setupPassword, setSetupPassword] = useState('');
+  const [setupLoading, setSetupLoading] = useState(false);
+  const [setupError, setSetupError] = useState('');
+
+  // Heartbeat to check if JS is alive
+  useEffect(() => {
+    const interval = setInterval(() => {
+      console.log("AppShell Heartbeat: ", new Date().toLocaleTimeString());
+    }, 2000);
+    return () => clearInterval(interval);
+  }, []);

@@ -1,0 +1,24 @@
+--- OPS KAIMANA PERMANENT TEST USERS ---
+DATE: 2026-04-19
+
+1. ADMIN
+   Email: admin.ops@kaimana.com
+   Password: Admin@123
+   Role: Admin
+   Access: Full system, User management, Master Data.
+
+2. OPERATOR
+   Email: operator.ops@kaimana.com
+   Password: Operator@123
+   Role: Operator
+   Access: Transactions (Receiving, Processing, Sales, Expenses), Stock.
+
+3. BUYER
+   Email: buyer.ops@kaimana.com
+   Password: Buyer@123
+   Role: Buyer
+   Access: Buyer View only.
+
+---
+Ready for GPT Agent Testing: YES
+Live URL: https://ops-kaimana.web.app

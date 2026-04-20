@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   LayoutDashboard, ArrowDownCircle, RefreshCcw, Package, CreditCard, 
   Database, Users, Settings, LogOut, ChevronLeft, ChevronRight,
-  User as UserIcon, BarChart, UserCheck, Loader2
+  User as UserIcon, BarChart, UserCheck, Loader2, Sparkles, Globe
 } from 'lucide-react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useLanguage } from '../../context/LanguageContext';
 import { useAuth } from '../../context/AuthContext';
 import { collection, getDocs, query, limit, doc, setDoc } from 'firebase/firestore';
@@ -14,38 +14,42 @@ import { db, auth } from '../../firebase/config';
 export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
   const { t, language, setLanguage } = useLanguage();
   const { currentUser, isAuthLoading, login, logout } = useAuth();
 
-  // Login form state
+  useEffect(() => {
+    if (!isAuthLoading && currentUser && location.pathname === '/') {
+      navigate(currentUser.role === 'Buyer' ? '/buyer' : '/dashboard', { replace: true });
+    }
+  }, [isAuthLoading, currentUser, location.pathname, navigate]);
+
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [loginError, setLoginError] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
 
-  // Setup state (first admin creation)
-  const [needsSetup, setNeedsSetup] = useState<boolean | null>(null);
+  const [needsSetup, setNeedsSetup] = useState<boolean | null>(null); 
   const [setupName, setSetupName] = useState('');
   const [setupEmail, setSetupEmail] = useState('');
   const [setupPassword, setSetupPassword] = useState('');
   const [setupLoading, setSetupLoading] = useState(false);
   const [setupError, setSetupError] = useState('');
 
-  // Check if system needs initial setup
   useEffect(() => {
-    if (!currentUser && !isAuthLoading) {
+    if (!currentUser && !isAuthLoading && needsSetup === null) {
       const check = async () => {
         try {
           const q = query(collection(db, 'users'), limit(1));
           const snap = await getDocs(q);
           setNeedsSetup(snap.empty);
-        } catch {
+        } catch (err) {
           setNeedsSetup(false);
         }
       };
       check();
     }
-  }, [currentUser, isAuthLoading]);
+  }, [currentUser, isAuthLoading, needsSetup]);
 
   const handleLogin = async () => {
     setLoginError('');
@@ -57,14 +61,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
     try {
       await login(loginEmail, loginPassword);
     } catch (err: any) {
-      const code = err?.code || '';
-      if (code === 'auth/user-not-found' || code === 'auth/invalid-credential') {
-        setLoginError(t('Email atau password salah', 'Invalid email or password'));
-      } else if (code === 'auth/too-many-requests') {
-        setLoginError(t('Terlalu banyak percobaan. Coba lagi nanti.', 'Too many attempts. Try again later.'));
-      } else {
-        setLoginError(err.message || 'Login failed');
-      }
+      setLoginError(err.message || 'Login failed');
     } finally {
       setLoginLoading(false);
     }
@@ -74,10 +71,6 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
     setSetupError('');
     if (!setupName || !setupEmail || !setupPassword) {
       setSetupError(t('Lengkapi semua field', 'Fill all fields'));
-      return;
-    }
-    if (setupPassword.length < 6) {
-      setSetupError(t('Password minimal 6 karakter', 'Password must be at least 6 characters'));
       return;
     }
     setSetupLoading(true);
@@ -99,101 +92,122 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
     }
   };
 
-  // Loading screen
-  if (isAuthLoading) {
+  if (isAuthLoading || (!currentUser && needsSetup === null)) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
-        <Loader2 className="w-8 h-8 animate-spin text-ocean-800" />
+      <div className="min-h-screen flex items-center justify-center bg-[#020617]">
+        <div className="relative">
+          <div className="w-16 h-16 border-4 border-ocean-500/20 border-t-ocean-500 rounded-full animate-spin"></div>
+          <div className="absolute inset-0 flex items-center justify-center">
+             <div className="w-8 h-8 bg-ocean-500 rounded-full animate-pulse"></div>
+          </div>
+        </div>
       </div>
     );
   }
 
-  // Real Production Login screen (Split)
   if (!currentUser) {
     return (
-      <div className="min-h-screen flex flex-col md:flex-row bg-white">
-        {/* Left Side: Branding */}
-        <div className="md:w-1/2 bg-white flex flex-col items-center justify-center p-12 relative overflow-hidden border-r border-slate-50">
-          <div className="relative z-10 text-center animate-in fade-in zoom-in duration-1000">
-            <div className="w-48 h-48 bg-white shadow-2xl rounded-3xl flex items-center justify-center mx-auto mb-10 p-6 border border-slate-50">
-              <img src="/images/logo.png" alt="OPS Kaimana" className="w-full h-auto object-contain" />
-            </div>
-            <h1 className="text-4xl font-black text-slate-900 tracking-tighter mb-4">OPS Kaimana</h1>
-            <p className="text-slate-400 font-bold text-lg max-w-md mx-auto leading-relaxed">
-              {t('Sistem Operasional Pemrosesan Ikan Terintegrasi', 'Integrated Fish Processing Operational System')}
-            </p>
+      <div className="min-h-screen flex flex-col md:flex-row bg-[#020617] selection:bg-ocean-500 selection:text-white relative">
+        {/* Top-aligned Language Selection (Responsive fix) */}
+        <div className="absolute top-8 left-0 right-0 z-[100] flex justify-center md:justify-start md:px-24">
+           <div className="flex bg-white/5 border border-white/10 backdrop-blur-md p-1.5 rounded-2xl">
+             <button onClick={() => setLanguage('id')} className={`px-5 py-2 rounded-xl text-[10px] font-black tracking-widest uppercase transition-all ${language === 'id' ? 'bg-ocean-500 text-white shadow-lg shadow-ocean-500/20' : 'text-slate-400 hover:text-white'}`}>INDONESIA</button>
+             <button onClick={() => setLanguage('en')} className={`px-5 py-2 rounded-xl text-[10px] font-black tracking-widest uppercase transition-all ${language === 'en' ? 'bg-ocean-500 text-white shadow-lg shadow-ocean-500/20' : 'text-slate-400 hover:text-white'}`}>ENGLISH</button>
+           </div>
+        </div>
+
+        {/* Left Side: Dynamic Branding */}
+        <div className="md:w-3/5 relative overflow-hidden flex flex-col items-center justify-center p-8 pt-24 md:p-12 lg:p-24 min-h-[50vh] md:min-h-screen">
+          {/* Abstract backgrounds */}
+          <div className="absolute top-0 left-0 w-full h-full opacity-30">
+             <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] rounded-full bg-ocean-600/20 blur-[120px] animate-pulse"></div>
+             <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-accent-500/10 blur-[100px]"></div>
           </div>
-          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-6">
-             <button onClick={() => setLanguage('id')} className={`text-[10px] font-black tracking-widest uppercase ${language === 'id' ? 'text-ocean-800' : 'text-slate-300'}`}>INDONESIA</button>
-             <div className="w-1 h-1 rounded-full bg-slate-200"></div>
-             <button onClick={() => setLanguage('en')} className={`text-[10px] font-black tracking-widest uppercase ${language === 'en' ? 'text-ocean-800' : 'text-slate-300'}`}>ENGLISH</button>
+          
+          <div className="relative z-10 w-full max-w-2xl text-center space-y-8 md:space-y-12">
+            <div className="group relative inline-block">
+              <div className="absolute -inset-1 bg-gradient-to-r from-ocean-500 to-accent-500 rounded-[3rem] blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
+              <div className="relative w-48 h-48 md:w-80 md:h-80 bg-white rounded-[2.5rem] md:rounded-[3rem] shadow-2xl flex items-center justify-center p-8 md:p-12 transition-transform duration-700 hover:scale-[1.02]">
+                <img src="/images/logo.png" alt="Logo" className="w-full h-auto object-contain" />
+              </div>
+            </div>
+            
+            <div className="space-y-4 md:space-y-6 animate-slide-up">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-md mx-auto">
+                <Sparkles size={14} className="text-ocean-400" />
+                <span className="text-[10px] font-black tracking-[0.3em] text-white/60 uppercase">Operational Excellence</span>
+              </div>
+              <h1 className="text-4xl md:text-6xl lg:text-8xl font-black text-white tracking-tighter italic uppercase leading-none">
+                OPS <span className="text-transparent bg-clip-text bg-gradient-to-br from-ocean-400 to-accent-400">Kaimana</span>
+              </h1>
+              <p className="text-slate-400 font-medium text-base md:text-xl max-w-lg mx-auto leading-relaxed">
+                {t('Sistem Operasional Pemrosesan Ikan Terintegrasi', 'Future-ready Integrated Fish Processing Operational System')}
+              </p>
+            </div>
           </div>
         </div>
 
-        {/* Right Side: Login Form */}
-        <div className="md:w-1/2 flex items-center justify-center p-8 bg-slate-50/30">
-          <div className="w-full max-w-sm animate-in fade-in slide-in-from-right duration-700 delay-150">
-            {needsSetup ? (
-              <div className="space-y-6">
-                <div className="mb-6">
-                  <h2 className="text-2xl font-black text-slate-900 tracking-tight mb-2">{t('Inisialisasi Sistem', 'System Initialization')}</h2>
-                  <p className="text-sm text-slate-500 font-medium">{t('Buat akun Administrator pertama Anda', 'Create your first Administrator account')}</p>
+        {/* Right Side: Glass Form */}
+        <div className="md:w-2/5 flex items-center justify-center p-8 bg-[#0f172a] relative border-l border-white/5 min-h-[50vh] md:min-h-screen">
+          <div className="w-full max-w-md space-y-12 relative z-10">
+            <div className="space-y-2">
+              <h2 className="text-3xl font-black text-white tracking-tight">{needsSetup ? t('Konfigurasi Awal', 'Initial Setup') : t('Selamat Datang', 'Welcome Back')}</h2>
+              <p className="text-slate-500 font-medium">{needsSetup ? t('Siapkan sistem Anda dalam hitungan detik', 'Ready your system in seconds') : t('Silakan masuk ke akun Anda', 'Please sign in to your account')}</p>
+            </div>
+
+            <div className="space-y-6">
+              {needsSetup ? (
+                <div className="space-y-6 animate-slide-up">
+                   <div className="space-y-2">
+                      <label className="text-white/40">Full Name</label>
+                      <input type="text" value={setupName} onChange={e => setSetupName(e.target.value)} className="w-full bg-white/5 border-white/10 text-white focus:bg-white/10" placeholder="Tariq Tharwat" />
+                   </div>
+                   <div className="space-y-2">
+                      <label className="text-white/40">Email Address</label>
+                      <input type="email" value={setupEmail} onChange={e => setSetupEmail(e.target.value)} className="w-full bg-white/5 border-white/10 text-white focus:bg-white/10" placeholder="admin@kaimana.com" />
+                   </div>
+                   <div className="space-y-2">
+                      <label className="text-white/40">Security Key</label>
+                      <input type="password" value={setupPassword} onChange={e => setSetupPassword(e.target.value)} className="w-full bg-white/5 border-white/10 text-white focus:bg-white/10" placeholder="••••••••" />
+                   </div>
+                   {setupError && <p className="text-xs text-rose-400 font-bold">{setupError}</p>}
+                   <button onClick={handleSetup} disabled={setupLoading} className="btn-primary w-full">
+                      {setupLoading ? <Loader2 className="w-6 h-6 animate-spin mx-auto" /> : 'INITIALIZE SYSTEM'}
+                   </button>
                 </div>
-                <div className="space-y-4">
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t('NAMA LENGKAP', 'FULL NAME')}</label>
-                    <input type="text" value={setupName} onChange={e => setSetupName(e.target.value)} className="w-full px-5 py-4 bg-white border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-ocean-800/5 focus:border-ocean-800 font-bold text-slate-900 transition-all shadow-sm" placeholder="Tariq Tharwat" />
+              ) : (
+                <div className="space-y-8 animate-slide-up">
+                  <div className="space-y-6">
+                    <div className="space-y-2 group">
+                      <label className="text-white/40 group-focus-within:text-ocean-400 transition-colors tracking-widest uppercase">User Identifier</label>
+                      <input type="email" value={loginEmail} onChange={e => { setLoginEmail(e.target.value); setLoginError(''); }}
+                        onKeyDown={e => e.key === 'Enter' && document.getElementById('pw')?.focus()} placeholder="Email address" autoFocus
+                        className="w-full bg-white/5 border-white/10 text-white focus:bg-white/10 py-4" />
+                    </div>
+                    <div className="space-y-2 group">
+                      <label className="text-white/40 group-focus-within:text-ocean-400 transition-colors tracking-widest uppercase">Access Password</label>
+                      <input id="pw" type="password" value={loginPassword} onChange={e => { setLoginPassword(e.target.value); setLoginError(''); }}
+                        onKeyDown={e => e.key === 'Enter' && handleLogin()} placeholder="••••••••"
+                        className="w-full bg-white/5 border-white/10 text-white focus:bg-white/10 py-4" />
+                    </div>
                   </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">EMAIL</label>
-                    <input type="email" value={setupEmail} onChange={e => setSetupEmail(e.target.value)} className="w-full px-5 py-4 bg-white border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-ocean-800/5 focus:border-ocean-800 font-bold text-slate-900 transition-all shadow-sm" placeholder="admin@ops.com" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">PASSWORD</label>
-                    <input type="password" value={setupPassword} onChange={e => setSetupPassword(e.target.value)} className="w-full px-5 py-4 bg-white border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-ocean-800/5 focus:border-ocean-800 font-bold text-slate-900 transition-all shadow-sm" placeholder="••••••••" />
-                  </div>
-                  {setupError && <p className="text-xs text-red-500 font-bold">{setupError}</p>}
-                  <button onClick={handleSetup} disabled={setupLoading} className="w-full py-4 bg-ocean-800 text-white rounded-2xl font-black text-sm hover:bg-ocean-900 transition-all active:scale-[0.98] shadow-lg shadow-ocean-800/20">
-                    {setupLoading ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : t('KONFIGURASI & MASUK', 'CONFIGURE & LOGIN')}
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-6">
-                <div className="mb-10">
-                  <h2 className="text-2xl font-black text-slate-900 tracking-tight mb-2">{t('Selamat Datang Kembali', 'Welcome Back')}</h2>
-                  <p className="text-sm text-slate-500 font-medium">{t('Masuk untuk mengakses dashboard operasional', 'Sign in to access operational dashboard')}</p>
-                </div>
-                <div className="space-y-4">
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">EMAIL</label>
-                    <input type="email" value={loginEmail} onChange={e => { setLoginEmail(e.target.value); setLoginError(''); }}
-                      onKeyDown={e => e.key === 'Enter' && document.getElementById('pw')?.focus()} placeholder="user@ops.com" autoFocus
-                      className="w-full px-5 py-4 bg-white border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-ocean-800/5 focus:border-ocean-800 font-bold text-slate-900 transition-all shadow-sm" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">PASSWORD</label>
-                    <input id="pw" type="password" value={loginPassword} onChange={e => { setLoginPassword(e.target.value); setLoginError(''); }}
-                      onKeyDown={e => e.key === 'Enter' && handleLogin()} placeholder="••••••••"
-                      className="w-full px-5 py-4 bg-white border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-ocean-800/5 focus:border-ocean-800 font-bold text-slate-900 transition-all shadow-sm" />
-                  </div>
-                  {loginError && <p className="text-xs text-red-500 font-bold">{loginError}</p>}
+                  {loginError && <p className="text-xs text-rose-400 font-bold bg-rose-400/10 p-3 rounded-lg border border-rose-400/20">{loginError}</p>}
                   <button onClick={handleLogin} disabled={loginLoading}
-                    className="w-full py-4 bg-ocean-800 text-white rounded-2xl font-black text-sm hover:bg-ocean-900 transition-all active:scale-[0.98] shadow-lg shadow-ocean-800/20">
-                    {loginLoading ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : t('MASUK KE SISTEM', 'LOGIN TO SYSTEM')}
+                    className="btn-primary w-full text-base tracking-widest">
+                    {loginLoading ? <Loader2 className="w-6 h-6 animate-spin mx-auto" /> : 'AUTHENTICATE'}
                   </button>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
+            <p className="text-[10px] text-slate-600 font-black tracking-widest text-center uppercase">© 2026 Kaimana Operational Systems</p>
           </div>
         </div>
       </div>
     );
   }
 
-  // RBAC Navigation
   const navigation = [
-    { icon: LayoutDashboard, label: t('Dashboard', 'Dashboard'), path: '/', roles: ['Admin', 'Operator'] },
+    { icon: LayoutDashboard, label: t('Dashboard', 'Dashboard'), path: '/dashboard', roles: ['Admin', 'Operator'] },
     { icon: ArrowDownCircle, label: t('Penerimaan', 'Receiving'), path: '/receiving', roles: ['Admin', 'Operator'] },
     { icon: RefreshCcw, label: t('Pengolahan', 'Processing'), path: '/processing', roles: ['Admin', 'Operator'] },
     { icon: Package, label: t('Packing', 'Packing'), path: '/packing', roles: ['Admin', 'Operator'] },
@@ -201,7 +215,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
     { icon: BarChart, label: t('Sales / Dispatch', 'Sales / Dispatch'), path: '/sales', roles: ['Admin', 'Operator'] },
     { icon: CreditCard, label: t('Biaya', 'Expenses'), path: '/expenses', roles: ['Admin', 'Operator'] },
     { icon: BarChart, label: t('Laporan', 'Reports'), path: '/reports', roles: ['Admin', 'Operator'] },
-    { icon: UserCheck, label: t('Buyer View', 'Buyer View'), path: '/buyer', roles: ['Admin', 'Buyer'] },
+    { icon: UserCheck, label: t('Buyers / Partners', 'Buyers / Partners'), path: '/buyer', roles: ['Admin', 'Buyer'] },
   ].filter(n => n.roles.includes(currentUser.role));
 
   const adminNav = [
@@ -211,78 +225,93 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
   ].filter(n => n.roles.includes(currentUser.role));
 
   return (
-    <div className="flex min-h-screen bg-white">
-      <aside className={`${collapsed ? 'w-20' : 'w-72'} bg-[#f8fafc] border-r border-slate-100 transition-all duration-300 flex flex-col fixed inset-y-0 z-50`}>
-        <div className="p-8 flex items-center justify-center">
-          <div className="bg-white p-2 rounded-xl shadow-sm border border-slate-50">
-            <img src="/images/logo.png" alt="OPS Kaimana" className={`${collapsed ? 'h-6' : 'h-12'} transition-all object-contain`} />
+    <div className="flex min-h-screen bg-[#f8fafc]">
+      {/* Sidebar Refinement */}
+      <aside className={`${collapsed ? 'w-24' : 'w-80'} bg-white border-r border-slate-100 transition-all duration-500 ease-in-out flex flex-col fixed inset-y-0 z-50 shadow-[4px_0_24px_rgba(0,0,0,0.02)]`}>
+        <div className="p-10 flex items-center justify-center">
+          <div className="relative group">
+            <div className="absolute -inset-2 bg-gradient-to-br from-ocean-500/10 to-accent-500/10 rounded-2xl blur opacity-0 group-hover:opacity-100 transition duration-500"></div>
+            <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 relative">
+              <img src="/images/logo.png" alt="Logo" className={`${collapsed ? 'h-8' : 'h-16'} transition-all object-contain`} />
+            </div>
           </div>
         </div>
-        <nav className="flex-1 px-4 space-y-1 overflow-y-auto">
+
+        <nav className="flex-1 px-6 space-y-2 overflow-y-auto custom-scrollbar">
           {navigation.map(item => {
             const active = location.pathname === item.path;
             return (
               <Link key={item.path} to={item.path}
-                className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-all ${active ? 'bg-ocean-800 text-white shadow-md shadow-ocean-800/10' : 'text-slate-500 hover:bg-ocean-50 hover:text-ocean-800'}`}>
-                <item.icon size={20} />
+                className={`flex items-center gap-4 px-5 py-4 rounded-2xl transition-all duration-300 group ${active ? 'bg-ocean-600 text-white shadow-xl shadow-ocean-600/20 translate-x-1' : 'text-slate-500 hover:bg-slate-50 hover:text-ocean-600'}`}>
+                <item.icon size={20} className={`transition-transform duration-300 ${active ? 'scale-110' : 'group-hover:scale-110'}`} />
                 {!collapsed && <span className="text-sm font-bold tracking-tight">{item.label}</span>}
               </Link>
             );
           })}
           {adminNav.length > 0 && (
-            <>
-              <div className="pt-6 pb-2 px-4">
-                {!collapsed && <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('Administrasi', 'Administration')}</span>}
-              </div>
+            <div className="pt-8">
+              {!collapsed && <p className="px-5 mb-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">{t('Administrasi', 'Administration')}</p>}
               {adminNav.map(item => {
                 const active = location.pathname === item.path;
                 return (
                   <Link key={item.path} to={item.path}
-                    className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-all ${active ? 'bg-ocean-800 text-white shadow-md shadow-ocean-800/10' : 'text-slate-500 hover:bg-ocean-50 hover:text-ocean-800'}`}>
-                    <item.icon size={20} />
+                    className={`flex items-center gap-4 px-5 py-4 rounded-2xl transition-all duration-300 group ${active ? 'bg-ocean-600 text-white shadow-xl shadow-ocean-600/20 translate-x-1' : 'text-slate-500 hover:bg-slate-50 hover:text-ocean-600'}`}>
+                    <item.icon size={20} className={`transition-transform duration-300 ${active ? 'scale-110' : 'group-hover:scale-110'}`} />
                     {!collapsed && <span className="text-sm font-bold tracking-tight">{item.label}</span>}
                   </Link>
                 );
               })}
-            </>
+            </div>
           )}
         </nav>
-        <div className="p-4 border-t border-slate-100">
+
+        <div className="p-6">
           <button onClick={() => setCollapsed(!collapsed)}
-            className="w-full flex items-center justify-center p-3 hover:bg-ocean-50 rounded-xl transition-colors text-slate-400 hover:text-ocean-800">
+            className="w-full flex items-center justify-center p-4 bg-slate-50 hover:bg-slate-100 rounded-2xl transition-all duration-300 text-slate-400 hover:text-ocean-600">
             {collapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
           </button>
         </div>
       </aside>
 
-      <main className={`flex-1 ${collapsed ? 'ml-20' : 'ml-72'} transition-all duration-300`}>
-        <header className="h-24 bg-white sticky top-0 z-40 px-12 flex items-center justify-between border-b border-slate-50">
-          <div>
-            <h2 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">{t('Selamat Datang', 'Welcome')},</h2>
-            <div className="flex items-center gap-2 mt-0.5">
-              <span className="text-xl font-black text-slate-900 tracking-tight">{currentUser.fullName}</span>
-              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
+      <main className={`flex-1 ${collapsed ? 'ml-24' : 'ml-80'} transition-all duration-500`}>
+        {/* Glass Header */}
+        <header className="h-24 sticky top-0 z-40 px-6 md:px-12 flex items-center justify-between glass-effect border-b border-slate-100/50">
+          <div className="animate-slide-up">
+            <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">{t('Sistem Operasional', 'Operational System')}</h2>
+            <div className="flex items-center gap-3 mt-1">
+              <span className="text-xl md:text-2xl font-black text-slate-900 tracking-tighter">{currentUser.fullName}</span>
+              <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.5)] animate-pulse"></div>
             </div>
           </div>
-          <div className="flex items-center gap-8">
-            <div className="flex bg-slate-100 p-1 rounded-xl">
+
+          <div className="flex items-center gap-4 md:gap-10">
+            <div className="hidden sm:flex bg-slate-100/50 p-1.5 rounded-2xl border border-slate-200/50">
               <button onClick={() => setLanguage('id')}
-                className={`px-4 py-1.5 rounded-lg text-[10px] font-black transition-all ${language === 'id' ? 'bg-white text-ocean-800 shadow-sm' : 'text-slate-400'}`}>ID</button>
+                className={`px-5 py-2 rounded-xl text-[11px] font-black transition-all duration-300 ${language === 'id' ? 'bg-white text-ocean-600 shadow-sm ring-1 ring-slate-100' : 'text-slate-400 hover:text-slate-600'}`}>ID</button>
               <button onClick={() => setLanguage('en')}
-                className={`px-4 py-1.5 rounded-lg text-[10px] font-black transition-all ${language === 'en' ? 'bg-white text-ocean-800 shadow-sm' : 'text-slate-400'}`}>EN</button>
+                className={`px-5 py-2 rounded-xl text-[11px] font-black transition-all duration-300 ${language === 'en' ? 'bg-white text-ocean-600 shadow-sm ring-1 ring-slate-100' : 'text-slate-400 hover:text-slate-600'}`}>EN</button>
             </div>
-            <div className="flex items-center gap-4 pl-8 border-l border-slate-100">
-              <div className="text-right">
-                <p className="text-xs font-black text-slate-900 uppercase tracking-wider">{currentUser.position}</p>
-                <p className="text-[10px] font-bold text-slate-400">{currentUser.role}</p>
+
+            {/* Mobile Language Icon */}
+            <div className="sm:hidden p-3 bg-slate-100/50 rounded-xl">
+               <Globe size={18} className="text-slate-500" />
+            </div>
+            
+            <div className="flex items-center gap-3 md:gap-5 pl-4 md:pl-10 border-l border-slate-200/50">
+              <div className="text-right hidden xs:block">
+                <p className="text-[10px] md:text-xs font-black text-slate-900 uppercase tracking-widest">{currentUser.position}</p>
+                <p className="text-[9px] md:text-[10px] font-bold text-ocean-500 uppercase tracking-tighter">{currentUser.role}</p>
               </div>
-              <button onClick={logout} className="p-2 text-slate-300 hover:text-red-500 transition-colors" title="Logout">
-                <LogOut size={20} />
+              <button onClick={logout} className="p-3 bg-slate-50 hover:bg-rose-50 text-slate-300 hover:text-rose-500 rounded-2xl transition-all duration-300 group" title="Logout">
+                <LogOut size={20} className="group-hover:rotate-12 transition-transform" />
               </button>
             </div>
           </div>
         </header>
-        <div className="p-12 max-w-7xl mx-auto">{children}</div>
+
+        <div className="p-6 md:p-12 max-w-[1600px] mx-auto animate-slide-up">
+          {children}
+        </div>
       </main>
     </div>
   );
