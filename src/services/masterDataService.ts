@@ -21,13 +21,20 @@ export const masterDataService = {
   },
 
   create: async (collectionName: string, data: any): Promise<string> => {
-    const docRef = await addDoc(collection(db, collectionName), {
-      ...data,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      active_status: true
-    });
-    return docRef.id;
+    console.log(`masterDataService.create[${collectionName}] called with:`, data);
+    try {
+      const docRef = await addDoc(collection(db, collectionName), {
+        ...data,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        active_status: true
+      });
+      console.log(`masterDataService.create[${collectionName}] success. ID:`, docRef.id);
+      return docRef.id;
+    } catch (err) {
+      console.error(`masterDataService.create[${collectionName}] FAILED:`, err);
+      throw err;
+    }
   },
 
   // Generic Update

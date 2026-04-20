@@ -73,13 +73,16 @@ export const ReceivingPage: React.FC = () => {
 
   const handleSave = async (isPost: boolean, isPrint: boolean = false) => {
     try {
+      console.log("handleSave started. isPost:", isPost);
       if (!formData.supplierId || formData.lines.length === 0) {
+        console.warn("Validation failed: Supplier or lines missing", { supplierId: formData.supplierId, linesCount: formData.lines.length });
         alert("Supplier and lines required");
         return;
       }
       
       const hasMissingPrice = formData.lines.some((l: any) => !l.pricePerKg || l.pricePerKg <= 0);
       if (hasMissingPrice) {
+        console.warn("Validation failed: Missing price", formData.lines);
         alert("Peringatan: Ada item dengan harga 0 atau kosong. Harap isi harga yang valid sebelum menyimpan.");
         return;
       }
@@ -96,22 +99,27 @@ export const ReceivingPage: React.FC = () => {
         paymentHistory: []
       };
       
+      console.log("Attempting to create receiving document:", docData);
       const id = await masterDataService.create('receivings', docData);
+      console.log("Document created successfully with ID:", id);
       
       if (isPost) {
+        console.log("Attempting to post receiving document...");
         // Transition from Draft to Posted and update stock atomically
         await transactionService.postReceiving(id, docData);
+        console.log("Post transaction successful");
       }
 
       if (isPrint) {
         window.open(`/print/receivings/${id}`, '_blank');
       }
 
+      console.log("Resetting form and closing modal.");
       // Only cleanup state after full success
       setIsCreating(false);
       setFormData({ date: new Date().toISOString().split('T')[0], supplierId: '', vehicleNo: '', notes: '', lines: [] });
     } catch (e: any) {
-      console.error("Save/Post error:", e);
+      console.error("CRITICAL ERROR in handleSave:", e);
       alert(t('Gagal menyimpan: ', 'Failed to save: ') + e.message);
     }
   };
@@ -204,7 +212,7 @@ export const ReceivingPage: React.FC = () => {
                           <select className="w-full bg-white border border-slate-200 rounded-lg p-2 text-sm font-bold"
                             value={line.itemId} onChange={e => updateLine(idx, 'itemId', e.target.value)}>
                             <option value="">--</option>
-                            {items.map((it: any) => <option key={it.id} value={it.id}>{it.name}</option>)}
+                            {items.map((it: any) => <option key={it.id} value={it.id}>{it.nameEn || it.name || it.item_code}</option>)}
                           </select>
                         </div>
                         <div className="col-span-2 space-y-1">
