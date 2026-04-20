@@ -205,7 +205,7 @@ export const ExpensesPage: React.FC = () => {
             { header: '', accessor: (e: any) => (
               <div className="flex justify-end gap-2">
                 <Link to={`/print/expenses/${e.id}`}>
-                  <Button variant="secondary" size="sm"><Plus size={16} className="rotate-45" /></Button>
+                  <Button variant="secondary" size="sm"><Printer size={16} /></Button>
                 </Link>
                 <Button variant="secondary" size="sm" onClick={() => console.log(e)}><ChevronRight size={16} /></Button>
               </div>

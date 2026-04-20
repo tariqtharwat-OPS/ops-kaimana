@@ -37,9 +37,11 @@ export const PrintPage: React.FC = () => {
 
   const docTitle = type === 'receivings' ? 'RECEIVING NOTE' : type === 'expenses' ? 'EXPENSE VOUCHER' : type === 'sales' ? 'SALES INVOICE' : type?.toUpperCase();
   const partyValue = type === 'receivings' 
-    ? suppliers.find(s => s.id === data.supplierId)?.name || 'General Supplier' 
+    ? suppliers.find((s: any) => s.id === data.supplierId)?.name || 'General Supplier' 
     : type === 'sales'
-    ? buyers.find(b => b.id === data.buyerId)?.name || 'General Buyer'
+    ? buyers.find((b: any) => b.id === data.buyerId)?.name || 'General Buyer'
+    : type === 'expenses' && data.supplierId
+    ? suppliers.find((s: any) => s.id === data.supplierId)?.name || data.reference || 'General Expense'
     : data.reference || 'N/A';
 
   const totalQty = data.totalQty || (data.lines || []).reduce((s: number, l: any) => s + (Number(l.quantity) || Number(l.qty) || 0), 0);
@@ -67,6 +69,8 @@ export const PrintPage: React.FC = () => {
             @page { size: A4; margin: 0; }
             body { background: white !important; margin: 0; padding: 0; -webkit-print-color-adjust: exact; }
             .print-hidden { display: none !important; }
+            tr { page-break-inside: avoid; }
+            td, th { page-break-inside: avoid; }
           }
           .invoice-table th { border-bottom: 2px solid #000; border-top: 2px solid #000; }
           .invoice-table td { border-bottom: 1px solid #eee; }
