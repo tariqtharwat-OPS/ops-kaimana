@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  LayoutDashboard, ArrowDownCircle, CreditCard, 
+  LayoutDashboard, ArrowDownCircle, CreditCard, RefreshCcw,
   Database, Users, Settings, LogOut, ChevronLeft, ChevronRight,
   User as UserIcon, BarChart, Loader2, Sparkles, Globe
 } from 'lucide-react';
@@ -209,7 +209,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
   const navigation = [
     { icon: LayoutDashboard, label: t('Dashboard', 'Dashboard'), path: '/dashboard', roles: ['Admin', 'Operator'] },
     { icon: ArrowDownCircle, label: t('Penerimaan', 'Receiving'), path: '/receiving', roles: ['Admin', 'Operator'] },
-    // { icon: RefreshCcw, label: t('Pengolahan', 'Processing'), path: '/processing', roles: ['Admin', 'Operator'] },
+    { icon: RefreshCcw, label: t('Pengolahan', 'Processing'), path: '/processing', roles: ['Admin', 'Operator'] },
     // { icon: Package, label: t('Packing', 'Packing'), path: '/packing', roles: ['Admin', 'Operator'] },
     { icon: Database, label: t('Stok', 'Stock'), path: '/stock', roles: ['Admin', 'Operator'] },
     { icon: BarChart, label: t('Sales / Dispatch', 'Sales / Dispatch'), path: '/sales', roles: ['Admin', 'Operator'] },

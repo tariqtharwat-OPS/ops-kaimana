@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Plus, Trash2, Send, Save, ChevronRight, Calculator } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { Plus, Send, Save, ChevronRight, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { useMasterData } from '../../hooks/useMasterData';
 import { masterDataService } from '../../services/masterDataService';
@@ -13,60 +13,115 @@ export const ProcessingPage: React.FC = () => {
   const { data: grades } = useMasterData('grades', true);
   const { data: sizes } = useMasterData('sizes', true);
   const { data: logs } = useMasterData('processing', true);
-  const { data: stock } = useMasterData('stock', true);
+  const { data: receivings } = useMasterData('receivings', true);
+  const { data: suppliers } = useMasterData('suppliers', true);
 
   const [isCreating, setIsCreating] = useState(false);
-  const [formData, setFormData] = useState<any>({
+  
+  const [formData, setFormData] = useState<{
+    date: string;
+    notes: string;
+    selectedReceivings: string[];
+    lines: any[];
+  }>({
     date: new Date().toISOString().split('T')[0],
     notes: '',
-    inputs: [],
-    outputs: []
+    selectedReceivings: [],
+    lines: []
   });
 
-  const getStockQty = (itemId: string, gradeId: string, sizeId: string) => {
-    const key = `${itemId}_${gradeId || 'no'}_${sizeId || 'no'}`;
-    const entry = stock.find((s: any) => s.id === key);
-    return entry ? entry.quantity : 0;
+  const postedReceivings = useMemo(() => receivings.filter((r: any) => r.status === 'Posted'), [receivings]);
+
+  const handleSelectReceiving = (id: string) => {
+    if (formData.selectedReceivings.includes(id)) {
+      setFormData(prev => ({
+        ...prev,
+        selectedReceivings: prev.selectedReceivings.filter(x => x !== id),
+        lines: prev.lines.filter(l => l.receivingId !== id)
+      }));
+    } else {
+      const rec = postedReceivings.find((r: any) => r.id === id);
+      if (rec && rec.lines) {
+        const newLines = rec.lines.map((l: any, idx: number) => ({
+          id: `${id}_${idx}`,
+          receivingId: id,
+          itemId: l.itemId,
+          gradeId: l.gradeId,
+          sizeId: l.sizeId,
+          invoiceQty: Number(l.quantity) || 0,
+          actualQty: Number(l.quantity) || 0,
+          shortfallReason: ''
+        }));
+        setFormData(prev => ({
+          ...prev,
+          selectedReceivings: [...prev.selectedReceivings, id],
+          lines: [...prev.lines, ...newLines]
+        }));
+      }
+    }
   };
 
-  const addLine = (type: 'inputs' | 'outputs') => {
-    setFormData((p: any) => ({
-      ...p,
-      [type]: [...p[type], { itemId: '', gradeId: '', sizeId: '', quantity: 0 }]
+  const updateLine = (id: string, field: string, value: any) => {
+    setFormData(prev => ({
+      ...prev,
+      lines: prev.lines.map(l => l.id === id ? { ...l, [field]: value } : l)
     }));
   };
 
-  const updateLine = (type: 'inputs' | 'outputs', index: number, field: string, value: any) => {
-    const lines = [...formData[type]];
-    lines[index] = { ...lines[index], [field]: value };
-    setFormData((p: any) => ({ ...p, [type]: lines }));
-  };
+  const summary = useMemo(() => {
+    const sum: Record<string, any> = {};
+    formData.lines.forEach(l => {
+      const key = `${l.itemId}_${l.gradeId}_${l.sizeId}`;
+      if (!sum[key]) {
+        sum[key] = {
+          itemId: l.itemId,
+          gradeId: l.gradeId,
+          sizeId: l.sizeId,
+          totalInvoice: 0,
+          totalActual: 0
+        };
+      }
+      sum[key].totalInvoice += l.invoiceQty;
+      sum[key].totalActual += l.actualQty;
+    });
+    return Object.values(sum);
+  }, [formData.lines]);
 
-  const removeLine = (type: 'inputs' | 'outputs', index: number) => {
-    const lines = formData[type].filter((_: any, i: number) => i !== index);
-    setFormData((p: any) => ({ ...p, [type]: lines }));
-  };
-
-  const calculateYield = () => {
-    const totalIn = formData.inputs.reduce((s: number, i: any) => s + (Number(i.quantity) || 0), 0);
-    const totalOut = formData.outputs.reduce((s: number, o: any) => s + (Number(o.quantity) || 0), 0);
-    if (totalIn === 0) return 0;
-    return (totalOut / totalIn) * 100;
+  const isValid = () => {
+    if (formData.selectedReceivings.length === 0) return false;
+    for (const l of formData.lines) {
+      if (l.actualQty < l.invoiceQty && !l.shortfallReason) return false;
+      if (l.actualQty > l.invoiceQty) return false; // Actual cannot exceed invoice
+    }
+    return true;
   };
 
   const handleSave = async (isPost: boolean) => {
+    if (!isValid()) {
+      alert("Pastikan semua qty valid dan alasan selisih (shortfall) diisi jika qty aktual kurang dari invoice.");
+      return;
+    }
     try {
-      if (formData.inputs.length === 0 || formData.outputs.length === 0) {
-        alert("Input and Output lines required");
-        return;
-      }
-      const docData = { ...formData, status: isPost ? 'Posted' : 'Draft', yield: calculateYield() };
+      const docData = { 
+        ...formData, 
+        summary,
+        status: isPost ? 'Posted' : 'Draft',
+        totalInput: formData.lines.reduce((acc, l) => acc + l.invoiceQty, 0),
+        totalOutput: formData.lines.reduce((acc, l) => acc + l.actualQty, 0)
+      };
+      
       const id = await masterDataService.create('processing', docData);
       if (isPost) {
-        await transactionService.postProcessing(id, docData);
+        // Create stock mapping to match transactionService requirements
+        const stockData = {
+          ...docData,
+          inputs: formData.lines.map(l => ({...l, quantity: l.invoiceQty})), // Decrease stock based on invoice qty
+          outputs: summary.map(s => ({...s, quantity: s.totalActual})) // Increase stock based on actual production
+        };
+        await transactionService.postProcessing(id, stockData);
       }
       setIsCreating(false);
-      setFormData({ date: new Date().toISOString().split('T')[0], notes: '', inputs: [], outputs: [] });
+      setFormData({ date: new Date().toISOString().split('T')[0], notes: '', selectedReceivings: [], lines: [] });
     } catch (e: any) {
       alert(e.message);
     }
@@ -76,126 +131,126 @@ export const ProcessingPage: React.FC = () => {
     return (
       <div className="space-y-8 pb-20">
         <Header 
-          title={t('Pengolahan Baru', 'New Processing')} 
-          subtitle={t('Transformasi bahan baku menjadi produk jadi', 'Transform raw materials into finished products')}
+          title={t('Produksi Baru', 'New Production')} 
+          subtitle={t('Proses berdasarkan faktur penerimaan', 'Process based on receiving invoices')}
           action={<Button variant="secondary" onClick={() => setIsCreating(false)}>{t('Batal', 'Cancel')}</Button>}
         />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-8">
-            {/* INPUTS */}
+            {/* SOURCE INVOICES */}
             <Card>
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest">{t('BAHAN BAKU (INPUT)', 'RAW MATERIALS (INPUT)')}</h3>
-                <Button variant="secondary" onClick={() => addLine('inputs')}><Plus size={16} /> {t('Tambah Item', 'Add Item')}</Button>
+                <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest">{t('1. PILIH INVOICE PENERIMAAN', '1. SELECT RECEIVING INVOICES')}</h3>
               </div>
-              <div className="space-y-4">
-                {formData.inputs.map((line: any, idx: number) => (
-                  <div key={idx} className="grid grid-cols-12 gap-3 items-end bg-slate-50 p-4 rounded-2xl">
-                    <div className="col-span-4 space-y-1.5">
-                      <label className="text-[10px] font-black text-slate-400">{t('ITEM', 'ITEM')}</label>
-                      <select className="w-full bg-white border border-slate-200 rounded-xl p-2.5 text-sm font-bold"
-                        value={line.itemId} onChange={e => updateLine('inputs', idx, 'itemId', e.target.value)}>
-                        <option value="">--</option>
-                        {items.map((it: any) => <option key={it.id} value={it.id}>{it.name}</option>)}
-                      </select>
-                    </div>
-                    <div className="col-span-3 space-y-1.5">
-                      <label className="text-[10px] font-black text-slate-400">GRADE/SIZE</label>
-                      <div className="flex gap-2">
-                        <select className="w-full bg-white border border-slate-200 rounded-xl p-2.5 text-sm font-bold"
-                          value={line.gradeId} onChange={e => updateLine('inputs', idx, 'gradeId', e.target.value)}>
-                          <option value="">--</option>
-                          {grades.map((g: any) => <option key={g.id} value={g.id}>{g.name}</option>)}
-                        </select>
-                        <select className="w-full bg-white border border-slate-200 rounded-xl p-2.5 text-sm font-bold"
-                          value={line.sizeId} onChange={e => updateLine('inputs', idx, 'sizeId', e.target.value)}>
-                          <option value="">--</option>
-                          {sizes.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
-                        </select>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-60 overflow-y-auto p-1">
+                {postedReceivings.map((r: any) => {
+                  const isSelected = formData.selectedReceivings.includes(r.id);
+                  return (
+                    <div 
+                      key={r.id} 
+                      onClick={() => handleSelectReceiving(r.id)}
+                      className={`p-4 rounded-2xl border-2 cursor-pointer transition-all ${isSelected ? 'border-ocean-500 bg-ocean-50/50' : 'border-slate-100 hover:border-ocean-200'}`}
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">{r.date}</p>
+                          <p className="font-bold text-slate-900">{suppliers.find((s: any) => s.id === r.supplierId)?.name || 'Unknown'}</p>
+                        </div>
+                        {isSelected && <CheckCircle2 className="text-ocean-600" size={20} />}
                       </div>
+                      <p className="text-sm font-black text-slate-600">Inv: #{r.id.substring(0,8).toUpperCase()}</p>
+                      <p className="text-xs font-bold text-slate-500 mt-2">{r.totalQty} kg</p>
                     </div>
-                    <div className="col-span-3 space-y-1.5">
-                      <label className="text-[10px] font-black text-slate-400">QTY (STOCK: {getStockQty(line.itemId, line.gradeId, line.sizeId)})</label>
-                      <input type="number" className="w-full bg-white border border-slate-200 rounded-xl p-2.5 text-sm font-bold"
-                        value={line.quantity} onChange={e => updateLine('inputs', idx, 'quantity', Number(e.target.value))} />
-                    </div>
-                    <div className="col-span-2 pb-1">
-                      <Button variant="secondary" className="w-full text-red-500 hover:bg-red-50" onClick={() => removeLine('inputs', idx)}><Trash2 size={16} /></Button>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
+                {postedReceivings.length === 0 && (
+                  <p className="text-slate-400 italic font-bold">No posted receiving invoices available.</p>
+                )}
               </div>
             </Card>
 
-            {/* OUTPUTS */}
-            <Card>
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest">{t('HASIL PRODUKSI (OUTPUT)', 'PRODUCTION OUTPUT')}</h3>
-                <Button variant="secondary" onClick={() => addLine('outputs')}><Plus size={16} /> {t('Tambah Item', 'Add Item')}</Button>
-              </div>
-              <div className="space-y-4">
-                {formData.outputs.map((line: any, idx: number) => (
-                  <div key={idx} className="grid grid-cols-12 gap-3 items-end bg-emerald-50/50 p-4 rounded-2xl border border-emerald-100/50">
-                    <div className="col-span-4 space-y-1.5">
-                      <label className="text-[10px] font-black text-emerald-600">{t('ITEM JADI', 'FINISHED ITEM')}</label>
-                      <select className="w-full bg-white border border-emerald-200 rounded-xl p-2.5 text-sm font-bold"
-                        value={line.itemId} onChange={e => updateLine('outputs', idx, 'itemId', e.target.value)}>
-                        <option value="">--</option>
-                        {items.map((it: any) => <option key={it.id} value={it.id}>{it.name}</option>)}
-                      </select>
-                    </div>
-                    <div className="col-span-3 space-y-1.5">
-                      <label className="text-[10px] font-black text-emerald-600">GRADE/SIZE</label>
-                      <div className="flex gap-2">
-                        <select className="w-full bg-white border border-emerald-200 rounded-xl p-2.5 text-sm font-bold"
-                          value={line.gradeId} onChange={e => updateLine('outputs', idx, 'gradeId', e.target.value)}>
-                          <option value="">--</option>
-                          {grades.map((g: any) => <option key={g.id} value={g.id}>{g.name}</option>)}
-                        </select>
-                        <select className="w-full bg-white border border-emerald-200 rounded-xl p-2.5 text-sm font-bold"
-                          value={line.sizeId} onChange={e => updateLine('outputs', idx, 'sizeId', e.target.value)}>
-                          <option value="">--</option>
-                          {sizes.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
-                        </select>
+            {/* LINE ITEMS */}
+            {formData.selectedReceivings.length > 0 && (
+              <Card>
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest">{t('2. KONFIRMASI KUANTITAS AKTUAL', '2. CONFIRM ACTUAL QUANTITY')}</h3>
+                </div>
+                <div className="space-y-4">
+                  {formData.lines.map((line: any) => {
+                    const itemName = items.find((i: any) => i.id === line.itemId)?.name || '';
+                    const hasShortfall = line.actualQty < line.invoiceQty;
+                    return (
+                      <div key={line.id} className={`p-4 rounded-2xl border ${hasShortfall ? 'border-amber-200 bg-amber-50/30' : 'border-slate-100 bg-slate-50/50'}`}>
+                        <div className="grid grid-cols-12 gap-4 items-center">
+                          <div className="col-span-4">
+                            <p className="text-[10px] font-black text-slate-400 uppercase">Inv: #{line.receivingId.substring(0,8).toUpperCase()}</p>
+                            <p className="font-bold text-sm text-slate-900">{itemName}</p>
+                            <div className="flex gap-1 mt-1">
+                              {line.gradeId && <span className="text-[10px] bg-white px-1.5 py-0.5 rounded font-black text-slate-500 border border-slate-200 uppercase">{grades.find((g: any) => g.id === line.gradeId)?.name}</span>}
+                              {line.sizeId && <span className="text-[10px] bg-white px-1.5 py-0.5 rounded font-black text-slate-500 border border-slate-200 uppercase">{sizes.find((s: any) => s.id === line.sizeId)?.name}</span>}
+                            </div>
+                          </div>
+                          
+                          <div className="col-span-3 text-center">
+                            <p className="text-[10px] font-black text-slate-400 uppercase">{t('QTY INVOICE', 'INVOICE QTY')}</p>
+                            <p className="font-black text-lg text-slate-700">{line.invoiceQty} kg</p>
+                          </div>
+
+                          <div className="col-span-5">
+                            <p className="text-[10px] font-black text-slate-400 uppercase">{t('QTY AKTUAL (PRODUKSI)', 'ACTUAL QTY (PROD)')}</p>
+                            <input 
+                              type="number" 
+                              className={`w-full p-2.5 rounded-xl border text-sm font-black focus:ring-2 outline-none ${hasShortfall ? 'border-amber-300 focus:ring-amber-500/20' : 'border-slate-200 focus:ring-ocean-500/20'}`}
+                              value={line.actualQty}
+                              max={line.invoiceQty}
+                              onChange={e => updateLine(line.id, 'actualQty', Number(e.target.value))}
+                            />
+                            {hasShortfall && (
+                              <div className="mt-2 animate-in fade-in slide-in-from-top-1">
+                                <select 
+                                  className="w-full p-2 rounded-lg border border-amber-300 bg-white text-xs font-bold text-amber-900 outline-none"
+                                  value={line.shortfallReason}
+                                  onChange={e => updateLine(line.id, 'shortfallReason', e.target.value)}
+                                >
+                                  <option value="">-- Klasifikasi Selisih --</option>
+                                  <option value="loss">Susut (Loss/Shrinkage)</option>
+                                  <option value="reject">Reject / Rusak</option>
+                                  <option value="waste">Waste</option>
+                                  <option value="other">Lainnya</option>
+                                </select>
+                                {!line.shortfallReason && <p className="text-[10px] text-red-500 font-bold mt-1 flex items-center gap-1"><AlertCircle size={10}/> Wajib diisi</p>}
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                    <div className="col-span-3 space-y-1.5">
-                      <label className="text-[10px] font-black text-emerald-600">QTY (KG)</label>
-                      <input type="number" className="w-full bg-white border border-emerald-200 rounded-xl p-2.5 text-sm font-bold"
-                        value={line.quantity} onChange={e => updateLine('outputs', idx, 'quantity', Number(e.target.value))} />
-                    </div>
-                    <div className="col-span-2 pb-1">
-                      <Button variant="secondary" className="w-full text-red-500 hover:bg-red-50" onClick={() => removeLine('outputs', idx)}><Trash2 size={16} /></Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </Card>
+                    );
+                  })}
+                </div>
+              </Card>
+            )}
+
+            {/* AGGREGATED SUMMARY */}
+            {summary.length > 0 && (
+              <Card>
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-sm font-black text-emerald-600 uppercase tracking-widest">{t('RINGKASAN HASIL PRODUKSI', 'PRODUCTION SUMMARY')}</h3>
+                </div>
+                <Table 
+                  data={summary}
+                  columns={[
+                    { header: 'ITEM', accessor: (s: any) => items.find((i: any) => i.id === s.itemId)?.name || '', className: 'font-bold' },
+                    { header: 'GRADE', accessor: (s: any) => grades.find((g: any) => g.id === s.gradeId)?.name || '--' },
+                    { header: 'SIZE', accessor: (s: any) => sizes.find((sz: any) => sz.id === s.sizeId)?.name || '--' },
+                    { header: 'TOTAL ACTUAL (KG)', accessor: (s: any) => <span className="font-black text-emerald-600">{s.totalActual}</span>, className: 'text-right' }
+                  ]}
+                />
+              </Card>
+            )}
           </div>
 
           <div className="space-y-8">
-            <Card className="bg-ocean-800 text-white border-none shadow-2xl">
-              <h3 className="text-xs font-black uppercase tracking-widest opacity-60 mb-6">{t('RINGKASAN RENDEMEN', 'YIELD SUMMARY')}</h3>
-              <div className="space-y-6">
-                <div className="flex justify-between items-end">
-                  <span className="text-sm font-medium opacity-80">{t('Total Input', 'Total Input')}</span>
-                  <span className="text-xl font-black">{formData.inputs.reduce((s: number, i: any) => s + (Number(i.quantity) || 0), 0)} kg</span>
-                </div>
-                <div className="flex justify-between items-end">
-                  <span className="text-sm font-medium opacity-80">{t('Total Output', 'Total Output')}</span>
-                  <span className="text-xl font-black">{formData.outputs.reduce((s: number, o: any) => s + (Number(o.quantity) || 0), 0)} kg</span>
-                </div>
-                <div className="pt-6 border-t border-white/10 flex justify-between items-center">
-                  <div className="flex items-center gap-2">
-                    <Calculator size={16} className="opacity-60" />
-                    <span className="text-sm font-black uppercase tracking-wider">{t('RENDEMEN', 'YIELD')}</span>
-                  </div>
-                  <span className="text-4xl font-black text-emerald-400">{calculateYield().toFixed(1)}%</span>
-                </div>
-              </div>
-            </Card>
-
             <Card className="space-y-6">
                <div className="space-y-1.5">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('TANGGAL', 'DATE')}</label>
@@ -208,7 +263,12 @@ export const ProcessingPage: React.FC = () => {
                     value={formData.notes} onChange={e => setFormData((p: any) => ({ ...p, notes: e.target.value }))} />
                </div>
                <div className="pt-4 space-y-3">
-                  <Button className="w-full py-4" onClick={() => handleSave(true)}><Send size={18} /> {t('POST KE STOK', 'POST TO STOCK')}</Button>
+                  <Button 
+                    className={`w-full py-4 ${!isValid() ? 'opacity-50 cursor-not-allowed' : ''}`} 
+                    onClick={() => isValid() && handleSave(true)}
+                  >
+                    <Send size={18} /> {t('POST PRODUKSI', 'POST PRODUCTION')}
+                  </Button>
                   <Button variant="secondary" className="w-full py-4" onClick={() => handleSave(false)}><Save size={18} /> {t('SIMPAN DRAFT', 'SAVE DRAFT')}</Button>
                </div>
             </Card>
@@ -221,8 +281,8 @@ export const ProcessingPage: React.FC = () => {
   return (
     <div className="space-y-10 animate-in fade-in duration-500">
       <Header 
-        title={t('Log Pengolahan', 'Processing Logs')} 
-        subtitle={t('Daftar transformasi bahan baku', 'List of raw material transformations')}
+        title={t('Produksi', 'Production')} 
+        subtitle={t('Daftar riwayat produksi dari penerimaan', 'Production history from receivings')}
         action={<Button onClick={() => setIsCreating(true)}><Plus size={20} /> {t('Produksi Baru', 'New Production')}</Button>}
       />
       
@@ -231,15 +291,15 @@ export const ProcessingPage: React.FC = () => {
           data={logs}
           columns={[
             { header: t('TANGGAL', 'DATE'), accessor: 'date', className: 'font-bold' },
-            { header: t('INPUT', 'INPUT'), accessor: (l: any) => (
-              <span className="font-bold">{l.inputs?.reduce((s: number, i: any) => s + i.quantity, 0)} kg</span>
+            { header: t('SUMBER INVOICE', 'SOURCE INVOICES'), accessor: (l: any) => (
+              <div className="flex flex-wrap gap-1">
+                {(l.selectedReceivings || []).map((id: string) => (
+                  <span key={id} className="text-[10px] font-black bg-slate-100 text-slate-600 px-2 py-1 rounded">#{id.substring(0,8).toUpperCase()}</span>
+                ))}
+              </div>
             )},
-            { header: t('OUTPUT', 'OUTPUT'), accessor: (l: any) => (
-              <span className="font-bold text-emerald-600">{l.outputs?.reduce((s: number, o: any) => s + o.quantity, 0)} kg</span>
-            )},
-            { header: t('RENDEMEN', 'YIELD'), accessor: (l: any) => (
-              <Badge variant="posted">{l.yield?.toFixed(2)}%</Badge>
-            )},
+            { header: t('TOTAL INPUT', 'TOTAL INPUT'), accessor: (l: any) => <span className="font-bold">{l.totalInput} kg</span> },
+            { header: t('TOTAL ACTUAL', 'TOTAL ACTUAL'), accessor: (l: any) => <span className="font-black text-emerald-600">{l.totalOutput} kg</span> },
             { header: 'STATUS', accessor: (l: any) => <Badge variant={l.status === 'Posted' ? 'posted' : 'draft'}>{l.status}</Badge> },
             { header: '', accessor: (l: any) => (
               <div className="flex justify-end">
@@ -252,4 +312,3 @@ export const ProcessingPage: React.FC = () => {
     </div>
   );
 };
-
