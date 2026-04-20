@@ -57,10 +57,31 @@ export const MasterDataPage: React.FC = () => {
       };
 
       let docId = formData.id;
+      let finalData = { ...formData };
+
+      if (activeTab === 'items' && finalData.pricingMatrix) {
+        // Cleanup orphaned data
+        const validGrades = finalData.hasGrade && finalData.gradeProfileId ? grades.filter((g: any) => g.profileId === finalData.gradeProfileId).map((g: any) => g.id) : ['standard'];
+        const validSizes = finalData.sizeProfileId ? sizes.filter((s: any) => s.profileId === finalData.sizeProfileId).map((s: any) => s.id) : ['standard'];
+        
+        const cleanedMatrix: any = {};
+        for (const g of validGrades) {
+          if (finalData.pricingMatrix[g]) {
+            cleanedMatrix[g] = {};
+            for (const s of validSizes) {
+              if (finalData.pricingMatrix[g][s] !== undefined) {
+                cleanedMatrix[g][s] = finalData.pricingMatrix[g][s];
+              }
+            }
+          }
+        }
+        finalData.pricingMatrix = cleanedMatrix;
+      }
+
       if (isEdit) {
-        await masterDataService.update(collectionMapping[activeTab], formData.id, formData);
+        await masterDataService.update(collectionMapping[activeTab], finalData.id, finalData);
       } else {
-        docId = await masterDataService.create(collectionMapping[activeTab], formData);
+        docId = await masterDataService.create(collectionMapping[activeTab], finalData);
       }
 
       // Handle nested options for grading/sizing
@@ -281,11 +302,11 @@ export const MasterDataPage: React.FC = () => {
                             <thead className="bg-slate-50 border-b border-slate-100">
                               <tr>
                                 <th className="p-3 text-left font-black text-slate-400">GRADE \ SIZE</th>
-                                {sizes.filter(s => s.profileId === formData.sizeProfileId).map((sz: any) => (
+                                {sizes.filter((s: any) => s.profileId === formData.sizeProfileId).map((sz: any) => (
                                   <th key={sz.id} className="p-3 text-center font-black text-slate-700">{sz.name}</th>
                                 ))}
-                                {sizes.filter(s => s.profileId === formData.sizeProfileId).length === 0 && (
-                                   <th className="p-3 text-center font-black text-slate-700">-</th>
+                                {(!formData.sizeProfileId || sizes.filter((s: any) => s.profileId === formData.sizeProfileId).length === 0) && (
+                                   <th className="p-3 text-center font-black text-slate-700">Standard Size</th>
                                 )}
                               </tr>
                             </thead>
@@ -294,7 +315,7 @@ export const MasterDataPage: React.FC = () => {
                                 grades.filter(g => g.profileId === formData.gradeProfileId).map((gr: any) => (
                                   <tr key={gr.id} className="border-b border-slate-50 last:border-0">
                                     <td className="p-3 font-bold text-slate-600 bg-slate-50/50">{gr.name}</td>
-                                    {sizes.filter(s => s.profileId === formData.sizeProfileId).map((sz: any) => {
+                                    {sizes.filter((s: any) => s.profileId === formData.sizeProfileId).map((sz: any) => {
                                       const currentPrice = formData.pricingMatrix?.[gr.id]?.[sz.id] || '';
                                       return (
                                         <td key={sz.id} className="p-1">
@@ -313,15 +334,28 @@ export const MasterDataPage: React.FC = () => {
                                         </td>
                                       );
                                     })}
-                                    {sizes.filter(s => s.profileId === formData.sizeProfileId).length === 0 && (
-                                       <td className="p-1 text-center text-slate-300 italic">No Sizes</td>
+                                    {(!formData.sizeProfileId || sizes.filter((s: any) => s.profileId === formData.sizeProfileId).length === 0) && (
+                                       <td className="p-1">
+                                         <input 
+                                            type="number" 
+                                            className="w-full px-2 py-2 bg-transparent text-center font-black text-ocean-800 placeholder:text-slate-200 outline-none focus:bg-white"
+                                            placeholder="0"
+                                            value={formData.pricingMatrix?.[gr.id]?.['standard'] || ''}
+                                            onChange={(e) => {
+                                              const matrix = { ...(formData.pricingMatrix || {}) };
+                                              if (!matrix[gr.id]) matrix[gr.id] = {};
+                                              matrix[gr.id]['standard'] = Number(e.target.value);
+                                              updateForm('pricingMatrix', matrix);
+                                            }}
+                                          />
+                                       </td>
                                     )}
                                   </tr>
                                 ))
                               ) : (
                                 <tr className="border-b border-slate-50 last:border-0">
                                    <td className="p-3 font-bold text-slate-600 bg-slate-50/50">Standard</td>
-                                   {sizes.filter(s => s.profileId === formData.sizeProfileId).map((sz: any) => {
+                                   {sizes.filter((s: any) => s.profileId === formData.sizeProfileId).map((sz: any) => {
                                       const currentPrice = formData.pricingMatrix?.['standard']?.[sz.id] || '';
                                       return (
                                         <td key={sz.id} className="p-1">
@@ -340,8 +374,21 @@ export const MasterDataPage: React.FC = () => {
                                         </td>
                                       );
                                     })}
-                                    {sizes.filter(s => s.profileId === formData.sizeProfileId).length === 0 && (
-                                       <td className="p-1 text-center text-slate-300 italic">Select Profiles</td>
+                                    {(!formData.sizeProfileId || sizes.filter((s: any) => s.profileId === formData.sizeProfileId).length === 0) && (
+                                       <td className="p-1">
+                                         <input 
+                                            type="number" 
+                                            className="w-full px-2 py-2 bg-transparent text-center font-black text-ocean-800 placeholder:text-slate-200 outline-none focus:bg-white"
+                                            placeholder="0"
+                                            value={formData.pricingMatrix?.['standard']?.['standard'] || ''}
+                                            onChange={(e) => {
+                                              const matrix = { ...(formData.pricingMatrix || {}) };
+                                              if (!matrix['standard']) matrix['standard'] = {};
+                                              matrix['standard']['standard'] = Number(e.target.value);
+                                              updateForm('pricingMatrix', matrix);
+                                            }}
+                                          />
+                                       </td>
                                     )}
                                 </tr>
                               )}
@@ -667,7 +714,8 @@ export const MasterDataPage: React.FC = () => {
               { header: t('NAMA PEMBELI / PARTNER', 'BUYER / PARTNER NAME'), accessor: 'name', className: 'font-bold text-slate-900' },
               { header: t('KONTAK', 'CONTACT'), accessor: 'phone', className: 'text-slate-400' },
               { 
-                header: t('SALDO', 'BALANCE'), 
+                header: t('TOTAL PENJUALAN', 'SALES VOLUME'), 
+
                 accessor: (b: any) => {
                   const stats = getBuyerStats(b.id);
                   return <span className="font-bold text-red-600">Rp {stats.balance.toLocaleString()}</span>;

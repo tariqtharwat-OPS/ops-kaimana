@@ -77,6 +77,13 @@ export const SalesPage: React.FC = () => {
         alert("Buyer and lines required");
         return;
       }
+
+      const hasMissingPrice = formData.lines.some((l: any) => !l.pricePerKg || l.pricePerKg <= 0);
+      if (hasMissingPrice) {
+        alert("Peringatan: Ada item dengan harga 0 atau kosong. Harap isi harga yang valid sebelum menyimpan.");
+        return;
+      }
+
       const docData = { 
         ...formData, 
         status: isPost ? 'Posted' : 'Draft', 

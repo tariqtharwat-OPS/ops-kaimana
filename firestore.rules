@@ -35,41 +35,26 @@ service cloud.firestore {
       allow write: if isSignedIn() && isAdmin();
     }
 
-    // 2. Master Data (Products, Suppliers, Customers)
-    match /master_products/{id} {
-      allow read: if isSignedIn() && (isAdmin() || isOperator());
-      allow write: if isSignedIn() && isAdmin();
-    }
-    match /master_suppliers/{id} {
-      allow read: if isSignedIn() && (isAdmin() || isOperator());
-      allow write: if isSignedIn() && isAdmin();
-    }
-    match /master_customers/{id} {
-      allow read: if isSignedIn() && (isAdmin() || isOperator());
-      allow write: if isSignedIn() && isAdmin();
-    }
+    // 2. Master Data
+    match /items/{id} { allow read: if isSignedIn(); allow write: if isAdmin(); }
+    match /suppliers/{id} { allow read: if isSignedIn(); allow write: if isAdmin(); }
+    match /buyers/{id} { allow read: if isSignedIn(); allow write: if isAdmin(); }
+    match /expense_categories/{id} { allow read: if isSignedIn(); allow write: if isAdmin(); }
+    match /workers/{id} { allow read: if isSignedIn(); allow write: if isAdmin(); }
+    match /grade_profiles/{id} { allow read: if isSignedIn(); allow write: if isAdmin(); }
+    match /size_profiles/{id} { allow read: if isSignedIn(); allow write: if isAdmin(); }
+    match /grades/{id} { allow read: if isSignedIn(); allow write: if isAdmin(); }
+    match /sizes/{id} { allow read: if isSignedIn(); allow write: if isAdmin(); }
 
-    // 3. Transactions (Receiving, Processing, Packing, Sales, Expenses)
-    match /transactions_receiving/{id} {
-      allow read, write: if isSignedIn() && (isAdmin() || isOperator());
-    }
-    match /transactions_processing/{id} {
-      allow read, write: if isSignedIn() && (isAdmin() || isOperator());
-    }
-    match /transactions_packing/{id} {
-      allow read, write: if isSignedIn() && (isAdmin() || isOperator());
-    }
-    match /transactions_sales/{id} {
-      allow read, write: if isSignedIn() && (isAdmin() || isOperator());
-    }
-    match /transactions_expenses/{id} {
-      allow read, write: if isSignedIn() && (isAdmin() || isOperator());
-    }
+    // 3. Transactions
+    match /receivings/{id} { allow read, write: if isSignedIn() && (isAdmin() || isOperator()); }
+    match /sales/{id} { allow read, write: if isSignedIn() && (isAdmin() || isOperator()); }
+    match /processing/{id} { allow read, write: if isSignedIn() && (isAdmin() || isOperator()); }
+    match /packing/{id} { allow read, write: if isSignedIn() && (isAdmin() || isOperator()); }
+    match /expenses/{id} { allow read, write: if isSignedIn() && (isAdmin() || isOperator()); }
 
     // 4. Stock
     match /stock/{id} {
-      // Admin/Operator see all
-      // Buyer sees only items assigned to them (if applicable)
       allow read: if isSignedIn() && (
         isAdmin() || 
         isOperator() || 
@@ -80,8 +65,8 @@ service cloud.firestore {
 
     // 5. Reports
     match /reports/{id} {
-      allow read: if isSignedIn() && (isAdmin() || isOperator());
-      allow write: if isSignedIn() && isAdmin();
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
     }
 
     // Catch-all: Default to deny
