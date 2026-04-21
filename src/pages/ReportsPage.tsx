@@ -37,7 +37,9 @@ export const ReportsPage: React.FC = () => {
   }, [postedSales, adjustments]);
 
   const totalPurchases = postedReceivings.reduce((sum, r) => sum + (r.totalAmount || 0), 0);
-  const totalExpenses = postedExpenses.reduce((sum, e) => sum + (e.transactionType === 'Money In' ? -(e.totalAmount || 0) : (e.totalAmount || 0)), 0);
+  const totalExpenses = postedExpenses
+    .filter((e: any) => e.category !== 'supplier_payment' && e.category !== 'sales_receipt')
+    .reduce((sum, e) => sum + (e.transactionType === 'Money In' ? -(e.totalAmount || 0) : (e.totalAmount || 0)), 0);
 
   // Receivables & Payables
   const buyerReceivables = useMemo(() => {
@@ -106,7 +108,7 @@ export const ReportsPage: React.FC = () => {
         </Card>
         <Card className="bg-red-50 border-red-100">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[10px] font-black text-red-600 uppercase tracking-widest">{t('Total Biaya', 'Total Expenses')}</span>
+            <span className="text-[10px] font-black text-red-600 uppercase tracking-widest">{t('Biaya Operasional', 'Operating Expenses')}</span>
             <TrendingDown size={16} className="text-red-500" />
           </div>
           <p className="text-2xl font-black text-red-900">Rp {totalExpenses.toLocaleString()}</p>
@@ -145,11 +147,11 @@ export const ReportsPage: React.FC = () => {
 
       <Card>
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">{t('Ringkasan Jurnal Uang', 'Money Journal Summary')}</h3>
+          <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">{t('Buku Kas / Pengeluaran', 'Cash Book / Expenses')}</h3>
           <DollarSign className="text-slate-300" size={16} />
         </div>
         <Table 
-          data={postedExpenses.slice(0, 10)} // Top 10 recent
+          data={postedExpenses.filter((e: any) => e.category !== 'supplier_payment' && e.category !== 'sales_receipt').slice(0, 10)} // Top 10 recent actual expenses
           columns={[
             { header: t('TANGGAL', 'DATE'), accessor: 'date' },
             { header: t('KATEGORI', 'CATEGORY'), accessor: (e: any) => e.category ? e.category.replace('_', ' ').toUpperCase() : '--' },
