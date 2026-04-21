@@ -17,6 +17,7 @@ export const ReportsPage: React.FC = () => {
   const { data: receivings } = useMasterData('receivings', true);
   const { data: stock } = useMasterData('stock', true);
   const { data: sales } = useMasterData('sales', true);
+  const { data: adjustments } = useMasterData('adjustments', true);
   const { data: expenses } = useMasterData('expenses', true);
   const { data: items } = useMasterData('items', true);
   const { data: buyers } = useMasterData('buyers', true);
@@ -28,21 +29,35 @@ export const ReportsPage: React.FC = () => {
   const postedExpenses = useMemo(() => expenses.filter((e: any) => e.status === 'Posted'), [expenses]);
 
   // Financial Summaries
-  const totalSales = postedSales.reduce((sum, s) => sum + (s.totalValue || 0), 0);
+  const totalSales = useMemo(() => {
+    const salesBase = postedSales.reduce((sum, s) => sum + (s.totalAmount || s.totalValue || 0), 0);
+    const adjTotal = adjustments.reduce((sum, a: any) => sum + (a.type === 'Credit' ? -a.amount : a.amount), 0);
+    return salesBase + adjTotal;
+  }, [postedSales, adjustments]);
+
   const totalPurchases = postedReceivings.reduce((sum, r) => sum + (r.totalAmount || 0), 0);
   const totalExpenses = postedExpenses.reduce((sum, e) => sum + (e.transactionType === 'Money In' ? -(e.totalAmount || 0) : (e.totalAmount || 0)), 0);
 
   // Receivables & Payables
   const buyerReceivables = useMemo(() => {
-    const balances = postedSales.reduce((acc, sale) => {
-      if (!acc[sale.buyerId]) acc[sale.buyerId] = 0;
-      acc[sale.buyerId] += (sale.balanceDue !== undefined ? sale.balanceDue : sale.totalValue);
-      return acc;
-    }, {} as Record<string, number>);
+    const balances: Record<string, number> = {};
+    
+    // Add sales balances
+    postedSales.forEach(sale => {
+      if (!balances[sale.buyerId]) balances[sale.buyerId] = 0;
+      balances[sale.buyerId] += (sale.balanceDue !== undefined ? sale.balanceDue : (sale.totalAmount || sale.totalValue || 0));
+    });
+
+    // Add adjustment balances
+    adjustments.forEach((adj: any) => {
+      if (!balances[adj.buyerId]) balances[adj.buyerId] = 0;
+      balances[adj.buyerId] += (adj.type === 'Credit' ? -adj.amount : adj.amount);
+    });
+
     return Object.entries(balances)
-      .map(([buyerId, balance]) => ({ buyerId, balance: balance as number }))
-      .filter(b => b.balance > 0);
-  }, [postedSales]);
+      .map(([buyerId, balance]) => ({ buyerId, balance }))
+      .filter(b => b.balance > 1); // Ignore small rounding or negative (credit) balances for this specific table
+  }, [postedSales, adjustments]);
 
   const supplierPayables = useMemo(() => {
     const balances = postedReceivings.reduce((acc, rec) => {

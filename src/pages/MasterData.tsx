@@ -165,13 +165,21 @@ export const MasterDataPage: React.FC = () => {
   const { data: sizes } = useMasterData('sizes', true);
   const { data: sales } = useMasterData('sales', true);
   const { data: receivings } = useMasterData('receivings', true);
+  const { data: adjustments } = useMasterData('adjustments', true);
 
   // Derived calculations for Buyers (Accounts Receivable)
   const getBuyerStats = (buyerId: string) => {
     const buyerSales = sales.filter((s: any) => s.buyerId === buyerId);
-    const balance = buyerSales
+    const buyerAdjs = adjustments.filter((a: any) => a.buyerId === buyerId);
+
+    const salesBalance = buyerSales
       .filter((s: any) => s.status === 'Posted')
-      .reduce((sum, s: any) => sum + (s.balanceDue !== undefined ? s.balanceDue : s.totalValue), 0);
+      .reduce((sum, s: any) => sum + (s.balanceDue !== undefined ? s.balanceDue : s.totalAmount), 0);
+      
+    const adjBalance = buyerAdjs
+      .reduce((sum, a: any) => sum + (a.type === 'Credit' ? -a.amount : a.amount), 0);
+
+    const balance = salesBalance + adjBalance;
       
     const allocatedStock = buyerSales
       .filter((s: any) => s.status === 'Draft')

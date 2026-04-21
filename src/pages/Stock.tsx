@@ -24,9 +24,14 @@ export const StockPage: React.FC = () => {
   const { data: grades } = useMasterData('grades');
   const { data: sizes } = useMasterData('sizes');
   const { data: movements } = useMasterData('stock_movements');
+  const { data: allocations } = useMasterData('buyerAllocations');
 
   const totalVolume = stock.reduce((sum: number, s: any) => sum + (s.quantity || 0), 0);
-  const reservedVolume = stock.filter((s: any) => s.buyer_id).reduce((sum: number, s: any) => sum + (s.quantity || 0), 0);
+  
+  // Reserved quantity is sum of Provisional allocations
+  const reservedVolume = allocations
+    .filter((a: any) => a.status === 'Provisional')
+    .reduce((sum: number, a: any) => sum + (a.allocatedQty || 0), 0);
 
   return (
     <div className="space-y-10 animate-in fade-in duration-500">
@@ -95,12 +100,12 @@ export const StockPage: React.FC = () => {
         </div>
 
         <Table 
-          data={stock.filter(s => activeTab === 'available' ? !s.buyer_id : s.buyer_id)}
+          data={activeTab === 'available' ? stock : allocations.filter((a: any) => a.status === 'Provisional')}
           columns={[
             { 
               header: t('BARANG', 'ITEM'), 
               accessor: (s: any) => {
-                const item = items.find((i: any) => i.id === s.item_id);
+                const item = items.find((i: any) => i.id === (s.itemId || s.item_id));
                 return (
                   <div className="flex flex-col">
                     <span className="font-black text-slate-900">{t(item?.nameId || '-', item?.nameEn || '-')}</span>
@@ -109,14 +114,37 @@ export const StockPage: React.FC = () => {
                 );
               }
             },
-            { header: 'GRADE', accessor: (s: any) => grades.find((g: any) => g.id === s.grade_id)?.name || '-' },
-            { header: 'SIZE', accessor: (s: any) => sizes.find((sz: any) => sz.id === s.size_id)?.name || '-' },
-            { header: t('KUANTITAS', 'QUANTITY'), accessor: (s: any) => <span className="font-black text-ocean-800">{s.quantity.toLocaleString()} kg</span>, className: 'text-right' },
+            { header: 'GRADE', accessor: (s: any) => grades.find((g: any) => g.id === (s.gradeId || s.grade_id))?.name || '-' },
+            { header: 'SIZE', accessor: (s: any) => sizes.find((sz: any) => sz.id === (s.sizeId || s.size_id))?.name || '-' },
+            { 
+              header: activeTab === 'available' ? t('TOTAL STOK', 'TOTAL STOCK') : t('ALOKASI', 'ALLOCATION'), 
+              accessor: (s: any) => <span className="font-black text-slate-400">{(s.quantity || s.allocatedQty || 0).toLocaleString()} kg</span>, 
+              className: 'text-right' 
+            },
+            ...(activeTab === 'available' ? [{
+              header: t('TERSEDIA', 'AVAILABLE'),
+              accessor: (s: any) => {
+                const reserved = allocations
+                  .filter((a: any) => 
+                    a.itemId === s.itemId && 
+                    (a.gradeId || null) === (s.gradeId || null) && 
+                    (a.sizeId || null) === (s.sizeId || null) && 
+                    a.status === 'Provisional' &&
+                    a.buyerId != null
+                  )
+                  .reduce((sum: number, a: any) => sum + (a.allocatedQty || 0), 0);
+                const available = (s.quantity || 0) - reserved;
+                return <span className="font-black text-ocean-800">{available.toLocaleString()} kg</span>;
+              },
+              className: 'text-right'
+            }] : []),
             { 
               header: t('STATUS', 'STATUS'), 
               accessor: (s: any) => (
-                <Badge variant={s.quantity > 500 ? 'posted' : 'pending'}>
-                  {s.quantity > 500 ? t('Stok Aman', 'Good Stock') : t('Stok Rendah', 'Low Stock')}
+                <Badge variant={(s.quantity || s.allocatedQty) > 500 ? 'posted' : 'pending'}>
+                  {activeTab === 'available' 
+                    ? (s.quantity > 500 ? t('Stok Aman', 'Good Stock') : t('Stok Rendah', 'Low Stock'))
+                    : s.status}
                 </Badge>
               ), 
               className: 'text-center' 
@@ -137,20 +165,31 @@ export const StockPage: React.FC = () => {
         
         <Card noPadding>
           <Table 
-            data={movements.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 10)}
+            data={movements.sort((a: any, b: any) => {
+              const timeA = a.timestamp?.toMillis ? a.timestamp.toMillis() : new Date(a.timestamp || a.created_at).getTime();
+              const timeB = b.timestamp?.toMillis ? b.timestamp.toMillis() : new Date(b.timestamp || b.created_at).getTime();
+              return timeB - timeA;
+            }).slice(0, 10)}
             columns={[
-              { header: t('WAKTU', 'TIME'), accessor: (m: any) => new Date(m.created_at).toLocaleString('id-ID'), className: 'text-xs text-slate-400 font-bold' },
+              { 
+                header: t('WAKTU', 'TIME'), 
+                accessor: (m: any) => {
+                  const date = m.timestamp?.toDate ? m.timestamp.toDate() : new Date(m.timestamp || m.created_at);
+                  return date.toLocaleString('id-ID');
+                }, 
+                className: 'text-xs text-slate-400 font-bold' 
+              },
               { header: t('TIPE', 'TYPE'), accessor: (m: any) => <Badge variant={m.type === 'IN' ? 'posted' : 'pending'}>{m.type}</Badge> },
               { header: t('SUMBER', 'SOURCE'), accessor: 'source', className: 'font-black text-slate-900 text-xs uppercase' },
               { 
                 header: t('BARANG', 'ITEM'), 
                 accessor: (m: any) => {
-                  const item = items.find((i: any) => i.id === m.item_id);
+                  const item = items.find((i: any) => i.id === m.itemId);
                   return <span className="font-bold text-slate-600">{t(item?.nameId || '-', item?.nameEn || '-')}</span>;
                 }
               },
-              { header: 'GRADE', accessor: (m: any) => grades.find((g: any) => g.id === m.grade_id)?.name || '-' },
-              { header: 'SIZE', accessor: (m: any) => sizes.find((sz: any) => sz.id === m.size_id)?.name || '-' },
+              { header: 'GRADE', accessor: (m: any) => grades.find((g: any) => g.id === m.gradeId)?.name || '-' },
+              { header: 'SIZE', accessor: (m: any) => sizes.find((sz: any) => sz.id === m.sizeId)?.name || '-' },
               { header: t('JUMLAH', 'QTY'), accessor: (m: any) => <span className={`font-black ${m.type === 'IN' ? 'text-emerald-600' : 'text-amber-600'}`}>{m.type === 'IN' ? '+' : '-'}{m.quantity} kg</span>, className: 'text-right' }
             ]}
           />

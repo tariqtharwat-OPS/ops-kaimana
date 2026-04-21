@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Plus, Trash2, Send, Save, ChevronRight, Printer } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { useMasterData } from '../../hooks/useMasterData';
-import { masterDataService } from '../../services/masterDataService';
+import { transactionService } from '../../services/transactionService';
 import { Button, Card, Header, Badge } from '../../components/ui/DesignSystem';
 import { Table } from '../../components/ui/Table';
 
@@ -60,7 +60,7 @@ export const ExpensesPage: React.FC = () => {
         totalAmount: calculateTotalAmount(),
         totalQty: calculateTotalQty() 
       };
-      const id = await masterDataService.create('expenses', docData);
+      const id = await transactionService.createDocument('expenses', docData, 'E');
 
       if (isPrint) {
         window.open(`/print/expenses/${id}`, '_blank');

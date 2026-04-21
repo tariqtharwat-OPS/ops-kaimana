@@ -17,6 +17,7 @@ export const ReceivingPage: React.FC = () => {
   
   const { data: suppliers } = useMasterData('suppliers', true);
   const { data: receivings } = useMasterData('receivings', true);
+  const { data: buyers } = useMasterData('buyers', true);
 
   const [isCreating, setIsCreating] = useState(false);
   const [formData, setFormData] = useState<any>({
@@ -35,28 +36,35 @@ export const ReceivingPage: React.FC = () => {
   const addLine = () => {
     setFormData((p: any) => ({
       ...p,
-      lines: [...p.lines, { itemId: '', gradeId: '', sizeId: '', quantity: 0, pricePerKg: 0 }]
+      lines: [...p.lines, { itemId: '', gradeId: '', sizeId: '', quantity: 0, pricePerKg: 0, buyerId: '' }]
     }));
   };
 
   const updateLine = (idx: number, field: string, value: any) => {
-    const lines = [...formData.lines];
-    const line = { ...lines[idx], [field]: value };
-    
-    // Auto-fill price logic
-    if (field === 'itemId' || field === 'gradeId' || field === 'sizeId') {
-      const item = items.find(i => i.id === line.itemId);
-      if (item && item.pricingMatrix) {
-        const gradeKey = line.gradeId || 'standard';
-        const sizeKey = line.sizeId;
-        if (sizeKey && item.pricingMatrix[gradeKey]?.[sizeKey]) {
-          line.pricePerKg = item.pricingMatrix[gradeKey][sizeKey];
+    setFormData((p: any) => {
+      const newLines = p.lines.map((l: any, i: number) => 
+        i === idx ? { ...l, [field]: value } : l
+      );
+      
+      const newLine = { ...newLines[idx] };
+      
+      // Auto-fill price only when item/grade/size changes AND price is currently 0 or empty
+      if (field === 'itemId' || field === 'gradeId' || field === 'sizeId') {
+        const item = items.find((i: any) => i.id === (field === 'itemId' ? value : newLine.itemId));
+        if (item && item.pricingMatrix) {
+          const gradeKey = field === 'gradeId' ? value : (newLine.gradeId || 'standard');
+          const sizeKey = field === 'sizeId' ? value : newLine.sizeId;
+          
+          const matrixPrice = item.pricingMatrix[gradeKey]?.[sizeKey || 'standard'];
+          if (matrixPrice && (!newLine.pricePerKg || newLine.pricePerKg === 0)) {
+            newLine.pricePerKg = matrixPrice;
+            newLines[idx] = newLine;
+          }
         }
       }
-    }
-    
-    lines[idx] = line;
-    setFormData((p: any) => ({ ...p, lines }));
+      
+      return { ...p, lines: newLines };
+    });
   };
 
   const removeLine = (idx: number) => {
@@ -73,51 +81,76 @@ export const ReceivingPage: React.FC = () => {
 
   const handleSave = async (isPost: boolean, isPrint: boolean = false) => {
     try {
-      console.log("handleSave started. isPost:", isPost);
-      if (!formData.supplierId || formData.lines.length === 0) {
-        console.warn("Validation failed: Supplier or lines missing", { supplierId: formData.supplierId, linesCount: formData.lines.length });
-        alert("Supplier and lines required");
+      // Use functional update trick to get the absolute latest state if needed, 
+      // but in a click handler, formData from closure is usually sufficient.
+      // To be 100% sure against stale closures, we'll build from a snapshot.
+      const snapshot = JSON.parse(JSON.stringify(formData));
+      
+      if (!snapshot.supplierId || snapshot.lines.length === 0) {
+        alert(t("Supplier and lines required", "Supplier dan detail barang harus diisi"));
         return;
       }
       
-      const hasMissingPrice = formData.lines.some((l: any) => !l.pricePerKg || l.pricePerKg <= 0);
-      if (hasMissingPrice) {
-        console.warn("Validation failed: Missing price", formData.lines);
-        alert("Peringatan: Ada item dengan harga 0 atau kosong. Harap isi harga yang valid sebelum menyimpan.");
+      // EXPLICIT CLEANING AND RE-CALCULATION
+      const finalLines = snapshot.lines.map((l: any) => ({
+        itemId: l.itemId || '',
+        gradeId: l.gradeId || '',
+        sizeId: l.sizeId || '',
+        quantity: Number(l.quantity) || 0,
+        pricePerKg: Number(l.pricePerKg) || 0,
+        buyerId: l.buyerId || null
+      })).filter((l: any) => l.itemId !== '');
+
+      if (finalLines.length === 0) {
+        alert(t("At least one valid item is required", "Minimal satu item harus diisi"));
         return;
       }
 
-      const totalAmount = calculateTotalAmount();
+      const totalQty = finalLines.reduce((sum: number, l: any) => sum + l.quantity, 0);
+      const totalAmount = finalLines.reduce((sum: number, l: any) => sum + (l.quantity * l.pricePerKg), 0);
+
+      const hasMissingPrice = finalLines.some((l: any) => l.pricePerKg <= 0);
+      if (hasMissingPrice) {
+        if (!window.confirm(t("Some items have 0 price. Continue?", "Ada item dengan harga 0. Lanjutkan?"))) {
+          return;
+        }
+      }
+
+      // Build payload EXPLICITLY to avoid carrying over unwanted state
       const docData = { 
-        ...formData, 
-        status: 'Draft', // Always create as Draft first to allow transaction to transition it correctly
-        totalQty: calculateTotalQty(),
+        date: snapshot.date,
+        supplierId: snapshot.supplierId,
+        vehicleNo: snapshot.vehicleNo || '',
+        notes: snapshot.notes || '',
+        lines: finalLines,
+        status: 'Draft',
+        totalQty,
         totalAmount,
         paymentStatus: 'Draft',
         amountPaid: 0,
         balanceDue: totalAmount,
-        paymentHistory: []
+        paymentHistory: [],
+        updatedAt: new Date().toISOString()
       };
       
-      console.log("Attempting to create receiving document:", docData);
-      const id = await masterDataService.create('receivings', docData);
-      console.log("Document created successfully with ID:", id);
+      const id = await transactionService.createDocument('receivings', docData, 'R');
       
       if (isPost) {
-        console.log("Attempting to post receiving document...");
-        // Transition from Draft to Posted and update stock atomically
         await transactionService.postReceiving(id, docData);
-        console.log("Post transaction successful");
       }
 
       if (isPrint) {
         window.open(`/print/receivings/${id}`, '_blank');
       }
 
-      console.log("Resetting form and closing modal.");
-      // Only cleanup state after full success
       setIsCreating(false);
-      setFormData({ date: new Date().toISOString().split('T')[0], supplierId: '', vehicleNo: '', notes: '', lines: [] });
+      setFormData({ 
+        date: new Date().toISOString().split('T')[0], 
+        supplierId: '', 
+        vehicleNo: '', 
+        notes: '', 
+        lines: [] 
+      });
     } catch (e: any) {
       console.error("CRITICAL ERROR in handleSave:", e);
       alert(t('Gagal menyimpan: ', 'Failed to save: ') + e.message);
@@ -207,7 +240,7 @@ export const ReceivingPage: React.FC = () => {
                     
                     return (
                       <div key={idx} className="grid grid-cols-12 gap-2 items-end bg-slate-50 p-3 rounded-xl border border-slate-100/50">
-                        <div className="col-span-3 space-y-1">
+                        <div className="col-span-2 space-y-1">
                           <label className="text-[10px] font-black text-slate-400 uppercase">{t('ITEM', 'ITEM')}</label>
                           <select className="w-full bg-white border border-slate-200 rounded-lg p-2 text-sm font-bold"
                             value={line.itemId} onChange={e => updateLine(idx, 'itemId', e.target.value)}>
@@ -216,7 +249,7 @@ export const ReceivingPage: React.FC = () => {
                           </select>
                         </div>
                         <div className="col-span-2 space-y-1">
-                          <label className="text-[10px] font-black text-slate-400 uppercase">GRADE</label>
+                          <label className="text-[10px] font-black text-slate-400 uppercase">GRADE / SIZE</label>
                           <div className="flex gap-1">
                             <select disabled={!item?.hasGrade}
                               className="w-full bg-white border border-slate-200 rounded-lg p-2 text-[10px] font-bold disabled:opacity-30"
@@ -232,18 +265,26 @@ export const ReceivingPage: React.FC = () => {
                           </div>
                         </div>
                         <div className="col-span-2 space-y-1">
-                          <label className="text-[10px] font-black text-slate-400 uppercase">QTY (KG)</label>
-                          <input type="number" className="w-full bg-white border border-slate-200 rounded-lg p-2 text-sm font-bold text-right"
+                          <label className="text-[10px] font-black text-slate-400 uppercase">{t('BUYER', 'BUYER')}</label>
+                          <select className="w-full bg-white border border-slate-200 rounded-lg p-2 text-[10px] font-bold"
+                            value={line.buyerId || ''} onChange={e => updateLine(idx, 'buyerId', e.target.value)}>
+                            <option value="">-- {t('Opsional', 'Optional')} --</option>
+                            {buyers.map((b: any) => <option key={b.id} value={b.id}>{b.name}</option>)}
+                          </select>
+                        </div>
+                        <div className="col-span-1 space-y-1">
+                          <label className="text-[10px] font-black text-slate-400 uppercase">QTY</label>
+                          <input type="number" className="w-full bg-white border border-slate-200 rounded-lg p-2 text-[10px] font-bold text-right"
                             value={line.quantity} onChange={e => updateLine(idx, 'quantity', Number(e.target.value))} />
                         </div>
                         <div className="col-span-2 space-y-1">
                           <label className="text-[10px] font-black text-slate-400 uppercase">PRICE/KG</label>
-                          <input type="number" className="w-full bg-white border border-slate-200 rounded-lg p-2 text-sm font-bold text-right"
+                          <input type="number" className="w-full bg-white border border-slate-200 rounded-lg p-2 text-[10px] font-bold text-right"
                             value={line.pricePerKg} onChange={e => updateLine(idx, 'pricePerKg', Number(e.target.value))} />
                         </div>
                         <div className="col-span-2 space-y-1">
                           <label className="text-[10px] font-black text-slate-400 uppercase text-right block">TOTAL</label>
-                          <div className="w-full bg-slate-100/50 border border-transparent rounded-lg p-2 text-sm font-black text-right text-ocean-700">
+                          <div className="w-full bg-slate-100/50 border border-transparent rounded-lg p-2 text-[10px] font-black text-right text-ocean-700">
                             Rp {((line.quantity || 0) * (line.pricePerKg || 0)).toLocaleString()}
                           </div>
                         </div>

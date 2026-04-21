@@ -16,6 +16,7 @@ export const SalesPage: React.FC = () => {
   const { data: buyers } = useMasterData('buyers', true);
   const { data: sales } = useMasterData('sales', true);
   const { data: stock } = useMasterData('stock', true);
+  const { data: allocations } = useMasterData('buyerAllocations');
 
   const [isCreating, setIsCreating] = useState(false);
   const [formData, setFormData] = useState<any>({
@@ -26,15 +27,40 @@ export const SalesPage: React.FC = () => {
     lines: []
   });
 
+  const getFilteredGrades = (itemId: string) => {
+    const item = items.find(i => i.id === itemId);
+    if (!item || !item.gradeProfileId) return [];
+    return grades.filter(g => g.profileId === item.gradeProfileId && g.active_status !== false);
+  };
+
+  const getFilteredSizes = (itemId: string) => {
+    const item = items.find(i => i.id === itemId);
+    if (!item || !item.sizeProfileId) return [];
+    return sizes.filter(s => s.profileId === item.sizeProfileId && s.active_status !== false);
+  };
+
   const [paymentModal, setPaymentModal] = useState<{isOpen: boolean, saleId: string, balanceDue: number}>({isOpen: false, saleId: '', balanceDue: 0});
   const [paymentAmount, setPaymentAmount] = useState<number>(0);
-  
   const [historyModal, setHistoryModal] = useState<{isOpen: boolean, sale: any}>({isOpen: false, sale: null});
 
   const getStockQty = (itemId: string, gradeId: string, sizeId: string) => {
     const key = `${itemId}_${gradeId || 'no'}_${sizeId || 'no'}`;
     const entry = stock.find((s: any) => s.id === key);
-    return entry ? entry.quantity : 0;
+    return entry ? (entry.quantity || 0) : 0;
+  };
+
+  const getAvailableQty = (itemId: string, gradeId: string, sizeId: string) => {
+    const total = getStockQty(itemId, gradeId, sizeId);
+    const reserved = allocations
+      .filter((a: any) => 
+        a.itemId === itemId && 
+        a.gradeId === gradeId && 
+        a.sizeId === sizeId && 
+        a.status === 'Provisional' &&
+        a.buyerId != null
+      )
+      .reduce((sum: number, a: any) => sum + (a.allocatedQty || 0), 0);
+    return total - reserved;
   };
 
   const addLine = () => {
@@ -89,18 +115,29 @@ export const SalesPage: React.FC = () => {
         return;
       }
 
-      const totalValue = calculateTotal();
+      // Check stock availability if posting
+      if (isPost) {
+        for (const line of formData.lines) {
+          const avail = getAvailableQty(line.itemId, line.gradeId, line.sizeId);
+          if (line.quantity > avail) {
+            alert(`Stok tidak mencukupi. Tersedia: ${avail} kg`);
+            return;
+          }
+        }
+      }
+
+      const totalAmount = calculateTotal();
       const docData = { 
         ...formData, 
         status: 'Draft',
-        totalValue,
+        totalAmount,
         totalQty: calculateTotalQty(),
-        paymentStatus: 'Draft',
+        paymentStatus: 'Unpaid',
         amountPaid: 0,
-        balanceDue: totalValue,
+        balanceDue: totalAmount,
         paymentHistory: []
       };
-      const id = await masterDataService.create('sales', docData);
+      const id = await transactionService.createDocument('sales', docData, 'S');
       if (isPost) {
         await transactionService.postSales(id, docData);
       }
@@ -159,7 +196,7 @@ export const SalesPage: React.FC = () => {
                     <select className="w-full bg-slate-50 border border-slate-100 rounded-xl p-3 font-bold"
                       value={formData.buyerId} onChange={e => setFormData((p: any) => ({ ...p, buyerId: e.target.value }))}>
                       <option value="">-- {t('Pilih Pembeli', 'Select Buyer')} --</option>
-                      {buyers.map((b: any) => <option key={b.id} value={b.id}>{b.name}</option>)}
+                      {buyers.filter(b => b.active_status !== false).map((b: any) => <option key={b.id} value={b.id}>{b.name}</option>)}
                     </select>
                   </div>
                   <div className="space-y-1.5">
@@ -188,26 +225,26 @@ export const SalesPage: React.FC = () => {
                         <select className="w-full bg-white border border-slate-200 rounded-lg p-2 text-sm font-bold"
                           value={line.itemId} onChange={e => updateLine(idx, 'itemId', e.target.value)}>
                           <option value="">--</option>
-                          {items.map((it: any) => <option key={it.id} value={it.id}>{it.name}</option>)}
+                          {items.filter(it => it.active_status !== false).map((it: any) => <option key={it.id} value={it.id}>{it.nameEn || it.nameId}</option>)}
                         </select>
                       </div>
                       <div className="col-span-2 space-y-1">
-                        <label className="text-[10px] font-black text-slate-400 uppercase">GRADE</label>
+                        <label className="text-[10px] font-black text-slate-400 uppercase">GRADE / SIZE</label>
                         <div className="flex gap-1">
                           <select className="w-full bg-white border border-slate-200 rounded-lg p-2 text-[10px] font-bold"
                             value={line.gradeId} onChange={e => updateLine(idx, 'gradeId', e.target.value)}>
                             <option value="">G</option>
-                            {grades.map((g: any) => <option key={g.id} value={g.id}>{g.name}</option>)}
+                            {getFilteredGrades(line.itemId).map((g: any) => <option key={g.id} value={g.id}>{g.name}</option>)}
                           </select>
                           <select className="w-full bg-white border border-slate-200 rounded-lg p-2 text-[10px] font-bold"
                             value={line.sizeId} onChange={e => updateLine(idx, 'sizeId', e.target.value)}>
                             <option value="">S</option>
-                            {sizes.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                            {getFilteredSizes(line.itemId).map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
                           </select>
                         </div>
                       </div>
                       <div className="col-span-2 space-y-1">
-                        <label className="text-[10px] font-black text-slate-400 uppercase">QTY (STK: {getStockQty(line.itemId, line.gradeId, line.sizeId)})</label>
+                        <label className="text-[10px] font-black text-slate-400 uppercase">QTY (AVAIL: {getAvailableQty(line.itemId, line.gradeId, line.sizeId)})</label>
                         <input type="number" className="w-full bg-white border border-slate-200 rounded-lg p-2 text-sm font-bold text-right"
                           value={line.quantity} onChange={e => updateLine(idx, 'quantity', Number(e.target.value))} />
                       </div>
@@ -239,7 +276,7 @@ export const SalesPage: React.FC = () => {
                    <span className="text-sm font-medium opacity-80">{t('Total Qty', 'Total Qty')}</span>
                    <span className="text-xl font-black">{calculateTotalQty().toLocaleString()} kg</span>
                  </div>
-                 <div className="pt-6 border-t border-white/10 flex justify-between items-center">
+                <div className="pt-6 border-t border-white/10 flex justify-between items-center">
                    <span className="text-sm font-black uppercase tracking-wider">{t('TOTAL NILAI', 'TOTAL VALUE')}</span>
                    <span className="text-3xl font-black text-emerald-400">Rp {calculateTotal().toLocaleString()}</span>
                  </div>
@@ -275,7 +312,7 @@ export const SalesPage: React.FC = () => {
             { header: t('TANGGAL', 'DATE'), accessor: 'date', className: 'font-bold' },
             { header: t('PEMBELI', 'BUYER'), accessor: (s: any) => buyers.find(b => b.id === s.buyerId)?.name || 'Unknown' },
             { header: t('TOTAL QTY', 'TOTAL QTY'), accessor: (s: any) => `${(s.totalQty || s.lines?.reduce((sum: number, l: any) => sum + l.quantity, 0))?.toLocaleString()} kg`, className: 'text-right' },
-            { header: t('TOTAL NILAI', 'TOTAL VALUE'), accessor: (s: any) => `Rp ${(s.totalValue || s.lines?.reduce((sum: number, l: any) => sum + (l.quantity * l.pricePerKg), 0))?.toLocaleString()}`, className: 'text-right font-bold text-emerald-700' },
+            { header: t('TOTAL NILAI', 'TOTAL VALUE'), accessor: (s: any) => `Rp ${(s.totalAmount || s.lines?.reduce((sum: number, l: any) => sum + (l.quantity * l.pricePerKg), 0))?.toLocaleString()}`, className: 'text-right font-bold text-emerald-700' },
             { header: 'STATUS', accessor: (s: any) => (
               <div className="flex gap-2">
                 <Badge variant={s.status === 'Posted' ? 'posted' : 'draft'}>{s.status}</Badge>
@@ -295,7 +332,7 @@ export const SalesPage: React.FC = () => {
                 )}
                 {s.status === 'Posted' && (!s.paymentStatus || s.paymentStatus !== 'Paid') && (
                   <Button variant="secondary" size="sm" onClick={() => {
-                    const bal = s.balanceDue !== undefined ? s.balanceDue : s.totalValue;
+                    const bal = s.balanceDue !== undefined ? s.balanceDue : s.totalAmount;
                     setPaymentModal({isOpen: true, saleId: s.id, balanceDue: bal});
                     setPaymentAmount(bal);
                   }}>

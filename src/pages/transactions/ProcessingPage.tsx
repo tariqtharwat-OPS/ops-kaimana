@@ -15,6 +15,7 @@ export const ProcessingPage: React.FC = () => {
   const { data: logs } = useMasterData('processing', true);
   const { data: receivings } = useMasterData('receivings', true);
   const { data: suppliers } = useMasterData('suppliers', true);
+  const { data: allocations } = useMasterData('buyerAllocations', true);
 
   const [isCreating, setIsCreating] = useState(false);
   
@@ -30,7 +31,10 @@ export const ProcessingPage: React.FC = () => {
     lines: []
   });
 
-  const postedReceivings = useMemo(() => receivings.filter((r: any) => r.status === 'Posted'), [receivings]);
+  const postedReceivings = useMemo(() => 
+    receivings.filter((r: any) => r.status === 'Posted' && !r.processedAt), 
+    [receivings]
+  );
 
   const handleSelectReceiving = (id: string) => {
     if (formData.selectedReceivings.includes(id)) {
@@ -40,7 +44,7 @@ export const ProcessingPage: React.FC = () => {
         lines: prev.lines.filter(l => l.receivingId !== id)
       }));
     } else {
-      const rec = postedReceivings.find((r: any) => r.id === id);
+      const rec = receivings.find((r: any) => r.id === id); // Use full list to find details
       if (rec && rec.lines) {
         const newLines = rec.lines.map((l: any, idx: number) => ({
           id: `${id}_${idx}`,
@@ -91,14 +95,14 @@ export const ProcessingPage: React.FC = () => {
     if (formData.selectedReceivings.length === 0) return false;
     for (const l of formData.lines) {
       if (l.actualQty < l.invoiceQty && !l.shortfallReason) return false;
-      if (l.actualQty > l.invoiceQty) return false; // Actual cannot exceed invoice
+      // Note: Actual can now exceed invoice if surplus occurs
     }
     return true;
   };
 
   const handleSave = async (isPost: boolean) => {
     if (!isValid()) {
-      alert("Pastikan semua qty valid dan alasan selisih (shortfall) diisi jika qty aktual kurang dari invoice.");
+      alert("Pastikan semua qty valid dan alasan selisih diisi jika ada shortfall.");
       return;
     }
     try {
@@ -110,13 +114,19 @@ export const ProcessingPage: React.FC = () => {
         totalOutput: formData.lines.reduce((acc, l) => acc + l.actualQty, 0)
       };
       
-      const id = await masterDataService.create('processing', docData);
+      const id = await transactionService.createDocument('processing', docData, 'P');
       if (isPost) {
         // Create stock mapping to match transactionService requirements
+        const relevantAllocations = allocations.filter((a: any) => 
+          formData.selectedReceivings.includes(a.receivingId) && a.status === 'Provisional'
+        );
+
         const stockData = {
           ...docData,
-          inputs: formData.lines.map(l => ({...l, quantity: l.invoiceQty})), // Decrease stock based on invoice qty
-          outputs: summary.map(s => ({...s, quantity: s.totalActual})) // Increase stock based on actual production
+          relevantAllocations,
+          // B4: Deduct based on actualQty confirmed in processing
+          inputs: formData.lines.map(l => ({...l, quantity: l.actualQty})), 
+          outputs: summary.map(s => ({...s, quantity: s.totalActual})) 
         };
         await transactionService.postProcessing(id, stockData);
       }

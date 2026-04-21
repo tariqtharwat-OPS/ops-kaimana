@@ -127,8 +127,9 @@ export const PrintPage: React.FC = () => {
             </thead>
             <tbody>
               {(data.lines || []).map((line: any, i: number) => {
+                const it = items.find((i: any) => i.id === line.itemId);
                 const desc = type === 'receivings' || type === 'sales'
-                  ? items.find((it: any) => it.id === line.itemId)?.name || 'Unknown Item'
+                  ? (it?.nameEn || it?.nameId || it?.item_code || 'Unknown Item')
                   : categories.find((c: any) => c.id === line.categoryId)?.name || line.description || 'General Expense';
                 const price = type === 'receivings' || type === 'sales' ? line.pricePerKg : line.amount / (line.qty || 1);
                 const lineTotal = type === 'receivings' || type === 'sales' ? (Number(line.quantity) * Number(line.pricePerKg)) : Number(line.amount);
