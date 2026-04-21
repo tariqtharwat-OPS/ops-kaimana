@@ -16,7 +16,7 @@ import { db } from '../firebase/config';
  * @returns Array of generated ID strings
  */
 export const generateDocIds = async (
-  prefix: 'R' | 'S' | 'E' | 'P' | 'PK' | 'PAY' | 'ADJ', 
+  prefix: 'R' | 'S' | 'E' | 'P' | 'PK' | 'PAY' | 'ADJ' | 'D', 
   dateInput: any = new Date(),
   count: number = 1,
   existingTransaction?: Transaction
@@ -59,7 +59,7 @@ export const generateDocIds = async (
  * Legacy wrapper for single ID generation
  */
 export const generateDocId = async (
-  prefix: 'R' | 'S' | 'E' | 'P' | 'PK' | 'PAY' | 'ADJ',
+  prefix: 'R' | 'S' | 'E' | 'P' | 'PK' | 'PAY' | 'ADJ' | 'D',
   dateInput: any = new Date(),
   existingTransaction?: Transaction
 ): Promise<string> => {

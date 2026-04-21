@@ -151,7 +151,7 @@ export const ReportsPage: React.FC = () => {
           <DollarSign className="text-slate-300" size={16} />
         </div>
         <Table 
-          data={postedExpenses.filter((e: any) => e.category !== 'supplier_payment' && e.category !== 'sales_receipt').slice(0, 10)} // Top 10 recent actual expenses
+          data={postedExpenses.filter((e: any) => e.category !== 'supplier_payment' && e.category !== 'sales_receipt').slice(0, 10)} 
           columns={[
             { header: t('TANGGAL', 'DATE'), accessor: 'date' },
             { header: t('KATEGORI', 'CATEGORY'), accessor: (e: any) => e.category ? e.category.replace('_', ' ').toUpperCase() : '--' },
@@ -171,10 +171,11 @@ export const ReportsPage: React.FC = () => {
           <Package className="text-slate-300" size={16} />
         </div>
         <Table 
-          data={stock.filter((s: any) => s.quantity > 0)}
+          data={stock.filter((s: any) => (s.physicalQty || s.quantity) > 0)}
           columns={[
             { header: 'ITEM', accessor: (s: any) => getItemLabel(items.find((i: any) => i.id === s.itemId)) },
-            { header: 'QTY', accessor: (s: any) => `${(s.quantity || 0).toLocaleString()} kg`, className: 'font-bold' },
+            { header: 'FISIK', accessor: (s: any) => `${(s.physicalQty || s.quantity || 0).toLocaleString()} kg`, className: 'font-bold' },
+            { header: 'TERSEDIA', accessor: (s: any) => `${((s.physicalQty || s.quantity || 0) - (s.reservedQty || 0)).toLocaleString()} kg`, className: 'font-black text-emerald-600' },
           ]}
         />
       </Card>
@@ -197,12 +198,12 @@ export const ReportsPage: React.FC = () => {
   );
 
   const handleExport = (format: 'csv' | 'pdf') => {
-    // Basic CSV Implementation
     if (format === 'csv') {
       const rows = [['DATE', 'SOURCE', 'ITEM', 'QTY', 'AMOUNT']];
       postedSales.forEach(s => {
         (s.lines || []).forEach((l: any) => {
-          const itemName = items.find((i: any) => i.id === l.itemId)?.nameEn || 'Unknown';
+          const it = items.find((i: any) => i.id === l.itemId);
+          const itemName = getItemLabel(it);
           rows.push([s.date, 'Sales', itemName, l.quantity, l.quantity * l.pricePerKg]);
         });
       });
@@ -215,7 +216,6 @@ export const ReportsPage: React.FC = () => {
       link.click();
       document.body.removeChild(link);
     } else {
-      // PDF - just trigger print as we don't have a PDF lib installed
       window.print();
     }
   };
@@ -233,7 +233,7 @@ export const ReportsPage: React.FC = () => {
         }
       />
 
-      <div className="flex gap-4 p-1 bg-slate-100 rounded-2xl w-fit">
+      <div className="flex gap-4 p-1 bg-slate-100 rounded-2xl w-fit print:hidden">
         <button onClick={() => setActiveTab('financial')}
           className={`px-6 py-3 rounded-xl text-xs font-black tracking-widest uppercase transition-all ${activeTab === 'financial' ? 'bg-white text-ocean-800 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>
           {t('Finansial', 'Financial')}

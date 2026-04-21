@@ -4,10 +4,7 @@ import {
   runTransaction, 
   serverTimestamp, 
   increment,
-  setDoc,
-  query,
-  where,
-  getDocs
+  setDoc
 } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { generateDocId, generateDocIds } from '../utils/docNumbering';
@@ -30,7 +27,7 @@ export const transactionService = {
   // POST PROCESSING
   postProcessing: async (id: string, data: any) => {
     return runTransaction(db, async (transaction) => {
-      // 1. READ PHASE
+      // 1. READ PHASE (All gets MUST happen here)
       const docRef = doc(db, 'processing', id);
       const snap = await transaction.get(docRef);
       if (!snap.exists()) throw new Error("Processing document not found");
@@ -41,38 +38,32 @@ export const transactionService = {
       const outputStockIds = [...new Set((data.outputs || []).map((o: any) => `${o.itemId}_${o.gradeId || 'no'}_${o.sizeId || 'no'}`))];
       const allStockIds = [...new Set([...inputStockIds, ...outputStockIds])] as string[];
       
-      const stockRefsMap: Record<string, any> = {};
+      const stockSnaps: Record<string, any> = {};
       for (const sId of allStockIds) {
-        stockRefsMap[sId] = await transaction.get(doc(db, 'stock', sId));
+        stockSnaps[sId] = await transaction.get(doc(db, 'stock', sId));
       }
 
       const allocationIds = (data.relevantAllocations || []).map((a: any) => a.id);
-      const allocationRefsMap: Record<string, any> = {};
       for (const aId of allocationIds) {
-        allocationRefsMap[aId] = await transaction.get(doc(db, 'buyerAllocations', aId));
+        await transaction.get(doc(db, 'buyerAllocations', aId));
       }
 
       const possibleAdjsCount = (data.relevantAllocations || []).length;
+      // Note: generateDocIds performs a transaction.get on doc_numbers
       const preGeneratedAdjIds = await generateDocIds('ADJ', data.date || new Date(), possibleAdjsCount, transaction);
 
       // 2. WRITE PHASE
       // Deduct Inputs (Physical & Reserved)
       for (const input of (data.inputs || [])) {
         const stockId = `${input.itemId}_${input.gradeId || 'no'}_${input.sizeId || 'no'}`;
-        const stockSnap = stockRefsMap[stockId];
-        const stockData = stockSnap.data();
+        const stockData = stockSnaps[stockId].data();
         const phys = stockData?.physicalQty || stockData?.quantity || 0;
         const res = stockData?.reservedQty || 0;
-        const avail = phys - res;
 
-        // Processing inputs are reserved if they come from a selected receiving
+        // Inputs from a selected receiving are considered reserved
         const inputIsReserved = (data.selectedReceivings || []).length > 0;
 
-        if (inputIsReserved) {
-          if (phys < input.quantity) throw new Error(`Insufficient physical stock for reserved input: ${stockId}`);
-        } else {
-          if (avail < input.quantity) throw new Error(`Insufficient available stock for general input: ${stockId}`);
-        }
+        if (phys < input.quantity) throw new Error(`Insufficient physical stock for input: ${stockId}`);
 
         transaction.update(doc(db, 'stock', stockId), {
           physicalQty: increment(-input.quantity),
@@ -91,7 +82,7 @@ export const transactionService = {
       // Add Outputs (Physical)
       for (const output of (data.outputs || [])) {
         const stockId = `${output.itemId}_${output.gradeId || 'no'}_${output.sizeId || 'no'}`;
-        const stockSnap = stockRefsMap[stockId];
+        const stockSnap = stockSnaps[stockId];
         const stockRef = doc(db, 'stock', stockId);
 
         if (!stockSnap.exists()) {
@@ -163,6 +154,7 @@ export const transactionService = {
   // POST RECEIVING
   postReceiving: async (id: string, data: any) => {
     return runTransaction(db, async (transaction) => {
+      // 1. READ PHASE
       const docRef = doc(db, 'receivings', id);
       const snap = await transaction.get(docRef);
       if (!snap.exists()) throw new Error("Receiving document not found");
@@ -170,18 +162,19 @@ export const transactionService = {
 
       const lines = data.lines || [];
       const uniqueStockIds = [...new Set(lines.map((l: any) => `${l.itemId}_${l.gradeId || 'no'}_${l.sizeId || 'no'}`))] as string[];
-      const stockRefsMap: Record<string, any> = {};
+      const stockSnaps: Record<string, any> = {};
       for (const sId of uniqueStockIds) {
-        stockRefsMap[sId] = await transaction.get(doc(db, 'stock', sId));
+        stockSnaps[sId] = await transaction.get(doc(db, 'stock', sId));
       }
 
       const buyerLinesCount = lines.filter((l: any) => l.buyerId).length;
       const preGeneratedSalesIds = await generateDocIds('S', data.date || new Date(), buyerLinesCount, transaction);
 
+      // 2. WRITE PHASE
       let saleIdx = 0;
       for (const line of lines) {
         const stockId = `${line.itemId}_${line.gradeId || 'no'}_${line.sizeId || 'no'}`;
-        const stockSnap = stockRefsMap[stockId];
+        const stockSnap = stockSnaps[stockId];
         const stockRef = doc(db, 'stock', stockId);
         const isAllocated = !!line.buyerId;
 
@@ -229,7 +222,9 @@ export const transactionService = {
     });
   },
 
-  // POST SALES
+  // POST SALES (Invoicing)
+  // ARCHITECTURAL CHANGE: Sales POST does NOT deduct physical stock anymore.
+  // It only confirms/creates a reservation. Stock is deducted only at Dispatch.
   postSales: async (id: string, data: any) => {
     return runTransaction(db, async (transaction) => {
       // 1. READ PHASE
@@ -241,40 +236,67 @@ export const transactionService = {
 
       const lines = data.lines || [];
       const uniqueStockIds = [...new Set(lines.map((l: any) => `${l.itemId}_${l.gradeId || 'no'}_${l.sizeId || 'no'}`))] as string[];
-      const stockRefsMap: Record<string, any> = {};
+      const stockSnaps: Record<string, any> = {};
       for (const sId of uniqueStockIds) {
-        stockRefsMap[sId] = await transaction.get(doc(db, 'stock', sId));
-      }
-
-      // Fetch allocations if they exist in lines
-      const allocationIds = [...new Set(lines.map((l: any) => l.allocationId).filter(Boolean))] as string[];
-      const allocationRefsMap: Record<string, any> = {};
-      for (const aId of allocationIds) {
-        allocationRefsMap[aId] = await transaction.get(doc(db, 'buyerAllocations', aId));
+        stockSnaps[sId] = await transaction.get(doc(db, 'stock', sId));
       }
 
       // 2. WRITE PHASE
       for (const line of lines) {
         const stockId = `${line.itemId}_${line.gradeId || 'no'}_${line.sizeId || 'no'}`;
-        const stockSnap = stockRefsMap[stockId];
-        const stockData = stockSnap.data();
+        const stockData = stockSnaps[stockId].data();
         const phys = stockData?.physicalQty || stockData?.quantity || 0;
         const res = stockData?.reservedQty || 0;
         const avail = phys - res;
 
-        // A line is reserved if it's linked to an allocation OR if the sale is a draft from receiving
-        const isReserved = !!line.allocationId || (salesDoc.sourceReceivingId && res >= line.quantity);
+        // Check if this line was already reserved (from allocation)
+        const isReserved = !!line.allocationId;
 
-        // ENFORCEMENT
-        if (isReserved) {
-          if (phys < line.quantity) throw new Error(`Insufficient physical stock for reserved sale: ${stockId}`);
+        if (!isReserved) {
+          // If not reserved, we MUST reserve it now
+          if (avail < line.quantity) throw new Error(`Insufficient available stock for sale: ${stockId}`);
+          transaction.update(doc(db, 'stock', stockId), {
+            reservedQty: increment(line.quantity),
+            lastUpdated: serverTimestamp()
+          });
         } else {
-          if (avail < line.quantity) throw new Error(`Insufficient available stock for general sale: ${stockId}. Available: ${avail}, Requested: ${line.quantity}`);
+          // If already reserved, just ensure physical exists (it should)
+          if (phys < line.quantity) throw new Error(`Physical stock missing for reserved sale: ${stockId}`);
         }
+      }
+      transaction.update(docRef, { status: 'Posted', postedAt: serverTimestamp(), paymentStatus: 'Unpaid' });
+    });
+  },
 
+  // POST DISPATCH (New separate step for stock deduction)
+  postDispatch: async (salesId: string) => {
+    return runTransaction(db, async (transaction) => {
+      // 1. READ PHASE
+      const salesRef = doc(db, 'sales', salesId);
+      const salesSnap = await transaction.get(salesRef);
+      if (!salesSnap.exists()) throw new Error("Sales document not found");
+      const salesData = salesSnap.data();
+      if (salesData.status !== 'Posted') throw new Error("Invoice must be posted before dispatch");
+      if (salesData.dispatchStatus === 'Dispatched') return;
+
+      const lines = salesData.lines || [];
+      const uniqueStockIds = [...new Set(lines.map((l: any) => `${l.itemId}_${l.gradeId || 'no'}_${l.sizeId || 'no'}`))] as string[];
+      const stockSnaps: Record<string, any> = {};
+      for (const sId of uniqueStockIds) {
+        stockSnaps[sId] = await transaction.get(doc(db, 'stock', sId));
+      }
+      // Pre-read counter for Dispatch Document
+      const preGeneratedDispatchIds = await generateDocIds('D', new Date(), 1, transaction);
+
+      // 2. WRITE PHASE
+      const dispatchId = preGeneratedDispatchIds[0];
+      for (const line of lines) {
+        const stockId = `${line.itemId}_${line.gradeId || 'no'}_${line.sizeId || 'no'}`;
+        
+        // Deduction phase: subtract from BOTH physical and reserved
         transaction.update(doc(db, 'stock', stockId), {
           physicalQty: increment(-line.quantity),
-          reservedQty: isReserved ? increment(-line.quantity) : increment(0),
+          reservedQty: increment(-line.quantity),
           quantity: increment(-line.quantity),
           lastUpdated: serverTimestamp()
         });
@@ -283,17 +305,28 @@ export const transactionService = {
           transaction.update(doc(db, 'buyerAllocations', line.allocationId), {
             status: 'Dispatched',
             dispatchedAt: serverTimestamp(),
-            saleId: id
+            dispatchId: dispatchId
           });
         }
 
         transaction.set(doc(collection(db, 'stock_movements')), {
-          type: 'OUT', source: 'Sales', docId: id,
+          type: 'OUT', source: 'Dispatch', docId: dispatchId, salesId: salesId,
           itemId: line.itemId, gradeId: line.gradeId || null, sizeId: line.sizeId || null,
           quantity: line.quantity, timestamp: serverTimestamp()
         });
       }
-      transaction.update(docRef, { status: 'Posted', postedAt: serverTimestamp(), paymentStatus: 'Unpaid' });
+
+      transaction.update(salesRef, { 
+        dispatchStatus: 'Dispatched', 
+        dispatchedAt: serverTimestamp(),
+        dispatchId: dispatchId
+      });
+
+      transaction.set(doc(db, 'dispatches', dispatchId), {
+        id: dispatchId, salesId: salesId, date: new Date().toISOString(),
+        buyerId: salesData.buyerId, lines: lines, status: 'Posted',
+        createdAt: serverTimestamp()
+      });
     });
   },
 
@@ -304,13 +337,12 @@ export const transactionService = {
       const snap = await transaction.get(docRef);
       if (!snap.exists()) throw new Error("Document not found");
       const docData = snap.data();
-      if (docData.status !== 'Posted') throw new Error("Only posted documents can be voided");
+      if (docData.status !== 'Posted' && docData.status !== 'Draft') throw new Error("Only posted or draft documents can be voided");
 
       const lines = docData.lines || [];
       const uniqueStockIds = [...new Set(lines.map((l: any) => `${l.itemId}_${l.gradeId || 'no'}_${l.sizeId || 'no'}`))] as string[];
-      const stockRefsMap: Record<string, any> = {};
       for (const sId of uniqueStockIds) {
-        stockRefsMap[sId] = await transaction.get(doc(db, 'stock', sId));
+        await transaction.get(doc(db, 'stock', sId));
       }
 
       // Logic depends on type
@@ -325,14 +357,24 @@ export const transactionService = {
           });
         }
       } else if (collectionName === 'sales') {
+        const wasDispatched = docData.dispatchStatus === 'Dispatched';
         for (const line of lines) {
           const stockId = `${line.itemId}_${line.gradeId || 'no'}_${line.sizeId || 'no'}`;
-          const isReserved = !!line.allocationId;
-          transaction.update(doc(db, 'stock', stockId), {
-            physicalQty: increment(line.quantity),
-            reservedQty: isReserved ? increment(line.quantity) : increment(0),
-            quantity: increment(line.quantity)
-          });
+          // If dispatched: add back to physical AND reserved
+          // If only invoiced: add back to reserved only (if it was reserved)
+          
+          if (wasDispatched) {
+            transaction.update(doc(db, 'stock', stockId), {
+              physicalQty: increment(line.quantity),
+              reservedQty: increment(line.quantity),
+              quantity: increment(line.quantity)
+            });
+          } else if (docData.status === 'Posted') {
+             transaction.update(doc(db, 'stock', stockId), {
+              reservedQty: increment(-line.quantity) // Cancel reservation
+            });
+          }
+
           if (line.allocationId) {
             transaction.update(doc(db, 'buyerAllocations', line.allocationId), { status: 'Confirmed' });
           }
@@ -345,14 +387,15 @@ export const transactionService = {
 
   // RECORD PAYMENT
   recordPayment: async (invoiceId: string, type: 'sales' | 'receivings', paymentAmount: number) => {
-    const paymentId = await generateDocId('PAY');
-    const journalId = await generateDocId('E');
-
     return runTransaction(db, async (transaction) => {
       const docRef = doc(db, type, invoiceId);
       const snap = await transaction.get(docRef);
       if (!snap.exists()) throw new Error("Document does not exist");
       const invoiceData = snap.data();
+
+      // Read counters at the beginning of write phase (after invoice snap)
+      const preGeneratedPaymentIds = await generateDocIds('PAY', new Date(), 1, transaction);
+      const preGeneratedExpIds = await generateDocIds('E', new Date(), 1, transaction);
       
       const total = invoiceData.totalAmount || invoiceData.totalValue || 0;
       const balanceDue = invoiceData.balanceDue !== undefined ? invoiceData.balanceDue : (total - (invoiceData.amountPaid || 0));
@@ -362,6 +405,9 @@ export const transactionService = {
       const newAmountPaid = (invoiceData.amountPaid || 0) + paymentAmount;
       const newBalanceDue = balanceDue - paymentAmount;
       const newPaymentStatus = newBalanceDue <= 0 ? 'Paid' : 'Partial';
+
+      const paymentId = preGeneratedPaymentIds[0];
+      const journalId = preGeneratedExpIds[0];
 
       const paymentHistory = invoiceData.paymentHistory || [];
       paymentHistory.push({ id: paymentId, date: new Date().toISOString().split('T')[0], amount: paymentAmount, journalId: journalId, reversed: false });

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Trash2, Save, ChevronRight, Printer, Send, DollarSign, X, RotateCcw, History } from 'lucide-react';
+import { Plus, Trash2, Save, ChevronRight, Printer, Send, DollarSign, X, RotateCcw, History, Truck } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../../context/LanguageContext';
 import { useMasterData } from '../../hooks/useMasterData';
@@ -16,7 +16,6 @@ export const SalesPage: React.FC = () => {
   const { data: buyers, loading: buyersLoading } = useMasterData('buyers', true);
   const { data: sales } = useMasterData('sales', true);
   const { data: stock } = useMasterData('stock', true);
-  const { data: allocations } = useMasterData('buyerAllocations');
 
   const [isCreating, setIsCreating] = useState(false);
   const [formData, setFormData] = useState<any>({
@@ -46,20 +45,18 @@ export const SalesPage: React.FC = () => {
   const getStockQty = (itemId: string, gradeId: string, sizeId: string) => {
     const key = `${itemId}_${gradeId || 'no'}_${sizeId || 'no'}`;
     const entry = stock.find((s: any) => s.id === key);
-    return entry ? (entry.quantity || 0) : 0;
+    return entry ? (entry.physicalQty || entry.quantity || 0) : 0;
+  };
+
+  const getReservedQty = (itemId: string, gradeId: string, sizeId: string) => {
+    const key = `${itemId}_${gradeId || 'no'}_${sizeId || 'no'}`;
+    const entry = stock.find((s: any) => s.id === key);
+    return entry ? (entry.reservedQty || 0) : 0;
   };
 
   const getAvailableQty = (itemId: string, gradeId: string, sizeId: string) => {
     const total = getStockQty(itemId, gradeId, sizeId);
-    const reserved = allocations
-      .filter((a: any) => 
-        a.itemId === itemId && 
-        a.gradeId === gradeId && 
-        a.sizeId === sizeId && 
-        a.status === 'Provisional' &&
-        a.buyerId != null
-      )
-      .reduce((sum: number, a: any) => sum + (a.allocatedQty || 0), 0);
+    const reserved = getReservedQty(itemId, gradeId, sizeId);
     return total - reserved;
   };
 
@@ -115,7 +112,7 @@ export const SalesPage: React.FC = () => {
         return;
       }
 
-      // Check stock availability if posting
+      // Check available stock if posting general sale
       if (isPost) {
         for (const line of formData.lines) {
           const avail = getAvailableQty(line.itemId, line.gradeId, line.sizeId);
@@ -154,6 +151,16 @@ export const SalesPage: React.FC = () => {
     }
   };
 
+  const handleDispatch = async (saleId: string) => {
+    if (!window.confirm(t('Konfirmasi Pengiriman Barang? Ini akan memotong stok fisik gudang.', 'Confirm Item Dispatch? This will deduct physical warehouse stock.'))) return;
+    try {
+      await transactionService.postDispatch(saleId);
+      alert(t('Barang berhasil dikirim!', 'Items dispatched successfully!'));
+    } catch (e: any) {
+      alert(e.message);
+    }
+  };
+
   const handlePayment = async () => {
     try {
       if (paymentAmount <= 0 || paymentAmount > paymentModal.balanceDue) {
@@ -182,8 +189,8 @@ export const SalesPage: React.FC = () => {
     return (
       <div className="space-y-8 pb-20">
         <Header 
-          title={t('Penjualan / Dispatch Baru', 'New Sales / Dispatch')} 
-          subtitle={t('Keluarkan stok untuk pengiriman ke buyer', 'Release stock for dispatch to buyer')}
+          title={t('Penjualan / Invoice Baru', 'New Sales / Invoice')} 
+          subtitle={t('Buat invoice penjualan. Stok akan dikurangi saat dispatch.', 'Create sales invoice. Stock will be deducted at dispatch.')}
           action={<Button variant="secondary" onClick={() => setIsCreating(false)}>{t('Batal', 'Cancel')}</Button>}
         />
 
@@ -294,9 +301,9 @@ export const SalesPage: React.FC = () => {
              </Card>
 
               <div className="space-y-4">
-                <Button className="w-full py-4 shadow-emerald-800/20" onClick={() => handleSave(true)}><Send size={18} /> {t('POST PENJUALAN', 'POST SALES')}</Button>
+                <Button className="w-full py-4 shadow-emerald-800/20" onClick={() => handleSave(true)}><Send size={18} /> {t('POST INVOICE', 'POST INVOICE')}</Button>
                 <div className="grid grid-cols-2 gap-4">
-                  <Button variant="secondary" className="w-full py-4" onClick={() => handleSave(false)}><Save size={18} /> {t('SIMPAN', 'SAVE')}</Button>
+                  <Button variant="secondary" className="w-full py-4" onClick={() => handleSave(false)}><Save size={18} /> {t('SIMPAN DRAFT', 'SAVE DRAFT')}</Button>
                   <Button variant="secondary" className="w-full py-4" onClick={() => handleSave(false, true)}><Printer size={18} /> {t('CETAK', 'PRINT')}</Button>
                 </div>
               </div>
@@ -309,9 +316,9 @@ export const SalesPage: React.FC = () => {
   return (
     <div className="space-y-10 animate-in fade-in duration-500">
       <Header 
-        title={t('Daftar Penjualan', 'Sales / Dispatch List')} 
-        subtitle={t('Kelola pengiriman barang ke pembeli', 'Manage item dispatch to buyers')}
-        action={<Button onClick={() => setIsCreating(true)}><Plus size={20} /> {t('Penjualan Baru', 'New Sales')}</Button>}
+        title={t('Daftar Penjualan & Pengiriman', 'Sales & Dispatch List')} 
+        subtitle={t('Kelola invoice dan pengiriman barang ke pembeli', 'Manage invoices and item dispatch to buyers')}
+        action={<Button onClick={() => setIsCreating(true)}><Plus size={20} /> {t('Invoice Baru', 'New Invoice')}</Button>}
       />
       
       <Card noPadding>
@@ -319,11 +326,12 @@ export const SalesPage: React.FC = () => {
           compact
           data={sales}
           columns={[
+            { header: 'ID', accessor: (s: any) => <span className="font-bold text-[10px] opacity-50">#{s.id.substring(0,8)}</span> },
             { header: t('TANGGAL', 'DATE'), accessor: 'date', className: 'font-bold' },
             { header: t('PEMBELI', 'BUYER'), accessor: (s: any) => buyers.find(b => b.id === s.buyerId)?.name || 'Unknown' },
-            { header: t('TOTAL QTY', 'TOTAL QTY'), accessor: (s: any) => `${(s.totalQty || s.lines?.reduce((sum: number, l: any) => sum + l.quantity, 0))?.toLocaleString()} kg`, className: 'text-right' },
-            { header: t('TOTAL NILAI', 'TOTAL VALUE'), accessor: (s: any) => `Rp ${(s.totalAmount || s.lines?.reduce((sum: number, l: any) => sum + (l.quantity * l.pricePerKg), 0))?.toLocaleString()}`, className: 'text-right font-bold text-emerald-700' },
-            { header: 'STATUS', accessor: (s: any) => (
+            { header: t('QTY', 'QTY'), accessor: (s: any) => `${(s.totalQty || 0).toLocaleString()} kg`, className: 'text-right' },
+            { header: t('NILAI', 'VALUE'), accessor: (s: any) => `Rp ${(s.totalAmount || 0).toLocaleString()}`, className: 'text-right font-bold text-emerald-700' },
+            { header: 'INVOICE', accessor: (s: any) => (
               <div className="flex gap-2">
                 <Badge variant={s.status === 'Posted' ? 'posted' : 'draft'}>{s.status}</Badge>
                 {s.status === 'Posted' && (
@@ -333,11 +341,21 @@ export const SalesPage: React.FC = () => {
                 )}
               </div>
             ) },
+            { header: 'DISPATCH', accessor: (s: any) => (
+              <Badge variant={s.dispatchStatus === 'Dispatched' ? 'posted' : 'pending'}>
+                {s.dispatchStatus || 'Pending'}
+              </Badge>
+            ) },
             { header: '', accessor: (s: any) => (
               <div className="flex gap-2 justify-end">
                 {s.status === 'Draft' && (
                   <Button variant="primary" size="sm" onClick={() => handleSave(true)}>
                     <Send size={16} /> POST
+                  </Button>
+                )}
+                {s.status === 'Posted' && s.dispatchStatus !== 'Dispatched' && (
+                  <Button variant="primary" size="sm" className="bg-orange-600 hover:bg-orange-700 border-none" onClick={() => handleDispatch(s.id)}>
+                    <Truck size={16} /> {t('KIRIM', 'DISPATCH')}
                   </Button>
                 )}
                 {s.status === 'Posted' && (

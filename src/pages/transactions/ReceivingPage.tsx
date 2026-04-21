@@ -456,14 +456,14 @@ export const ReceivingPage: React.FC = () => {
               <button onClick={() => setHistoryModal({isOpen: false, receiving: null})} className="p-2 text-slate-400 hover:text-slate-600 bg-slate-100 rounded-full transition-colors"><X size={20}/></button>
             </div>
             
-             <div className="p-6 overflow-y-auto space-y-4 flex-1">
+            <div className="p-6 overflow-y-auto space-y-4 flex-1">
               {(!historyModal.receiving?.paymentHistory || historyModal.receiving.paymentHistory.length === 0) ? (
                 <div className="text-center py-10">
                   <p className="text-slate-400 font-bold">{t('Belum ada riwayat pembayaran.', 'No payment history yet.')}</p>
                 </div>
               ) : (
-                historyModal.receiving.paymentHistory.map((p: any) => (
-                  <div key={p.id} className={`p-4 rounded-2xl border flex items-center justify-between ${p.reversed ? 'bg-slate-50 border-slate-100 opacity-60' : 'bg-red-50/50 border-red-100'}`}>
+                [...historyModal.receiving.paymentHistory].reverse().map((p: any, idx: number) => (
+                  <div key={p.id || idx} className={`p-4 rounded-2xl border flex items-center justify-between ${p.reversed ? 'bg-slate-50 border-slate-100 opacity-60' : 'bg-red-50/50 border-red-100'}`}>
                     <div>
                       <div className="flex items-center gap-2 mb-1">
                         <span className="text-xs font-black text-slate-400">{p.date || '--'}</span>

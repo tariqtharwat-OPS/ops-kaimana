@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Plus, Send, Save, ChevronRight, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Plus, Send, Save, ChevronRight, CheckCircle2, AlertCircle, TrendingUp } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { useMasterData } from '../../hooks/useMasterData';
 import { transactionService } from '../../services/transactionService';
@@ -44,7 +44,7 @@ export const ProcessingPage: React.FC = () => {
         lines: prev.lines.filter(l => l.receivingId !== id)
       }));
     } else {
-      const rec = receivings.find((r: any) => r.id === id); // Use full list to find details
+      const rec = receivings.find((r: any) => r.id === id);
       if (rec && rec.lines) {
         const newLines = rec.lines.map((l: any, idx: number) => ({
           id: `${id}_${idx}`,
@@ -95,7 +95,7 @@ export const ProcessingPage: React.FC = () => {
     if (formData.selectedReceivings.length === 0) return false;
     for (const l of formData.lines) {
       if (l.actualQty < l.invoiceQty && !l.shortfallReason) return false;
-      // Note: Actual can now exceed invoice if surplus occurs
+      if (l.actualQty <= 0) return false;
     }
     return true;
   };
@@ -128,7 +128,6 @@ export const ProcessingPage: React.FC = () => {
       
       const id = await transactionService.createDocument('processing', docData, 'P');
       if (isPost) {
-        // Create stock mapping to match transactionService requirements
         const relevantAllocations = allocations.filter((a: any) => 
           formData.selectedReceivings.includes(a.receivingId) && a.status === 'Provisional'
         );
@@ -136,7 +135,6 @@ export const ProcessingPage: React.FC = () => {
         const stockData = {
           ...docData,
           relevantAllocations,
-          // B4: Deduct based on actualQty confirmed in processing
           inputs: formData.lines.map(l => ({...l, quantity: l.actualQty})), 
           outputs: summary.map(s => ({...s, quantity: s.totalActual})) 
         };
@@ -155,13 +153,12 @@ export const ProcessingPage: React.FC = () => {
       <div className="space-y-8 pb-20">
         <Header 
           title={t('Produksi Baru', 'New Production')} 
-          subtitle={t('Proses berdasarkan faktur penerimaan', 'Process based on receiving invoices')}
+          subtitle={t('Konfirmasi hasil olah dari penerimaan. Surplus diperbolehkan.', 'Confirm processing output. Surplus is allowed.')}
           action={<Button variant="secondary" onClick={() => setIsCreating(false)}>{t('Batal', 'Cancel')}</Button>}
         />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-8">
-            {/* SOURCE INVOICES */}
             <Card>
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest">{t('1. PILIH INVOICE PENERIMAAN', '1. SELECT RECEIVING INVOICES')}</h3>
@@ -199,18 +196,18 @@ export const ProcessingPage: React.FC = () => {
               </div>
             </Card>
 
-            {/* LINE ITEMS */}
             {formData.selectedReceivings.length > 0 && (
               <Card>
                 <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest">{t('2. KONFIRMASI KUANTITAS AKTUAL', '2. CONFIRM ACTUAL QUANTITY')}</h3>
+                  <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest">{t('2. KONFIRMASI HASIL PRODUKSI AKTUAL', '2. CONFIRM ACTUAL PRODUCTION OUTPUT')}</h3>
                 </div>
                 <div className="space-y-4">
                   {formData.lines.map((line: any) => {
                     const itemName = items.find((i: any) => i.id === line.itemId)?.name || '';
                     const hasShortfall = line.actualQty < line.invoiceQty;
+                    const hasSurplus = line.actualQty > line.invoiceQty;
                     return (
-                      <div key={line.id} className={`p-4 rounded-2xl border ${hasShortfall ? 'border-amber-200 bg-amber-50/30' : 'border-slate-100 bg-slate-50/50'}`}>
+                      <div key={line.id} className={`p-4 rounded-2xl border transition-all ${hasShortfall ? 'border-amber-200 bg-amber-50/30' : hasSurplus ? 'border-emerald-200 bg-emerald-50/30' : 'border-slate-100 bg-slate-50/50'}`}>
                         <div className="grid grid-cols-12 gap-4 items-center">
                           <div className="col-span-4">
                             <p className="text-[10px] font-black text-slate-400 uppercase">Inv: #{line.receivingId.substring(0,8).toUpperCase()}</p>
@@ -240,17 +237,19 @@ export const ProcessingPage: React.FC = () => {
                           </div>
                           
                           <div className="col-span-3 text-center">
-                            <p className="text-[10px] font-black text-slate-400 uppercase">{t('QTY INVOICE', 'INVOICE QTY')}</p>
+                            <p className="text-[10px] font-black text-slate-400 uppercase">{t('ESTIMASI AWAL', 'RAW ESTIMATE')}</p>
                             <p className="font-black text-lg text-slate-700">{line.invoiceQty} kg</p>
                           </div>
 
                           <div className="col-span-5">
-                            <p className="text-[10px] font-black text-slate-400 uppercase">{t('QTY AKTUAL (PRODUKSI)', 'ACTUAL QTY (PROD)')}</p>
+                            <div className="flex justify-between items-center mb-1">
+                               <p className="text-[10px] font-black text-slate-400 uppercase">{t('QTY AKTUAL (PROSES)', 'ACTUAL QTY (PROCESSED)')}</p>
+                               {hasSurplus && <span className="text-[9px] font-black text-emerald-600 bg-emerald-100 px-1.5 py-0.5 rounded flex items-center gap-1 animate-pulse"><TrendingUp size={10}/> SURPLUS</span>}
+                            </div>
                             <input 
                               type="number" 
-                              className={`w-full p-2.5 rounded-xl border text-sm font-black focus:ring-2 outline-none ${hasShortfall ? 'border-amber-300 focus:ring-amber-500/20' : 'border-slate-200 focus:ring-ocean-500/20'}`}
+                              className={`w-full p-2.5 rounded-xl border text-sm font-black focus:ring-2 outline-none ${hasShortfall ? 'border-amber-300 focus:ring-amber-500/20' : hasSurplus ? 'border-emerald-300 focus:ring-emerald-500/20' : 'border-slate-200 focus:ring-ocean-500/20'}`}
                               value={line.actualQty}
-                              max={line.invoiceQty}
                               onChange={e => updateLine(line.id, 'actualQty', Number(e.target.value))}
                             />
                             {hasShortfall && (
@@ -266,7 +265,7 @@ export const ProcessingPage: React.FC = () => {
                                   <option value="waste">Waste</option>
                                   <option value="other">Lainnya</option>
                                 </select>
-                                {!line.shortfallReason && <p className="text-[10px] text-red-500 font-bold mt-1 flex items-center gap-1"><AlertCircle size={10}/> Wajib diisi</p>}
+                                {!line.shortfallReason && <p className="text-[10px] text-red-500 font-bold mt-1 flex items-center gap-1"><AlertCircle size={10}/> Wajib diisi jika kurang</p>}
                               </div>
                             )}
                           </div>
@@ -278,7 +277,6 @@ export const ProcessingPage: React.FC = () => {
               </Card>
             )}
 
-            {/* AGGREGATED SUMMARY */}
             {summary.length > 0 && (
               <Card>
                 <div className="flex items-center justify-between mb-6">
@@ -290,7 +288,7 @@ export const ProcessingPage: React.FC = () => {
                     { header: 'ITEM', accessor: (s: any) => getItemLabel(items.find((i: any) => i.id === s.itemId)), className: 'font-bold' },
                     { header: 'GRADE', accessor: (s: any) => grades.find((g: any) => g.id === s.gradeId)?.name || '--' },
                     { header: 'SIZE', accessor: (s: any) => sizes.find((sz: any) => sz.id === s.sizeId)?.name || '--' },
-                    { header: 'TOTAL ACTUAL (KG)', accessor: (s: any) => <span className="font-black text-emerald-600">{s.totalActual}</span>, className: 'text-right' }
+                    { header: 'TOTAL ACTUAL (KG)', accessor: (s: any) => <span className="font-black text-emerald-600">{s.totalActual} kg</span>, className: 'text-right' }
                   ]}
                 />
               </Card>
