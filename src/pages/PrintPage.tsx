@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useMasterData } from '../hooks/useMasterData';
 import { Loader2, Printer, ChevronLeft } from 'lucide-react';
 import { companyConfig } from '../config/company';
+import { getItemLabel } from '../utils/itemMapping';
 
 export const PrintPage: React.FC = () => {
   const { type, id } = useParams();
@@ -129,7 +130,7 @@ export const PrintPage: React.FC = () => {
               {(data.lines || []).map((line: any, i: number) => {
                 const it = items.find((i: any) => i.id === line.itemId);
                 const desc = type === 'receivings' || type === 'sales'
-                  ? (it?.nameEn || it?.nameId || it?.item_code || 'Unknown Item')
+                  ? getItemLabel(it)
                   : categories.find((c: any) => c.id === line.categoryId)?.name || line.description || 'General Expense';
                 const price = type === 'receivings' || type === 'sales' ? line.pricePerKg : line.amount / (line.qty || 1);
                 const lineTotal = type === 'receivings' || type === 'sales' ? (Number(line.quantity) * Number(line.pricePerKg)) : Number(line.amount);

@@ -13,6 +13,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { useMasterData } from '../hooks/useMasterData';
 import { Button, Card, Header, Badge } from '../components/ui/DesignSystem';
 import { Table } from '../components/ui/Table';
+import { getItemLabel, getItemCodeLabel } from '../utils/itemMapping';
 
 export const StockPage: React.FC = () => {
   const { t } = useLanguage();
@@ -108,8 +109,8 @@ export const StockPage: React.FC = () => {
                 const item = items.find((i: any) => i.id === s.itemId);
                 return (
                   <div className="flex flex-col">
-                    <span className="font-black text-slate-900">{t(item?.nameId || '-', item?.nameEn || '-')}</span>
-                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">{item?.item_code || '-'}</span>
+                    <span className="font-black text-slate-900">{getItemLabel(item)}</span>
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">{getItemCodeLabel(item)}</span>
                   </div>
                 );
               }
@@ -185,7 +186,7 @@ export const StockPage: React.FC = () => {
                 header: t('BARANG', 'ITEM'), 
                 accessor: (m: any) => {
                   const item = items.find((i: any) => i.id === m.itemId);
-                  return <span className="font-bold text-slate-600">{t(item?.nameId || '-', item?.nameEn || '-')}</span>;
+                  return <span className="font-bold text-slate-600">{getItemLabel(item)}</span>;
                 }
               },
               { header: 'GRADE', accessor: (m: any) => grades.find((g: any) => g.id === m.gradeId)?.name || '-' },

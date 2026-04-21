@@ -8,6 +8,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { useMasterData } from '../hooks/useMasterData';
 import { Card, Header, Button, Badge } from '../components/ui/DesignSystem';
 import { Table } from '../components/ui/Table';
+import { getItemLabel } from '../utils/itemMapping';
 
 export const ReportsPage: React.FC = () => {
   const { t } = useLanguage();
@@ -170,8 +171,8 @@ export const ReportsPage: React.FC = () => {
         <Table 
           data={stock.filter((s: any) => s.quantity > 0)}
           columns={[
-            { header: 'ITEM', accessor: (s: any) => items.find((i: any) => i.id === s.itemId)?.name || 'Unknown' },
-            { header: 'QTY', accessor: (s: any) => `${s.quantity} kg`, className: 'font-bold' },
+            { header: 'ITEM', accessor: (s: any) => getItemLabel(items.find((i: any) => i.id === s.itemId)) },
+            { header: 'QTY', accessor: (s: any) => `${(s.quantity || 0).toLocaleString()} kg`, className: 'font-bold' },
           ]}
         />
       </Card>
@@ -193,15 +194,39 @@ export const ReportsPage: React.FC = () => {
     </div>
   );
 
+  const handleExport = (format: 'csv' | 'pdf') => {
+    // Basic CSV Implementation
+    if (format === 'csv') {
+      const rows = [['DATE', 'SOURCE', 'ITEM', 'QTY', 'AMOUNT']];
+      postedSales.forEach(s => {
+        (s.lines || []).forEach((l: any) => {
+          const itemName = items.find((i: any) => i.id === l.itemId)?.nameEn || 'Unknown';
+          rows.push([s.date, 'Sales', itemName, l.quantity, l.quantity * l.pricePerKg]);
+        });
+      });
+      const csvContent = "data:text/csv;charset=utf-8," + rows.map(e => e.join(",")).join("\n");
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `kaimana_report_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } else {
+      // PDF - just trigger print as we don't have a PDF lib installed
+      window.print();
+    }
+  };
+
   return (
-    <div className="space-y-10 animate-in fade-in duration-500 pb-20">
+    <div className="space-y-10 animate-in fade-in duration-500 pb-20 print:p-0">
       <Header 
         title={t('Pusat Laporan', 'Report Center')} 
         subtitle={t('Laporan Minimum Operasional', 'Minimum Operational Reports')}
         action={
-          <div className="flex gap-2">
-            <Button variant="secondary"><Download size={18} /> CSV</Button>
-            <Button variant="secondary"><Download size={18} /> PDF</Button>
+          <div className="flex gap-2 print:hidden">
+            <Button variant="secondary" onClick={() => handleExport('csv')}><Download size={18} /> CSV</Button>
+            <Button variant="secondary" onClick={() => handleExport('pdf')}><Download size={18} /> PDF</Button>
           </div>
         }
       />

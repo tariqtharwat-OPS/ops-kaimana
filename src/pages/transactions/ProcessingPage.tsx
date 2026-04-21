@@ -5,6 +5,7 @@ import { useMasterData } from '../../hooks/useMasterData';
 import { transactionService } from '../../services/transactionService';
 import { Button, Card, Header, Badge } from '../../components/ui/DesignSystem';
 import { Table } from '../../components/ui/Table';
+import { getItemLabel } from '../../utils/itemMapping';
 
 export const ProcessingPage: React.FC = () => {
   const { t } = useLanguage();
@@ -286,7 +287,7 @@ export const ProcessingPage: React.FC = () => {
                 <Table 
                   data={summary}
                   columns={[
-                    { header: 'ITEM', accessor: (s: any) => items.find((i: any) => i.id === s.itemId)?.name || '', className: 'font-bold' },
+                    { header: 'ITEM', accessor: (s: any) => getItemLabel(items.find((i: any) => i.id === s.itemId)), className: 'font-bold' },
                     { header: 'GRADE', accessor: (s: any) => grades.find((g: any) => g.id === s.gradeId)?.name || '--' },
                     { header: 'SIZE', accessor: (s: any) => sizes.find((sz: any) => sz.id === s.sizeId)?.name || '--' },
                     { header: 'TOTAL ACTUAL (KG)', accessor: (s: any) => <span className="font-black text-emerald-600">{s.totalActual}</span>, className: 'text-right' }

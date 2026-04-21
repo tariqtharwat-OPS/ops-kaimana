@@ -5,6 +5,7 @@ import { useLanguage } from '../../context/LanguageContext';
 import { useMasterData } from '../../hooks/useMasterData';
 import { transactionService } from '../../services/transactionService';
 import { Button, Card, Header, Badge } from '../../components/ui/DesignSystem';
+import { getItemLabel } from '../../utils/itemMapping';
 import { Table } from '../../components/ui/Table';
 
 export const ReceivingPage: React.FC = () => {
@@ -264,14 +265,9 @@ export const ReceivingPage: React.FC = () => {
                             {itemsLoading ? (
                               <option disabled>Loading...</option>
                             ) : (
-                              items.map((it: any) => {
-                                const label = (it.nameId && it.nameId.trim()) ||
-                                              (it.nameEn && it.nameEn.trim()) ||
-                                              (it.item_code && it.item_code.trim()) ||
-                                              `ID-${it.id?.slice(0,6)}` ||
-                                              'UNKNOWN';
-                                return <option key={it.id} value={it.id}>{label}</option>;
-                              })
+                              items.map((it: any) => (
+                                <option key={it.id} value={it.id}>{getItemLabel(it)}</option>
+                              ))
                             )}
                           </select>
                         </div>
@@ -460,8 +456,8 @@ export const ReceivingPage: React.FC = () => {
               <button onClick={() => setHistoryModal({isOpen: false, receiving: null})} className="p-2 text-slate-400 hover:text-slate-600 bg-slate-100 rounded-full transition-colors"><X size={20}/></button>
             </div>
             
-            <div className="p-6 overflow-y-auto space-y-4 flex-1">
-              {(!historyModal.receiving.paymentHistory || historyModal.receiving.paymentHistory.length === 0) ? (
+             <div className="p-6 overflow-y-auto space-y-4 flex-1">
+              {(!historyModal.receiving?.paymentHistory || historyModal.receiving.paymentHistory.length === 0) ? (
                 <div className="text-center py-10">
                   <p className="text-slate-400 font-bold">{t('Belum ada riwayat pembayaran.', 'No payment history yet.')}</p>
                 </div>
@@ -470,10 +466,10 @@ export const ReceivingPage: React.FC = () => {
                   <div key={p.id} className={`p-4 rounded-2xl border flex items-center justify-between ${p.reversed ? 'bg-slate-50 border-slate-100 opacity-60' : 'bg-red-50/50 border-red-100'}`}>
                     <div>
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="text-xs font-black text-slate-400">{p.date}</span>
+                        <span className="text-xs font-black text-slate-400">{p.date || '--'}</span>
                         {p.reversed && <Badge variant="draft">Reversed</Badge>}
                       </div>
-                      <p className={`font-black text-lg ${p.reversed ? 'text-slate-500 line-through' : 'text-red-700'}`}>Rp {p.amount.toLocaleString()}</p>
+                      <p className={`font-black text-lg ${p.reversed ? 'text-slate-500 line-through' : 'text-red-700'}`}>Rp {(p.amount || 0).toLocaleString()}</p>
                       <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase">Ref: {p.id}</p>
                     </div>
                     {!p.reversed && (

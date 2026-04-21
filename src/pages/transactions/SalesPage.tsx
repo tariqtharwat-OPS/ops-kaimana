@@ -5,6 +5,7 @@ import { useLanguage } from '../../context/LanguageContext';
 import { useMasterData } from '../../hooks/useMasterData';
 import { transactionService } from '../../services/transactionService';
 import { Button, Card, Header, Badge } from '../../components/ui/DesignSystem';
+import { getItemLabel } from '../../utils/itemMapping';
 import { Table } from '../../components/ui/Table';
 
 export const SalesPage: React.FC = () => {
@@ -231,14 +232,9 @@ export const SalesPage: React.FC = () => {
                           {itemsLoading ? (
                             <option disabled>Loading...</option>
                           ) : (
-                            items.filter(it => it.active_status !== false).map((it: any) => {
-                              const label = (it.nameId && it.nameId.trim()) ||
-                                            (it.nameEn && it.nameEn.trim()) ||
-                                            (it.item_code && it.item_code.trim()) ||
-                                            `ID-${it.id?.slice(0,6)}` ||
-                                            'UNKNOWN';
-                              return <option key={it.id} value={it.id}>{label}</option>;
-                            })
+                            items.filter(it => it.active_status !== false).map((it: any) => (
+                              <option key={it.id} value={it.id}>{getItemLabel(it)}</option>
+                            ))
                           )}
                         </select>
                       </div>
@@ -338,7 +334,12 @@ export const SalesPage: React.FC = () => {
               </div>
             ) },
             { header: '', accessor: (s: any) => (
-              <div className="flex justify-end gap-2">
+              <div className="flex gap-2 justify-end">
+                {s.status === 'Draft' && (
+                  <Button variant="primary" size="sm" onClick={() => handleSave(true)}>
+                    <Send size={16} /> POST
+                  </Button>
+                )}
                 {s.status === 'Posted' && (
                   <Button variant="ghost" size="sm" onClick={() => setHistoryModal({isOpen: true, sale: s})} title="Payment History">
                     <History size={16} />
@@ -346,7 +347,7 @@ export const SalesPage: React.FC = () => {
                 )}
                 {s.status === 'Posted' && (!s.paymentStatus || s.paymentStatus !== 'Paid') && (
                   <Button variant="secondary" size="sm" onClick={() => {
-                    const bal = s.balanceDue !== undefined ? s.balanceDue : s.totalAmount;
+                    const bal = s.balanceDue !== undefined ? s.balanceDue : (s.totalAmount || 0);
                     setPaymentModal({isOpen: true, saleId: s.id, balanceDue: bal});
                     setPaymentAmount(bal);
                   }}>
@@ -416,7 +417,7 @@ export const SalesPage: React.FC = () => {
             </div>
             
             <div className="p-6 overflow-y-auto space-y-4 flex-1">
-              {(!historyModal.sale.paymentHistory || historyModal.sale.paymentHistory.length === 0) ? (
+              {(!historyModal.sale?.paymentHistory || historyModal.sale.paymentHistory.length === 0) ? (
                 <div className="text-center py-10">
                   <p className="text-slate-400 font-bold">{t('Belum ada riwayat pembayaran.', 'No payment history yet.')}</p>
                 </div>
@@ -425,10 +426,10 @@ export const SalesPage: React.FC = () => {
                   <div key={p.id} className={`p-4 rounded-2xl border flex items-center justify-between ${p.reversed ? 'bg-slate-50 border-slate-100 opacity-60' : 'bg-emerald-50/50 border-emerald-100'}`}>
                     <div>
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="text-xs font-black text-slate-400">{p.date}</span>
+                        <span className="text-xs font-black text-slate-400">{p.date || '--'}</span>
                         {p.reversed && <Badge variant="draft">Reversed</Badge>}
                       </div>
-                      <p className={`font-black text-lg ${p.reversed ? 'text-slate-500 line-through' : 'text-emerald-700'}`}>Rp {p.amount.toLocaleString()}</p>
+                      <p className={`font-black text-lg ${p.reversed ? 'text-slate-500 line-through' : 'text-emerald-700'}`}>Rp {(p.amount || 0).toLocaleString()}</p>
                       <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase">Ref: {p.id}</p>
                     </div>
                     {!p.reversed && (
