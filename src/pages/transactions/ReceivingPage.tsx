@@ -10,14 +10,14 @@ import { Table } from '../../components/ui/Table';
 
 export const ReceivingPage: React.FC = () => {
   const { t } = useLanguage();
-  const { data: items } = useMasterData('items', true);
+  const { data: items, loading: itemsLoading } = useMasterData('items', true);
   const { data: grades } = useMasterData('grades', true);
   const { data: sizes } = useMasterData('sizes', true);
   
   
-  const { data: suppliers } = useMasterData('suppliers', true);
+  const { data: suppliers, loading: suppliersLoading } = useMasterData('suppliers', true);
   const { data: receivings } = useMasterData('receivings', true);
-  const { data: buyers } = useMasterData('buyers', true);
+  const { data: buyers, loading: buyersLoading } = useMasterData('buyers', true);
 
   const [isCreating, setIsCreating] = useState(false);
   const [formData, setFormData] = useState<any>({
@@ -211,7 +211,11 @@ export const ReceivingPage: React.FC = () => {
                     <select className="w-full bg-slate-50 border border-slate-100 rounded-xl p-3 font-bold"
                       value={formData.supplierId} onChange={e => setFormData((p: any) => ({ ...p, supplierId: e.target.value }))}>
                       <option value="">-- {t('Pilih Supplier', 'Select Supplier')} --</option>
-                      {suppliers.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                      {suppliersLoading ? (
+                        <option disabled>Loading...</option>
+                      ) : (
+                        suppliers.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)
+                      )}
                     </select>
                   </div>
                   <div className="space-y-1.5">
@@ -245,7 +249,11 @@ export const ReceivingPage: React.FC = () => {
                           <select className="w-full bg-white border border-slate-200 rounded-lg p-2 text-sm font-bold"
                             value={line.itemId} onChange={e => updateLine(idx, 'itemId', e.target.value)}>
                             <option value="">--</option>
-                            {items.map((it: any) => <option key={it.id} value={it.id}>{it.nameEn || it.name || it.item_code}</option>)}
+                            {itemsLoading ? (
+                              <option disabled>Loading...</option>
+                            ) : (
+                              items.map((it: any) => <option key={it.id} value={it.id}>{t(it.nameId, it.nameEn) || it.name || it.item_code}</option>)
+                            )}
                           </select>
                         </div>
                         <div className="col-span-2 space-y-1">
@@ -269,7 +277,11 @@ export const ReceivingPage: React.FC = () => {
                           <select className="w-full bg-white border border-slate-200 rounded-lg p-2 text-[10px] font-bold"
                             value={line.buyerId || ''} onChange={e => updateLine(idx, 'buyerId', e.target.value)}>
                             <option value="">-- {t('Opsional', 'Optional')} --</option>
-                            {buyers.map((b: any) => <option key={b.id} value={b.id}>{b.name}</option>)}
+                            {buyersLoading ? (
+                              <option disabled>Loading...</option>
+                            ) : (
+                              buyers.map((b: any) => <option key={b.id} value={b.id}>{b.name}</option>)
+                            )}
                           </select>
                         </div>
                         <div className="col-span-1 space-y-1">

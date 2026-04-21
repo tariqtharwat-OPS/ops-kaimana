@@ -105,7 +105,7 @@ export const StockPage: React.FC = () => {
             { 
               header: t('BARANG', 'ITEM'), 
               accessor: (s: any) => {
-                const item = items.find((i: any) => i.id === (s.itemId || s.item_id));
+                const item = items.find((i: any) => i.id === s.itemId);
                 return (
                   <div className="flex flex-col">
                     <span className="font-black text-slate-900">{t(item?.nameId || '-', item?.nameEn || '-')}</span>
@@ -114,8 +114,8 @@ export const StockPage: React.FC = () => {
                 );
               }
             },
-            { header: 'GRADE', accessor: (s: any) => grades.find((g: any) => g.id === (s.gradeId || s.grade_id))?.name || '-' },
-            { header: 'SIZE', accessor: (s: any) => sizes.find((sz: any) => sz.id === (s.sizeId || s.size_id))?.name || '-' },
+            { header: 'GRADE', accessor: (s: any) => grades.find((g: any) => g.id === s.gradeId)?.name || '-' },
+            { header: 'SIZE', accessor: (s: any) => sizes.find((sz: any) => sz.id === s.sizeId)?.name || '-' },
             { 
               header: activeTab === 'available' ? t('TOTAL STOK', 'TOTAL STOCK') : t('ALOKASI', 'ALLOCATION'), 
               accessor: (s: any) => <span className="font-black text-slate-400">{(s.quantity || s.allocatedQty || 0).toLocaleString()} kg</span>, 

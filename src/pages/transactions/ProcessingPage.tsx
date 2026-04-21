@@ -13,7 +13,7 @@ export const ProcessingPage: React.FC = () => {
   const { data: grades } = useMasterData('grades', true);
   const { data: sizes } = useMasterData('sizes', true);
   const { data: logs } = useMasterData('processing', true);
-  const { data: receivings } = useMasterData('receivings', true);
+  const { data: receivings, loading: receivingsLoading } = useMasterData('receivings', true);
   const { data: suppliers } = useMasterData('suppliers', true);
   const { data: allocations } = useMasterData('buyerAllocations', true);
 
@@ -110,7 +110,7 @@ export const ProcessingPage: React.FC = () => {
         ...formData, 
         summary,
         status: 'Draft',
-        totalInput: formData.lines.reduce((acc, l) => acc + l.invoiceQty, 0),
+        totalInput: formData.lines.reduce((acc, l) => acc + l.actualQty, 0),
         totalOutput: formData.lines.reduce((acc, l) => acc + l.actualQty, 0)
       };
       
@@ -155,28 +155,34 @@ export const ProcessingPage: React.FC = () => {
                 <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest">{t('1. PILIH INVOICE PENERIMAAN', '1. SELECT RECEIVING INVOICES')}</h3>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-60 overflow-y-auto p-1">
-                {postedReceivings.map((r: any) => {
-                  const isSelected = formData.selectedReceivings.includes(r.id);
-                  return (
-                    <div 
-                      key={r.id} 
-                      onClick={() => handleSelectReceiving(r.id)}
-                      className={`p-4 rounded-2xl border-2 cursor-pointer transition-all ${isSelected ? 'border-ocean-500 bg-ocean-50/50' : 'border-slate-100 hover:border-ocean-200'}`}
-                    >
-                      <div className="flex justify-between items-start mb-2">
-                        <div>
-                          <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">{r.date}</p>
-                          <p className="font-bold text-slate-900">{suppliers.find((s: any) => s.id === r.supplierId)?.name || 'Unknown'}</p>
+                {receivingsLoading ? (
+                  <p className="text-slate-400 italic font-bold">Loading invoices...</p>
+                ) : (
+                  <>
+                    {postedReceivings.map((r: any) => {
+                      const isSelected = formData.selectedReceivings.includes(r.id);
+                      return (
+                        <div 
+                          key={r.id} 
+                          onClick={() => handleSelectReceiving(r.id)}
+                          className={`p-4 rounded-2xl border-2 cursor-pointer transition-all ${isSelected ? 'border-ocean-500 bg-ocean-50/50' : 'border-slate-100 hover:border-ocean-200'}`}
+                        >
+                          <div className="flex justify-between items-start mb-2">
+                            <div>
+                              <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">{r.date}</p>
+                              <p className="font-bold text-slate-900">{suppliers.find((s: any) => s.id === r.supplierId)?.name || 'Unknown'}</p>
+                            </div>
+                            {isSelected && <CheckCircle2 className="text-ocean-600" size={20} />}
+                          </div>
+                          <p className="text-sm font-black text-slate-600">Inv: #{r.id.substring(0,8).toUpperCase()}</p>
+                          <p className="text-xs font-bold text-slate-500 mt-2">{r.totalQty} kg</p>
                         </div>
-                        {isSelected && <CheckCircle2 className="text-ocean-600" size={20} />}
-                      </div>
-                      <p className="text-sm font-black text-slate-600">Inv: #{r.id.substring(0,8).toUpperCase()}</p>
-                      <p className="text-xs font-bold text-slate-500 mt-2">{r.totalQty} kg</p>
-                    </div>
-                  );
-                })}
-                {postedReceivings.length === 0 && (
-                  <p className="text-slate-400 italic font-bold">No posted receiving invoices available.</p>
+                      );
+                    })}
+                    {postedReceivings.length === 0 && (
+                      <p className="text-slate-400 italic font-bold">No posted receiving invoices available.</p>
+                    )}
+                  </>
                 )}
               </div>
             </Card>
