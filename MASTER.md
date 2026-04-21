@@ -20,7 +20,7 @@
 ### Module Status
 | Module | File | Data | Status |
 |---|---|---|---|
-| Master Data | `MasterData.tsx` | Firestore | Functional; pricing matrix partial |
+| Master Data | `MasterData.tsx` | Firestore | **READY FOR SIMULATION** (Items: Tuna, Dapa Dapa, Test Item) |
 | Receiving | `ReceivingPage.tsx` | Firestore | Core OK; buyer assign MISSING; no doc numbering |
 | Processing | `ProcessingPage.tsx` | Firestore | Core OK; uses invoiceQty not actualQty; no buyer settle |
 | Packing | `PackingPage.tsx` | **MOCK** | Dead — not connected to Firestore |
