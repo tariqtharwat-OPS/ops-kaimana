@@ -19,12 +19,12 @@ export const StockPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'available' | 'assigned'>('available');
 
   // Real data from Firestore
-  const { data: stock } = useMasterData('stock');
-  const { data: items } = useMasterData('items');
-  const { data: grades } = useMasterData('grades');
-  const { data: sizes } = useMasterData('sizes');
-  const { data: movements } = useMasterData('stock_movements');
-  const { data: allocations } = useMasterData('buyerAllocations');
+  const { data: stock } = useMasterData('stock', true);
+  const { data: items } = useMasterData('items', true);
+  const { data: grades } = useMasterData('grades', true);
+  const { data: sizes } = useMasterData('sizes', true);
+  const { data: movements } = useMasterData('stock_movements', true);
+  const { data: allocations } = useMasterData('buyerAllocations', true);
 
   const totalVolume = stock.reduce((sum: number, s: any) => sum + (s.quantity || 0), 0);
   

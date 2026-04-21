@@ -233,7 +233,11 @@ export const SalesPage: React.FC = () => {
                             <option disabled>Loading...</option>
                           ) : (
                             items.filter(it => it.active_status !== false).map((it: any) => {
-                              const label = it.nameId || it.nameEn || it.item_code || it.id;
+                              const label = (it.nameId && it.nameId.trim()) ||
+                                            (it.nameEn && it.nameEn.trim()) ||
+                                            (it.item_code && it.item_code.trim()) ||
+                                            `ID-${it.id?.slice(0,6)}` ||
+                                            'UNKNOWN';
                               return <option key={it.id} value={it.id}>{label}</option>;
                             })
                           )}
