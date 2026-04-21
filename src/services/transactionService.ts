@@ -162,28 +162,43 @@ export const transactionService = {
       if (!snap.exists()) throw new Error("Receiving document not found");
       if (snap.data().status === 'Posted') throw new Error("Document already posted");
 
+      // 1. COLLECT ALL UNIQUE STOCK REFS
+      const lines = data.lines || [];
+      const stockRefsMap: Record<string, any> = {};
+      const uniqueStockIds = [...new Set(lines.map((l: any) => `${l.itemId}_${l.gradeId || 'no'}_${l.sizeId || 'no'}`))];
+      
+      for (const sId of uniqueStockIds) {
+        stockRefsMap[sId] = await transaction.get(doc(db, 'stock', sId as string));
+      }
+
+      // 2. NOW PERFORM ALL WRITES
       transaction.update(docRef, { 
         status: 'Posted', 
         postedAt: serverTimestamp(),
         paymentStatus: 'Unpaid'
       });
 
-      for (let i = 0; i < (data.lines || []).length; i++) {
-        const line = data.lines[i];
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
         const stockId = `${line.itemId}_${line.gradeId || 'no'}_${line.sizeId || 'no'}`;
         const stockRef = doc(db, 'stock', stockId);
-        const stockSnap = await transaction.get(stockRef);
+        const stockSnap = stockRefsMap[stockId];
 
         if (!stockSnap.exists()) {
           transaction.set(stockRef, {
             itemId: line.itemId, gradeId: line.gradeId || null, sizeId: line.sizeId || null,
             quantity: line.quantity, lastUpdated: serverTimestamp()
           });
+          // Update local map snap so subsequent lines for SAME stockId in THIS loop use update instead of set
+          stockRefsMap[stockId] = { exists: () => true, data: () => ({ quantity: line.quantity }) };
         } else {
+          const currentQty = stockSnap.data()?.quantity || 0;
           transaction.update(stockRef, {
             quantity: increment(line.quantity),
             lastUpdated: serverTimestamp()
           });
+          // Update local map for same-transaction consistency
+          stockRefsMap[stockId] = { exists: () => true, data: () => ({ quantity: currentQty + line.quantity }) };
         }
 
         if (line.buyerId) {
