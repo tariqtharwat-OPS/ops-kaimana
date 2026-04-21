@@ -99,6 +99,18 @@ export const ProcessingPage: React.FC = () => {
     return true;
   };
 
+  const getFilteredGrades = (itemId: string) => {
+    const item = items.find(i => i.id === itemId);
+    if (!item || !item.hasGrade || !item.gradeProfileId) return [];
+    return grades.filter(g => g.profileId === item.gradeProfileId && g.active_status !== false);
+  };
+
+  const getFilteredSizes = (itemId: string) => {
+    const item = items.find(i => i.id === itemId);
+    if (!item || !item.sizeProfileId) return [];
+    return sizes.filter(s => s.profileId === item.sizeProfileId && s.active_status !== false);
+  };
+
   const handleSave = async (isPost: boolean) => {
     if (!isValid()) {
       alert("Pastikan semua qty valid dan alasan selisih diisi jika ada shortfall.");
@@ -203,8 +215,26 @@ export const ProcessingPage: React.FC = () => {
                             <p className="text-[10px] font-black text-slate-400 uppercase">Inv: #{line.receivingId.substring(0,8).toUpperCase()}</p>
                             <p className="font-bold text-sm text-slate-900">{itemName}</p>
                             <div className="flex gap-1 mt-1">
-                              {line.gradeId && <span className="text-[10px] bg-white px-1.5 py-0.5 rounded font-black text-slate-500 border border-slate-200 uppercase">{grades.find((g: any) => g.id === line.gradeId)?.name}</span>}
-                              {line.sizeId && <span className="text-[10px] bg-white px-1.5 py-0.5 rounded font-black text-slate-500 border border-slate-200 uppercase">{sizes.find((s: any) => s.id === line.sizeId)?.name}</span>}
+                              <select 
+                                className="text-[10px] bg-white px-1 py-0.5 rounded font-black text-slate-500 border border-slate-200 uppercase outline-none focus:ring-1 focus:ring-ocean-500/20"
+                                value={line.gradeId || ''} 
+                                onChange={e => updateLine(line.id, 'gradeId', e.target.value)}
+                              >
+                                <option value="">G--</option>
+                                {getFilteredGrades(line.itemId).map((g: any) => (
+                                  <option key={g.id} value={g.id}>{g.name}</option>
+                                ))}
+                              </select>
+                              <select 
+                                className="text-[10px] bg-white px-1 py-0.5 rounded font-black text-slate-500 border border-slate-200 uppercase outline-none focus:ring-1 focus:ring-ocean-500/20"
+                                value={line.sizeId || ''} 
+                                onChange={e => updateLine(line.id, 'sizeId', e.target.value)}
+                              >
+                                <option value="">S--</option>
+                                {getFilteredSizes(line.itemId).map((s: any) => (
+                                  <option key={s.id} value={s.id}>{s.name}</option>
+                                ))}
+                              </select>
                             </div>
                           </div>
                           

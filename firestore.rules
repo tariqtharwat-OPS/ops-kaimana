@@ -53,17 +53,38 @@ service cloud.firestore {
     match /packing/{id} { allow read, write: if isSignedIn() && (isAdmin() || isOperator()); }
     match /expenses/{id} { allow read, write: if isSignedIn() && (isAdmin() || isOperator()); }
 
-    // 4. Stock
+    // 4. Stock & Movements
     match /stock/{id} {
-      allow read: if isSignedIn() && (
-        isAdmin() || 
-        isOperator() || 
-        (isBuyer() && resource.data.buyerId == getUserData().linkedBuyerId)
-      );
+      allow read: if isSignedIn(); 
+      allow write: if isSignedIn() && (isAdmin() || isOperator());
+    }
+    match /stock_movements/{id} {
+      allow read: if isSignedIn();
       allow write: if isSignedIn() && (isAdmin() || isOperator());
     }
 
-    // 5. Reports
+    // 5. Buyer & Operational Support
+    match /buyerAllocations/{id} {
+      allow read: if isSignedIn() && (isAdmin() || isOperator() || (isBuyer() && resource.data.buyerId == getUserData().linkedBuyerId));
+      allow write: if isSignedIn() && (isAdmin() || isOperator());
+    }
+    match /buyerCredits/{id} {
+      allow read: if isSignedIn() && (isAdmin() || isOperator() || (isBuyer() && resource.data.buyerId == getUserData().linkedBuyerId));
+      allow write: if isSignedIn() && (isAdmin() || isOperator());
+    }
+    match /adjustments/{id} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && (isAdmin() || isOperator());
+    }
+    match /payments/{id} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && (isAdmin() || isOperator());
+    }
+    match /doc_numbers/{id} {
+      allow read, write: if isSignedIn() && (isAdmin() || isOperator());
+    }
+
+    // 6. Reports
     match /reports/{id} {
       allow read: if isSignedIn();
       allow write: if isAdmin();

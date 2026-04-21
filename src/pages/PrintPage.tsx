@@ -87,7 +87,7 @@ export const PrintPage: React.FC = () => {
           <div className="text-right space-y-4">
             <h2 className="text-3xl font-black tracking-tighter text-slate-300 uppercase leading-none">{docTitle}</h2>
             <div className="space-y-0.5 text-[11px]">
-              <p><span className="font-bold text-slate-400">DOCUMENT NO:</span> <span className="font-black text-slate-900">#{data.id?.substring(0, 8).toUpperCase()}</span></p>
+              <p><span className="font-bold text-slate-400">DOCUMENT NO:</span> <span className="font-black text-slate-900">#{data.id?.toUpperCase()}</span></p>
               <p><span className="font-bold text-slate-400">DATE:</span> <span className="font-black text-slate-900">{new Date(data.date).toLocaleDateString('id-ID', { dateStyle: 'long' })}</span></p>
               <p><span className="font-bold text-slate-400">STATUS:</span> <span className={`font-black uppercase ${data.status === 'Posted' ? 'text-emerald-600' : 'text-amber-500'}`}>{data.status}</span></p>
             </div>
