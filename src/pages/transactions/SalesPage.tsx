@@ -232,7 +232,10 @@ export const SalesPage: React.FC = () => {
                           {itemsLoading ? (
                             <option disabled>Loading...</option>
                           ) : (
-                            items.filter(it => it.active_status !== false).map((it: any) => <option key={it.id} value={it.id}>{t(it.nameId, it.nameEn) || it.item_code}</option>)
+                            items.filter(it => it.active_status !== false).map((it: any) => {
+                              const label = it.nameId || it.nameEn || it.item_code || it.id;
+                              return <option key={it.id} value={it.id}>{label}</option>;
+                            })
                           )}
                         </select>
                       </div>
