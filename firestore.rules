@@ -52,6 +52,7 @@ service cloud.firestore {
     match /processing/{id} { allow read, write: if isSignedIn() && (isAdmin() || isOperator()); }
     match /packing/{id} { allow read, write: if isSignedIn() && (isAdmin() || isOperator()); }
     match /expenses/{id} { allow read, write: if isSignedIn() && (isAdmin() || isOperator()); }
+    match /dispatches/{docId} { allow read, write: if isSignedIn(); }
 
     // 4. Stock & Movements
     match /stock/{id} {
