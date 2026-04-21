@@ -63,12 +63,20 @@ export const transactionService = {
         const stockData = stockSnap.data();
         const phys = stockData?.physicalQty || stockData?.quantity || 0;
         const res = stockData?.reservedQty || 0;
+        const avail = phys - res;
 
-        if (phys < input.quantity) throw new Error(`Insufficient stock for input: ${stockId}`);
+        // Processing inputs are reserved if they come from a selected receiving
+        const inputIsReserved = (data.selectedReceivings || []).length > 0;
+
+        if (inputIsReserved) {
+          if (phys < input.quantity) throw new Error(`Insufficient physical stock for reserved input: ${stockId}`);
+        } else {
+          if (avail < input.quantity) throw new Error(`Insufficient available stock for general input: ${stockId}`);
+        }
 
         transaction.update(doc(db, 'stock', stockId), {
           physicalQty: increment(-input.quantity),
-          reservedQty: increment(-(Math.min(res, input.quantity))),
+          reservedQty: inputIsReserved ? increment(-(Math.min(res, input.quantity))) : increment(0),
           quantity: increment(-input.quantity), 
           lastUpdated: serverTimestamp()
         });
@@ -252,10 +260,17 @@ export const transactionService = {
         const stockData = stockSnap.data();
         const phys = stockData?.physicalQty || stockData?.quantity || 0;
         const res = stockData?.reservedQty || 0;
+        const avail = phys - res;
 
-        if (phys < line.quantity) throw new Error(`Insufficient stock: ${stockId}`);
+        // A line is reserved if it's linked to an allocation OR if the sale is a draft from receiving
+        const isReserved = !!line.allocationId || (salesDoc.sourceReceivingId && res >= line.quantity);
 
-        const isReserved = (salesDoc.sourceReceivingId || salesDoc.status === 'Draft' || !!line.allocationId) && res >= line.quantity;
+        // ENFORCEMENT
+        if (isReserved) {
+          if (phys < line.quantity) throw new Error(`Insufficient physical stock for reserved sale: ${stockId}`);
+        } else {
+          if (avail < line.quantity) throw new Error(`Insufficient available stock for general sale: ${stockId}. Available: ${avail}, Requested: ${line.quantity}`);
+        }
 
         transaction.update(doc(db, 'stock', stockId), {
           physicalQty: increment(-line.quantity),
@@ -300,7 +315,6 @@ export const transactionService = {
 
       // Logic depends on type
       if (collectionName === 'receivings') {
-        // Reverse Receiving: physicalQty -, reservedQty -
         for (const line of lines) {
           const stockId = `${line.itemId}_${line.gradeId || 'no'}_${line.sizeId || 'no'}`;
           const isAllocated = !!line.buyerId;
@@ -311,7 +325,6 @@ export const transactionService = {
           });
         }
       } else if (collectionName === 'sales') {
-        // Reverse Sales: physicalQty +, reservedQty + (if was reserved)
         for (const line of lines) {
           const stockId = `${line.itemId}_${line.gradeId || 'no'}_${line.sizeId || 'no'}`;
           const isReserved = !!line.allocationId;
@@ -321,15 +334,9 @@ export const transactionService = {
             quantity: increment(line.quantity)
           });
           if (line.allocationId) {
-            transaction.update(doc(db, 'buyerAllocations', line.allocationId), { status: 'Confirmed' }); // Revert to confirmed
+            transaction.update(doc(db, 'buyerAllocations', line.allocationId), { status: 'Confirmed' });
           }
         }
-      } else if (collectionName === 'processing') {
-        // Reverse Processing: Input +, Output -
-        const inputs = docData.inputs || [];
-        const outputs = docData.outputs || [];
-        // (Complex: would need to read all stock for inputs too)
-        // For now, focusing on the simple reversal of the main document status.
       }
 
       transaction.update(docRef, { status: 'Voided', voidedAt: serverTimestamp() });
