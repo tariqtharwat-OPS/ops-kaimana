@@ -1,4 +1,4 @@
-﻿# OPS-KAIMANA — MASTER EXECUTION PLAN
+# OPS-KAIMANA — MASTER EXECUTION PLAN
 **Single Source of Truth | Version 2.0 | April 2026**
 > This file supersedes all previous plan files. All execution must follow this file only.
 > Every completed item must be marked `[x]`. Before any change, re-read this file first.
@@ -626,34 +626,34 @@ Status: [ ] | Files: ReportsPage.tsx
 Mark [x] when FULLY complete and verified. Never mark done without testing.
 
 Bug Fixes - Do First:
-- [ ] B1 - Stock.tsx field names (Step 2)
-- [ ] B2 - PrintPage item name (Step 3)
-- [ ] B3 - Sales dropdown filtering (Step 4)
-- [ ] B4 - Processing actualQty (Step 5)
-- [ ] B5 - Payments to own collection (Step 6)
-- [ ] B6 - Block double processing (Step 7)
-- [ ] B7 - Filter inactive dropdowns (Step 13)
-- [ ] B8 - PackingPage to Firestore (Step 11)
-- [ ] B9 - BuyerView live data (Step 12)
-- [ ] B10 - Movements sort field (Step 2)
+- [x] B1 - Stock.tsx field names (Step 2)
+- [x] B2 - PrintPage item name (Step 3)
+- [x] B3 - Sales dropdown filtering (Step 4)
+- [x] B4 - Processing actualQty (Step 5)
+- [x] B5 - Payments to own collection (Step 6)
+- [x] B6 - Block double processing (Step 7)
+- [x] B7 - Filter inactive dropdowns (Step 13)
+- [x] B8 - PackingPage to Firestore (Step 11)
+- [x] B9 - BuyerView live data (Step 12)
+- [x] B10 - Movements sort field (Step 2)
 
 New Features - After All Bugs Fixed:
-- [ ] F1 - Doc numbering + rounding utilities (Step 1)
-- [ ] F2 - Doc IDs on all forms (Step 8)
+- [x] F1 - Doc numbering + rounding utilities (Step 1)
+- [x] F2 - Doc IDs on all forms (Step 8)
 - [ ] F3 - Buyer allocation UI at Receiving (Step 9)
-- [ ] F4 - buyerAllocations on POST (Step 9)
-- [ ] F5 - Settlement ADJ document on Processing POST (Step 10)
-- [ ] F6 - buyerCredits on shortfall (Step 10)
-- [ ] F7 - Admin void/cancel (Step 15)
+- [x] F4 - buyerAllocations on POST (Step 9)
+- [x] F5 - Settlement ADJ document on Processing POST (Step 10)
+- [x] F6 - buyerCredits on shortfall (Step 10)
+- [x] F7 - Admin void/cancel (Step 15)
 - [ ] F8 - Reports enhancement (Step 16)
-- [ ] F9 - Firestore rules for 4 new collections (Step 14)
+- [x] F9 - Firestore rules for 4 new collections (Step 14)
 
 Final Verification:
 - [ ] V1 - All 25 acceptance criteria passed
-- [ ] V2 - No mockData imports in any transaction page
-- [ ] V3 - All print invoices show correct item names
-- [ ] V4 - Stock movements log correctly for all modules
-- [ ] V5 - Buyer portal shows real live data
+- [x] V2 - No mockData imports in any transaction page
+- [x] V3 - All print invoices show correct item names
+- [x] V4 - Stock movements log correctly for all modules
+- [x] V5 - Buyer portal shows real live data
 - [ ] V6 - ADJ documents visible in Reports
 
 ---
@@ -691,7 +691,7 @@ Final Verification:
 
 ---
 
-END OF MASTER EXECUTION PLAN v2.0 (Refined)
+END OF MASTER EXECUTION PLAN v2.1
 Last updated: 2026-04-21
 Single source of truth. Do not create other plan files.
 Before any code change: re-read this file. After completing any step: mark it [x] here.

@@ -3,7 +3,6 @@ import { Plus, Trash2, Save, ChevronRight, Printer, Send, DollarSign, X, RotateC
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../../context/LanguageContext';
 import { useMasterData } from '../../hooks/useMasterData';
-import { masterDataService } from '../../services/masterDataService';
 import { transactionService } from '../../services/transactionService';
 import { Button, Card, Header, Badge } from '../../components/ui/DesignSystem';
 import { Table } from '../../components/ui/Table';

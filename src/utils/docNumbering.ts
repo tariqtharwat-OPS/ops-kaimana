@@ -2,9 +2,7 @@ import {
   collection, 
   query, 
   where, 
-  getDocs, 
-  getCountFromServer,
-  Transaction
+  getCountFromServer
 } from 'firebase/firestore';
 import { db } from '../firebase/config';
 

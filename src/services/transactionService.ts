@@ -28,7 +28,7 @@ export const transactionService = {
   postProcessing: async (id: string, data: any) => {
     // PRE-GENERATE IDs OUTSIDE TRANSACTION (Fix 1)
     const possibleAdjsCount = (data.relevantAllocations || []).length;
-    const preGeneratedAdjIds = [];
+    const preGeneratedAdjIds: any[] = [];
     for (let i = 0; i < possibleAdjsCount; i++) {
       preGeneratedAdjIds.push(await generateDocId('ADJ', data.date || new Date(), i));
     }
@@ -148,9 +148,14 @@ export const transactionService = {
 
   // POST RECEIVING
   postReceiving: async (id: string, data: any) => {
+    console.log(`[STABILIZATION] Starting postReceiving for ${id}`, data);
+    
+    if (!data.supplierId) throw new Error("Supplier ID is missing");
+    if (!data.lines || data.lines.length === 0) throw new Error("Lines are missing");
+
     // PRE-GENERATE IDs OUTSIDE TRANSACTION (Fix 1 & 3)
     const buyerLines = (data.lines || []).filter((l: any) => l.buyerId);
-    const preGeneratedSales = [];
+    const preGeneratedSales: any[] = [];
     for (let i = 0; i < buyerLines.length; i++) {
       const saleId = await generateDocId('S', data.date, i);
       preGeneratedSales.push({ lineIndex: data.lines.indexOf(buyerLines[i]), saleId });
@@ -165,10 +170,10 @@ export const transactionService = {
       // 1. COLLECT ALL UNIQUE STOCK REFS
       const lines = data.lines || [];
       const stockRefsMap: Record<string, any> = {};
-      const uniqueStockIds = [...new Set(lines.map((l: any) => `${l.itemId}_${l.gradeId || 'no'}_${l.sizeId || 'no'}`))];
+      const uniqueStockIds = [...new Set(lines.map((l: any) => `${l.itemId}_${l.gradeId || 'no'}_${l.sizeId || 'no'}`))] as string[];
       
       for (const sId of uniqueStockIds) {
-        stockRefsMap[sId] = await transaction.get(doc(db, 'stock', sId as string));
+        stockRefsMap[sId] = await transaction.get(doc(db, 'stock', sId));
       }
 
       // 2. NOW PERFORM ALL WRITES
@@ -178,8 +183,12 @@ export const transactionService = {
         paymentStatus: 'Unpaid'
       });
 
+      console.log(`[STABILIZATION] Writing ${lines.length} lines to stock`);
+
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
+        if (!line.itemId) throw new Error(`Missing Item ID on line ${i}`);
+
         const stockId = `${line.itemId}_${line.gradeId || 'no'}_${line.sizeId || 'no'}`;
         const stockRef = doc(db, 'stock', stockId);
         const stockSnap = stockRefsMap[stockId];
@@ -189,15 +198,13 @@ export const transactionService = {
             itemId: line.itemId, gradeId: line.gradeId || null, sizeId: line.sizeId || null,
             quantity: line.quantity, lastUpdated: serverTimestamp()
           });
-          // Update local map snap so subsequent lines for SAME stockId in THIS loop use update instead of set
           stockRefsMap[stockId] = { exists: () => true, data: () => ({ quantity: line.quantity }) };
         } else {
-          const currentQty = stockSnap.data()?.quantity || 0;
           transaction.update(stockRef, {
             quantity: increment(line.quantity),
             lastUpdated: serverTimestamp()
           });
-          // Update local map for same-transaction consistency
+          const currentQty = stockSnap.data()?.quantity || 0;
           stockRefsMap[stockId] = { exists: () => true, data: () => ({ quantity: currentQty + line.quantity }) };
         }
 
@@ -235,6 +242,7 @@ export const transactionService = {
           quantity: line.quantity, timestamp: serverTimestamp()
         });
       }
+      console.log(`[STABILIZATION] postReceiving completed for ${id}`);
     });
   },
 
@@ -278,6 +286,9 @@ export const transactionService = {
 
   // RECORD PAYMENT
   recordPayment: async (invoiceId: string, type: 'sales' | 'receivings', paymentAmount: number) => {
+    const paymentId = await generateDocId('PAY');
+    const journalId = await generateDocId('E');
+
     return runTransaction(db, async (transaction) => {
       const docRef = doc(db, type, invoiceId);
       const snap = await transaction.get(docRef);
@@ -294,12 +305,11 @@ export const transactionService = {
       const newBalanceDue = balanceDue - paymentAmount;
       const newPaymentStatus = newBalanceDue <= 0 ? 'Paid' : 'Partial';
 
-      const paymentId = `PAY-${Date.now()}`;
       const newPayment = {
         id: paymentId,
         date: new Date().toISOString().split('T')[0],
         amount: paymentAmount,
-        journalId: `JRN-${paymentId}`,
+        journalId: journalId,
         reversed: false
       };
 
@@ -313,8 +323,9 @@ export const transactionService = {
         paymentHistory
       });
 
-      const journalRef = doc(collection(db, 'expenses'), newPayment.journalId);
+      const journalRef = doc(db, 'expenses', journalId);
       transaction.set(journalRef, {
+        id: journalId,
         date: new Date().toISOString().split('T')[0],
         reference: paymentId,
         buyerId: type === 'sales' ? invoiceData.buyerId : null,

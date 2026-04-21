@@ -3,7 +3,6 @@ import { Plus, Trash2, Send, Save, Printer, ChevronRight, DollarSign, X, RotateC
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../../context/LanguageContext';
 import { useMasterData } from '../../hooks/useMasterData';
-import { masterDataService } from '../../services/masterDataService';
 import { transactionService } from '../../services/transactionService';
 import { Button, Card, Header, Badge } from '../../components/ui/DesignSystem';
 import { Table } from '../../components/ui/Table';
@@ -86,12 +85,17 @@ export const ReceivingPage: React.FC = () => {
       // To be 100% sure against stale closures, we'll build from a snapshot.
       const snapshot = JSON.parse(JSON.stringify(formData));
       
-      if (!snapshot.supplierId || snapshot.lines.length === 0) {
-        alert(t("Supplier and lines required", "Supplier dan detail barang harus diisi"));
+      // STRICT VALIDATION
+      if (!snapshot.supplierId) {
+        alert(t("Supplier is required", "Supplier harus dipilih"));
         return;
       }
-      
-      // EXPLICIT CLEANING AND RE-CALCULATION
+
+      if (snapshot.lines.length === 0) {
+        alert(t("At least one item is required", "Minimal satu item harus diisi"));
+        return;
+      }
+
       const finalLines = snapshot.lines.map((l: any) => ({
         itemId: l.itemId || '',
         gradeId: l.gradeId || '',
@@ -99,15 +103,12 @@ export const ReceivingPage: React.FC = () => {
         quantity: Number(l.quantity) || 0,
         pricePerKg: Number(l.pricePerKg) || 0,
         buyerId: l.buyerId || null
-      })).filter((l: any) => l.itemId !== '');
+      })).filter((l: any) => l.itemId !== '' && l.quantity > 0);
 
       if (finalLines.length === 0) {
-        alert(t("At least one valid item is required", "Minimal satu item harus diisi"));
+        alert(t("Valid items with quantity > 0 are required", "Item valid dengan jumlah > 0 diperlukan"));
         return;
       }
-
-      const totalQty = finalLines.reduce((sum: number, l: any) => sum + l.quantity, 0);
-      const totalAmount = finalLines.reduce((sum: number, l: any) => sum + (l.quantity * l.pricePerKg), 0);
 
       const hasMissingPrice = finalLines.some((l: any) => l.pricePerKg <= 0);
       if (hasMissingPrice) {
@@ -115,6 +116,9 @@ export const ReceivingPage: React.FC = () => {
           return;
         }
       }
+
+      const totalQty = finalLines.reduce((sum: number, l: any) => sum + l.quantity, 0);
+      const totalAmount = finalLines.reduce((sum: number, l: any) => sum + (l.quantity * l.pricePerKg), 0);
 
       // Build payload EXPLICITLY to avoid carrying over unwanted state
       const docData = { 
@@ -137,12 +141,16 @@ export const ReceivingPage: React.FC = () => {
       
       if (isPost) {
         await transactionService.postReceiving(id, docData);
+        alert(t("Document Posted Successfully", "Dokumen Berhasil di-Post"));
+      } else {
+        alert(t("Draft Saved Successfully", "Draft Berhasil Disimpan"));
       }
 
       if (isPrint) {
         window.open(`/print/receivings/${id}`, '_blank');
       }
 
+      // RESET AND CLOSE
       setIsCreating(false);
       setFormData({ 
         date: new Date().toISOString().split('T')[0], 
@@ -208,11 +216,15 @@ export const ReceivingPage: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('SUPPLIER', 'SUPPLIER')}</label>
-                    <select className="w-full bg-slate-50 border border-slate-100 rounded-xl p-3 font-bold"
-                      value={formData.supplierId} onChange={e => setFormData((p: any) => ({ ...p, supplierId: e.target.value }))}>
+                    <select 
+                      className={`w-full bg-slate-50 border border-slate-100 rounded-xl p-3 font-bold ${suppliersLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      disabled={suppliersLoading}
+                      value={formData.supplierId} 
+                      onChange={e => setFormData((p: any) => ({ ...p, supplierId: e.target.value }))}
+                    >
                       <option value="">-- {t('Pilih Supplier', 'Select Supplier')} --</option>
                       {suppliersLoading ? (
-                        <option disabled>Loading...</option>
+                        <option disabled>Loading Suppliers...</option>
                       ) : (
                         suppliers.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)
                       )}
