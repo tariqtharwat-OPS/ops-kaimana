@@ -4,8 +4,7 @@ import {
   runTransaction, 
   serverTimestamp, 
   increment,
-  setDoc,
-  getDocs
+  setDoc
 } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { generateDocId } from '../utils/docNumbering';
@@ -259,47 +258,6 @@ export const transactionService = {
         postedAt: serverTimestamp(),
         paymentStatus: 'Unpaid'
       });
-    });
-  },
-
-  // REBUILD STOCK FROM ALL TRANSACTIONS (Task D)
-  rebuildStock: async () => {
-    // Note: getDocs cannot be used inside runTransaction if they are not part of the transaction.
-    // However, for a one-time rebuild, we can fetch all and then apply in a transaction or writeBatch.
-    const recSnap = await getDocs(collection(db, 'receivings'));
-    const salesSnap = await getDocs(collection(db, 'sales'));
-    
-    const postedRecs = recSnap.docs.filter(d => d.data().status === 'Posted');
-    const postedSales = salesSnap.docs.filter(d => d.data().status === 'Posted');
-    
-    const intendedStock: Record<string, number> = {};
-    
-    for (const rec of postedRecs) {
-      for (const line of (rec.data().lines || [])) {
-        const key = `${line.itemId}_${line.gradeId || 'no'}_${line.sizeId || 'no'}`;
-        intendedStock[key] = (intendedStock[key] || 0) + (Number(line.quantity) || 0);
-      }
-    }
-    
-    for (const sale of postedSales) {
-      for (const line of (sale.data().lines || [])) {
-        const key = `${line.itemId}_${line.gradeId || 'no'}_${line.sizeId || 'no'}`;
-        intendedStock[key] = (intendedStock[key] || 0) - (Number(line.quantity) || 0);
-      }
-    }
-
-    return runTransaction(db, async (transaction) => {
-      for (const [key, qty] of Object.entries(intendedStock)) {
-        const [itemId, gradeId, sizeId] = key.split('_');
-        const stockRef = doc(db, 'stock', key);
-        transaction.set(stockRef, {
-          itemId,
-          gradeId: gradeId === 'no' ? null : gradeId,
-          sizeId: sizeId === 'no' ? null : sizeId,
-          quantity: qty,
-          lastUpdated: serverTimestamp()
-        }, { merge: true });
-      }
     });
   },
 
