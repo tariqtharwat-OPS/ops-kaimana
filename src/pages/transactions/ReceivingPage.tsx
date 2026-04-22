@@ -7,9 +7,13 @@ import { transactionService } from '../../services/transactionService';
 import { Button, Card, Header, Badge } from '../../components/ui/DesignSystem';
 import { getItemLabel } from '../../utils/itemMapping';
 import { Table } from '../../components/ui/Table';
+import { useAuth } from '../../context/AuthContext';
 
 export const ReceivingPage: React.FC = () => {
   const { t } = useLanguage();
+  const { currentUser } = useAuth();
+  const canModify = currentUser?.role === 'Admin' || currentUser?.role === 'Operator';
+
   const { data: items, loading: itemsLoading } = useMasterData('items', true);
   const { data: grades } = useMasterData('grades', true);
   const { data: sizes } = useMasterData('sizes', true);
@@ -340,9 +344,9 @@ export const ReceivingPage: React.FC = () => {
                </div>
              </Card>
 
-             <Button className="w-full py-4 shadow-ocean-800/20" onClick={() => handleSave(true)}><Send size={18} /> {t('POST PENERIMAAN', 'POST RECEIVING')}</Button>
+             {canModify && <Button className="w-full py-4 shadow-ocean-800/20" onClick={() => handleSave(true)}><Send size={18} /> {t('POST PENERIMAAN', 'POST RECEIVING')}</Button>}
              <div className="grid grid-cols-2 gap-4">
-                <Button variant="secondary" className="w-full py-4" onClick={() => handleSave(false)}><Save size={18} /> {t('SIMPAN', 'SAVE')}</Button>
+                {canModify && <Button variant="secondary" className="w-full py-4" onClick={() => handleSave(false)}><Save size={18} /> {t('SIMPAN', 'SAVE')}</Button>}
                 <Button variant="secondary" className="w-full py-4" onClick={() => handleSave(false, true)}><Printer size={18} /> {t('CETAK', 'PRINT')}</Button>
              </div>
           </div>

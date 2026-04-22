@@ -27,7 +27,7 @@ export const StockPage: React.FC = () => {
   const { data: movements } = useMasterData('stock_movements', true);
   const { data: allocations } = useMasterData('buyerAllocations', true);
 
-  const totalPhysical = stock.reduce((sum: number, s: any) => sum + (s.physicalQty || s.quantity || 0), 0);
+  const totalPhysical = stock.reduce((sum: number, s: any) => sum + (s.physicalQty || 0), 0);
   const totalReserved = stock.reduce((sum: number, s: any) => sum + (s.reservedQty || 0), 0);
   const totalAvailable = totalPhysical - totalReserved;
 
@@ -81,7 +81,7 @@ export const StockPage: React.FC = () => {
             <AlertCircle className="text-amber-500" size={16} />
             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('STOK RENDAH', 'LOW STOCK')}</span>
           </div>
-          <h3 className="text-2xl font-black text-slate-900">{stock.filter((s: any) => (s.physicalQty || s.quantity) < 100).length} Items</h3>
+          <h3 className="text-2xl font-black text-slate-900">{stock.filter((s: any) => (s.physicalQty || 0) < 100).length} Items</h3>
         </Card>
       </div>
 
@@ -98,7 +98,7 @@ export const StockPage: React.FC = () => {
         </div>
 
         <Table 
-          data={activeTab === 'available' ? stock.filter((s:any) => (s.physicalQty || s.quantity) > 0) : allocations.filter((a: any) => a.status === 'Provisional')}
+          data={activeTab === 'available' ? stock.filter((s:any) => (s.physicalQty || 0) > 0) : allocations.filter((a: any) => a.status === 'Provisional')}
           columns={[
             { 
               header: t('BARANG', 'ITEM'), 
@@ -116,7 +116,7 @@ export const StockPage: React.FC = () => {
             { header: 'SIZE', accessor: (s: any) => sizes.find((sz: any) => sz.id === s.sizeId)?.name || '-' },
             { 
               header: activeTab === 'available' ? t('FISIK', 'PHYSICAL') : t('ALOKASI', 'ALLOCATION'), 
-              accessor: (s: any) => <span className="font-bold text-slate-900">{(s.physicalQty || s.quantity || s.allocatedQty || 0).toLocaleString()} kg</span>, 
+              accessor: (s: any) => <span className="font-bold text-slate-900">{(s.physicalQty || s.allocatedQty || 0).toLocaleString()} kg</span>, 
               className: 'text-right' 
             },
             ...(activeTab === 'available' ? [
@@ -128,7 +128,7 @@ export const StockPage: React.FC = () => {
               {
                 header: t('TERSEDIA', 'AVAILABLE'),
                 accessor: (s: any) => {
-                  const phys = s.physicalQty || s.quantity || 0;
+                  const phys = s.physicalQty || 0;
                   const res = s.reservedQty || 0;
                   const avail = phys - res;
                   return <span className={`font-black ${avail < 0 ? 'text-red-600' : 'text-emerald-600'}`}>{avail.toLocaleString()} kg</span>;
@@ -141,7 +141,7 @@ export const StockPage: React.FC = () => {
               accessor: (s: any) => (
                 <Badge variant={((s.physicalQty || s.quantity || s.allocatedQty) > 500) ? 'posted' : 'pending'}>
                   {activeTab === 'available' 
-                    ? ((s.physicalQty || s.quantity) > 500 ? t('Aman', 'Safe') : t('Rendah', 'Low'))
+                    ? ((s.physicalQty || 0) > 500 ? t('Aman', 'Safe') : t('Rendah', 'Low'))
                     : s.status}
                 </Badge>
               ), 

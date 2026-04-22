@@ -18,7 +18,7 @@ export const ReportsPage: React.FC = () => {
   const { data: receivings } = useMasterData('receivings', true);
   const { data: stock } = useMasterData('stock', true);
   const { data: sales } = useMasterData('sales', true);
-  const { data: adjustments } = useMasterData('adjustments', true);
+  const { data: adjustments } = useMasterData('buyerCredits', true);
   const { data: expenses } = useMasterData('expenses', true);
   const { data: items } = useMasterData('items', true);
   const { data: buyers } = useMasterData('buyers', true);
@@ -171,11 +171,11 @@ export const ReportsPage: React.FC = () => {
           <Package className="text-slate-300" size={16} />
         </div>
         <Table 
-          data={stock.filter((s: any) => (s.physicalQty || s.quantity) > 0)}
+          data={stock.filter((s: any) => (s.physicalQty || 0) > 0)}
           columns={[
             { header: 'ITEM', accessor: (s: any) => getItemLabel(items.find((i: any) => i.id === s.itemId)) },
-            { header: 'FISIK', accessor: (s: any) => `${(s.physicalQty || s.quantity || 0).toLocaleString()} kg`, className: 'font-bold' },
-            { header: 'TERSEDIA', accessor: (s: any) => `${((s.physicalQty || s.quantity || 0) - (s.reservedQty || 0)).toLocaleString()} kg`, className: 'font-black text-emerald-600' },
+            { header: 'FISIK', accessor: (s: any) => `${(s.physicalQty || 0).toLocaleString()} kg`, className: 'font-bold' },
+            { header: 'TERSEDIA', accessor: (s: any) => `${((s.physicalQty || 0) - (s.reservedQty || 0)).toLocaleString()} kg`, className: 'font-black text-emerald-600' },
           ]}
         />
       </Card>

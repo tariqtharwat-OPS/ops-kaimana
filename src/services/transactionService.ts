@@ -68,7 +68,6 @@ export const transactionService = {
         transaction.update(doc(db, 'stock', stockId), {
           physicalQty: increment(-input.quantity),
           reservedQty: inputIsReserved ? increment(-(Math.min(res, input.quantity))) : increment(0),
-          quantity: increment(-input.quantity), 
           lastUpdated: serverTimestamp()
         });
 
@@ -88,13 +87,12 @@ export const transactionService = {
         if (!stockSnap.exists()) {
           transaction.set(stockRef, {
             itemId: output.itemId, gradeId: output.gradeId || null, sizeId: output.sizeId || null,
-            physicalQty: output.quantity, reservedQty: 0, quantity: output.quantity,
+            physicalQty: output.quantity, reservedQty: 0,
             lastUpdated: serverTimestamp()
           });
         } else {
           transaction.update(stockRef, {
             physicalQty: increment(output.quantity),
-            quantity: increment(output.quantity),
             lastUpdated: serverTimestamp()
           });
         }
@@ -132,8 +130,9 @@ export const transactionService = {
 
           if (shortfall > 0) {
             const adjId = preGeneratedAdjIds[adjPoolIndex++];
-            transaction.set(doc(db, 'adjustments', adjId), {
+            transaction.set(doc(db, 'buyerCredits', adjId), {
               id: adjId, buyerId: allocation.buyerId, receivingId: allocation.receivingId,
+              allocationId: allocation.id, // Direct trace to the source allocation
               itemId: allocation.itemId, gradeId: allocation.gradeId || null, sizeId: allocation.sizeId || null,
               quantity: shortfall, amount: shortfall * (allocation.pricePerKg || 0), 
               type: 'Credit', status: 'Posted', createdAt: serverTimestamp()
@@ -182,13 +181,12 @@ export const transactionService = {
           transaction.set(stockRef, {
             itemId: line.itemId, gradeId: line.gradeId || null, sizeId: line.sizeId || null,
             physicalQty: line.quantity, reservedQty: isAllocated ? line.quantity : 0,
-            quantity: line.quantity, lastUpdated: serverTimestamp()
+            lastUpdated: serverTimestamp()
           });
         } else {
           transaction.update(stockRef, {
             physicalQty: increment(line.quantity),
             reservedQty: isAllocated ? increment(line.quantity) : increment(0),
-            quantity: increment(line.quantity),
             lastUpdated: serverTimestamp()
           });
         }
@@ -297,7 +295,6 @@ export const transactionService = {
         transaction.update(doc(db, 'stock', stockId), {
           physicalQty: increment(-line.quantity),
           reservedQty: increment(-line.quantity),
-          quantity: increment(-line.quantity),
           lastUpdated: serverTimestamp()
         });
 
@@ -337,7 +334,18 @@ export const transactionService = {
       const snap = await transaction.get(docRef);
       if (!snap.exists()) throw new Error("Document not found");
       const docData = snap.data();
+      if (docData.status === 'Voided') throw new Error("Document is already voided");
       if (docData.status !== 'Posted' && docData.status !== 'Draft') throw new Error("Only posted or draft documents can be voided");
+
+      // SPECIAL SAFETY: Do not void a sale if it has been physically dispatched
+      if (collectionName === 'sales' && docData.dispatchStatus === 'Dispatched') {
+        throw new Error("Cannot void a dispatched sale. Please process a Return or Adjustment instead.");
+      }
+      
+      // SPECIAL SAFETY: Do not void a receiving if it has been processed
+      if (collectionName === 'receivings' && docData.processedAt) {
+        throw new Error("Cannot void a receiving that has already been processed. Please process an Adjustment instead.");
+      }
 
       const lines = docData.lines || [];
       const uniqueStockIds = [...new Set(lines.map((l: any) => `${l.itemId}_${l.gradeId || 'no'}_${l.sizeId || 'no'}`))] as string[];
@@ -352,8 +360,7 @@ export const transactionService = {
           const isAllocated = !!line.buyerId;
           transaction.update(doc(db, 'stock', stockId), {
             physicalQty: increment(-line.quantity),
-            reservedQty: isAllocated ? increment(-line.quantity) : increment(0),
-            quantity: increment(-line.quantity)
+            reservedQty: isAllocated ? increment(-line.quantity) : increment(0)
           });
         }
       } else if (collectionName === 'sales') {
@@ -366,8 +373,7 @@ export const transactionService = {
           if (wasDispatched) {
             transaction.update(doc(db, 'stock', stockId), {
               physicalQty: increment(line.quantity),
-              reservedQty: increment(line.quantity),
-              quantity: increment(line.quantity)
+              reservedQty: increment(line.quantity)
             });
           } else if (docData.status === 'Posted') {
              transaction.update(doc(db, 'stock', stockId), {
@@ -446,9 +452,13 @@ export const transactionService = {
       paymentHistory[paymentIndex].reversed = true;
       transaction.update(docRef, { amountPaid: newAmountPaid, balanceDue: newBalanceDue, paymentStatus: newPaymentStatus, paymentHistory });
 
-      const revId = `REV-${paymentId}`;
-      transaction.set(doc(collection(db, 'expenses'), revId), {
-        date: new Date().toISOString().split('T')[0], reference: revId,
+      const preGeneratedAdjIds = await generateDocIds('ADJ', new Date(), 1, transaction);
+      const revId = preGeneratedAdjIds[0];
+
+      transaction.set(doc(db, 'expenses', revId), {
+        id: revId,
+        date: new Date().toISOString().split('T')[0], 
+        reference: paymentId,
         buyerId: type === 'sales' ? invoiceData.buyerId : null, supplierId: type === 'receivings' ? invoiceData.supplierId : null,
         transactionType: type === 'sales' ? 'Money Out' : 'Money In', category: 'adjustment',
         notes: `Reversal of Payment ${paymentId}`, totalAmount: payment.amount, totalQty: 0, status: 'Posted', linkedInvoiceId: invoiceId,

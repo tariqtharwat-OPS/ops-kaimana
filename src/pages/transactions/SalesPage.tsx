@@ -7,9 +7,13 @@ import { transactionService } from '../../services/transactionService';
 import { Button, Card, Header, Badge } from '../../components/ui/DesignSystem';
 import { getItemLabel } from '../../utils/itemMapping';
 import { Table } from '../../components/ui/Table';
+import { useAuth } from '../../context/AuthContext';
 
 export const SalesPage: React.FC = () => {
   const { t } = useLanguage();
+  const { currentUser } = useAuth();
+  const canModify = currentUser?.role === 'Admin' || currentUser?.role === 'Operator';
+
   const { data: items, loading: itemsLoading } = useMasterData('items', true);
   const { data: grades } = useMasterData('grades', true);
   const { data: sizes } = useMasterData('sizes', true);
@@ -300,10 +304,10 @@ export const SalesPage: React.FC = () => {
                </div>
              </Card>
 
-              <div className="space-y-4">
-                <Button className="w-full py-4 shadow-emerald-800/20" onClick={() => handleSave(true)}><Send size={18} /> {t('POST INVOICE', 'POST INVOICE')}</Button>
+               <div className="space-y-4">
+                {canModify && <Button className="w-full py-4 shadow-emerald-800/20" onClick={() => handleSave(true)}><Send size={18} /> {t('POST INVOICE', 'POST INVOICE')}</Button>}
                 <div className="grid grid-cols-2 gap-4">
-                  <Button variant="secondary" className="w-full py-4" onClick={() => handleSave(false)}><Save size={18} /> {t('SIMPAN DRAFT', 'SAVE DRAFT')}</Button>
+                  {canModify && <Button variant="secondary" className="w-full py-4" onClick={() => handleSave(false)}><Save size={18} /> {t('SIMPAN DRAFT', 'SAVE DRAFT')}</Button>}
                   <Button variant="secondary" className="w-full py-4" onClick={() => handleSave(false, true)}><Printer size={18} /> {t('CETAK', 'PRINT')}</Button>
                 </div>
               </div>
@@ -348,12 +352,12 @@ export const SalesPage: React.FC = () => {
             ) },
             { header: '', accessor: (s: any) => (
               <div className="flex gap-2 justify-end">
-                {s.status === 'Draft' && (
+                {s.status === 'Draft' && canModify && (
                   <Button variant="primary" size="sm" onClick={() => handleSave(true)}>
                     <Send size={16} /> POST
                   </Button>
                 )}
-                {s.status === 'Posted' && s.dispatchStatus !== 'Dispatched' && (
+                {s.status === 'Posted' && s.dispatchStatus !== 'Dispatched' && canModify && (
                   <Button variant="primary" size="sm" className="bg-orange-600 hover:bg-orange-700 border-none" onClick={() => handleDispatch(s.id)}>
                     <Truck size={16} /> {t('KIRIM', 'DISPATCH')}
                   </Button>

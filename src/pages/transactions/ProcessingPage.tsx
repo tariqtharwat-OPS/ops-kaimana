@@ -6,9 +6,13 @@ import { transactionService } from '../../services/transactionService';
 import { Button, Card, Header, Badge } from '../../components/ui/DesignSystem';
 import { Table } from '../../components/ui/Table';
 import { getItemLabel } from '../../utils/itemMapping';
+import { useAuth } from '../../context/AuthContext';
 
 export const ProcessingPage: React.FC = () => {
   const { t } = useLanguage();
+  const { currentUser } = useAuth();
+  const canModify = currentUser?.role === 'Admin' || currentUser?.role === 'Operator';
+
   const { data: items } = useMasterData('items', true);
   const { data: grades } = useMasterData('grades', true);
   const { data: sizes } = useMasterData('sizes', true);
@@ -308,13 +312,15 @@ export const ProcessingPage: React.FC = () => {
                     value={formData.notes} onChange={e => setFormData((p: any) => ({ ...p, notes: e.target.value }))} />
                </div>
                <div className="pt-4 space-y-3">
-                  <Button 
-                    className={`w-full py-4 ${!isValid() ? 'opacity-50 cursor-not-allowed' : ''}`} 
-                    onClick={() => isValid() && handleSave(true)}
-                  >
-                    <Send size={18} /> {t('POST PRODUKSI', 'POST PRODUCTION')}
-                  </Button>
-                  <Button variant="secondary" className="w-full py-4" onClick={() => handleSave(false)}><Save size={18} /> {t('SIMPAN DRAFT', 'SAVE DRAFT')}</Button>
+                  {canModify && (
+                    <Button 
+                      className={`w-full py-4 ${!isValid() ? 'opacity-50 cursor-not-allowed' : ''}`} 
+                      onClick={() => isValid() && handleSave(true)}
+                    >
+                      <Send size={18} /> {t('POST PRODUKSI', 'POST PRODUCTION')}
+                    </Button>
+                  )}
+                  {canModify && <Button variant="secondary" className="w-full py-4" onClick={() => handleSave(false)}><Save size={18} /> {t('SIMPAN DRAFT', 'SAVE DRAFT')}</Button>}
                </div>
             </Card>
           </div>
