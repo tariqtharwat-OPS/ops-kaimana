@@ -48,11 +48,17 @@ service cloud.firestore {
 
     // 3. Transactions
     match /receivings/{id} { allow read, write: if isSignedIn() && (isAdmin() || isOperator()); }
-    match /sales/{id} { allow read, write: if isSignedIn() && (isAdmin() || isOperator()); }
+    match /sales/{id} { 
+      allow read: if isSignedIn() && (isAdmin() || isOperator() || (isBuyer() && resource.data.buyerId == getUserData().linkedBuyerId));
+      allow write: if isSignedIn() && (isAdmin() || isOperator()); 
+    }
     match /processing/{id} { allow read, write: if isSignedIn() && (isAdmin() || isOperator()); }
     match /packing/{id} { allow read, write: if isSignedIn() && (isAdmin() || isOperator()); }
     match /expenses/{id} { allow read, write: if isSignedIn() && (isAdmin() || isOperator()); }
-    match /dispatches/{docId} { allow read, write: if isSignedIn(); }
+    match /dispatches/{docId} { 
+      allow read: if isSignedIn() && (isAdmin() || isOperator() || (isBuyer() && resource.data.buyerId == getUserData().linkedBuyerId));
+      allow write: if isSignedIn() && (isAdmin() || isOperator()); 
+    }
 
     // 4. Stock & Movements
     match /stock/{id} {

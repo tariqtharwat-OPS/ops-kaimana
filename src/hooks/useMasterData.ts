@@ -1,16 +1,26 @@
 import { useState, useEffect } from 'react';
 import { masterDataService } from '../services/masterDataService';
 import { where } from 'firebase/firestore';
+import { useAuth } from '../context/AuthContext';
 
 export function useMasterData(collectionName: string, includeInactive = false) {
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const { currentUser } = useAuth();
 
   useEffect(() => {
     setLoading(true);
-    const constraints = includeInactive ? [] : [where('active_status', '==', true)];
+    let constraints = includeInactive ? [] : [where('active_status', '==', true)];
     
+    // SCOPING: If user is a Buyer, restrict visibility of transactional collections
+    if (currentUser?.role === 'Buyer' && currentUser.linkedBuyerId) {
+      const transactionalCollections = ['sales', 'buyerAllocations', 'dispatches', 'buyerCredits'];
+      if (transactionalCollections.includes(collectionName)) {
+        constraints.push(where('buyerId', '==', currentUser.linkedBuyerId));
+      }
+    }
+
     try {
       const unsubscribe = masterDataService.subscribe(collectionName, (docs) => {
         setData(docs);
@@ -22,7 +32,7 @@ export function useMasterData(collectionName: string, includeInactive = false) {
       setError(err as Error);
       setLoading(false);
     }
-  }, [collectionName, includeInactive]);
+  }, [collectionName, includeInactive, currentUser?.id, currentUser?.role, currentUser?.linkedBuyerId]);
 
   return { data, loading, error };
 }

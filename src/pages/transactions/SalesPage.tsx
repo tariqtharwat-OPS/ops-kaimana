@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Trash2, Save, ChevronRight, Printer, Send, DollarSign, X, RotateCcw, History, Truck } from 'lucide-react';
+import { Plus, Trash2, Save, Printer, Send, DollarSign, X, RotateCcw, History, Truck } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../../context/LanguageContext';
 import { useMasterData } from '../../hooks/useMasterData';
@@ -46,14 +46,18 @@ export const SalesPage: React.FC = () => {
   const [paymentAmount, setPaymentAmount] = useState<number>(0);
   const [historyModal, setHistoryModal] = useState<{isOpen: boolean, sale: any}>({isOpen: false, sale: null});
 
+  const getStockKey = (itemId: string, gradeId: string, sizeId: string) => {
+    return `${itemId}_${gradeId || 'no'}_${sizeId || 'no'}`;
+  };
+
   const getStockQty = (itemId: string, gradeId: string, sizeId: string) => {
-    const key = `${itemId}_${gradeId || 'no'}_${sizeId || 'no'}`;
+    const key = getStockKey(itemId, gradeId, sizeId);
     const entry = stock.find((s: any) => s.id === key);
-    return entry ? (entry.physicalQty || entry.quantity || 0) : 0;
+    return entry ? (entry.physicalQty || 0) : 0;
   };
 
   const getReservedQty = (itemId: string, gradeId: string, sizeId: string) => {
-    const key = `${itemId}_${gradeId || 'no'}_${sizeId || 'no'}`;
+    const key = getStockKey(itemId, gradeId, sizeId);
     const entry = stock.find((s: any) => s.id === key);
     return entry ? (entry.reservedQty || 0) : 0;
   };
@@ -61,7 +65,7 @@ export const SalesPage: React.FC = () => {
   const getAvailableQty = (itemId: string, gradeId: string, sizeId: string) => {
     const total = getStockQty(itemId, gradeId, sizeId);
     const reserved = getReservedQty(itemId, gradeId, sizeId);
-    return total - reserved;
+    return Math.max(0, total - reserved);
   };
 
   const addLine = () => {
@@ -106,22 +110,23 @@ export const SalesPage: React.FC = () => {
   const handleSave = async (isPost: boolean, isPrint: boolean = false) => {
     try {
       if (!formData.buyerId || formData.lines.length === 0) {
-        alert("Buyer and lines required");
+        alert(t('Pembeli dan detail barang wajib diisi', 'Buyer and lines required'));
         return;
       }
 
       const hasMissingPrice = formData.lines.some((l: any) => !l.pricePerKg || l.pricePerKg <= 0);
       if (hasMissingPrice) {
-        alert("Peringatan: Ada item dengan harga 0 atau kosong. Harap isi harga yang valid sebelum menyimpan.");
+        alert(t("Harga tidak boleh kosong atau 0", "Price cannot be empty or 0"));
         return;
       }
 
-      // Check available stock if posting general sale
+      // Check availability for manual sales
       if (isPost) {
         for (const line of formData.lines) {
           const avail = getAvailableQty(line.itemId, line.gradeId, line.sizeId);
-          if (line.quantity > avail) {
-            alert(`Stok tidak mencukupi. Tersedia: ${avail} kg`);
+          // If this is a manual sale (no allocationId), we MUST check availability
+          if (!line.allocationId && line.quantity > avail) {
+            alert(`${t('Stok tidak mencukupi untuk', 'Insufficient stock for')} ${getItemLabel(items.find(i => i.id === line.itemId))}. ${t('Tersedia', 'Available')}: ${avail} kg`);
             return;
           }
         }
@@ -152,6 +157,18 @@ export const SalesPage: React.FC = () => {
     } catch (e: any) {
       console.error("Sales Save/Post error:", e);
       alert(t('Gagal menyimpan: ', 'Failed to save: ') + e.message);
+    }
+  };
+
+  const handleQuickPost = async (sale: any) => {
+    try {
+      if (!sale.buyerId || !sale.lines || sale.lines.length === 0) {
+        throw new Error(t("Data invoice tidak lengkap (Buyer/Lines missing)", "Invoice data incomplete (Buyer/Lines missing)"));
+      }
+      await transactionService.postSales(sale.id, sale);
+      alert(t("Invoice berhasil di-POST!", "Invoice posted successfully!"));
+    } catch (e: any) {
+      alert(e.message);
     }
   };
 
@@ -265,14 +282,20 @@ export const SalesPage: React.FC = () => {
                         </div>
                       </div>
                       <div className="col-span-2 space-y-1">
-                        <label className="text-[10px] font-black text-slate-400 uppercase">QTY (AVAIL: {getAvailableQty(line.itemId, line.gradeId, line.sizeId)})</label>
+                        <label className="text-[10px] font-black text-slate-400 uppercase">
+                          QTY <span className="text-emerald-600">(AVAIL: {getAvailableQty(line.itemId, line.gradeId, line.sizeId)})</span>
+                        </label>
                         <input type="number" className="w-full bg-white border border-slate-200 rounded-lg p-2 text-sm font-bold text-right"
-                          value={line.quantity} onChange={e => updateLine(idx, 'quantity', Number(e.target.value))} />
+                          onWheel={e => e.currentTarget.blur()}
+                          value={line.quantity || ''} 
+                          onChange={e => updateLine(idx, 'quantity', e.target.value === '' ? 0 : Number(e.target.value))} />
                       </div>
                       <div className="col-span-2 space-y-1">
                         <label className="text-[10px] font-black text-slate-400 uppercase text-right block">PRICE/KG</label>
                         <input type="number" className="w-full bg-white border border-slate-200 rounded-lg p-2 text-sm font-bold text-right text-emerald-700"
-                          value={line.pricePerKg} onChange={e => updateLine(idx, 'pricePerKg', Number(e.target.value))} />
+                          onWheel={e => e.currentTarget.blur()}
+                          value={line.pricePerKg || ''} 
+                          onChange={e => updateLine(idx, 'pricePerKg', e.target.value === '' ? 0 : Number(e.target.value))} />
                       </div>
                       <div className="col-span-2 space-y-1">
                         <label className="text-[10px] font-black text-slate-400 uppercase text-right block">TOTAL</label>
@@ -304,13 +327,16 @@ export const SalesPage: React.FC = () => {
                </div>
              </Card>
 
-               <div className="space-y-4">
-                {canModify && <Button className="w-full py-4 shadow-emerald-800/20" onClick={() => handleSave(true)}><Send size={18} /> {t('POST INVOICE', 'POST INVOICE')}</Button>}
-                <div className="grid grid-cols-2 gap-4">
-                  {canModify && <Button variant="secondary" className="w-full py-4" onClick={() => handleSave(false)}><Save size={18} /> {t('SIMPAN DRAFT', 'SAVE DRAFT')}</Button>}
-                  <Button variant="secondary" className="w-full py-4" onClick={() => handleSave(false, true)}><Printer size={18} /> {t('CETAK', 'PRINT')}</Button>
+                <div className="space-y-4">
+                  {canModify && <Button className="w-full py-4 shadow-emerald-800/20" onClick={() => handleSave(true)}><Send size={18} /> {t('POST INVOICE', 'POST INVOICE')}</Button>}
+                  <p className="text-[10px] text-center font-bold text-emerald-200 opacity-60 px-4 italic">
+                    *{t('Posting invoice hanya mengunci stok (Reserved). Stok fisik berkurang saat DISPATCH.', 'Posting invoice only reserves stock. Physical deduction occurs at DISPATCH.')}
+                  </p>
+                  <div className="grid grid-cols-2 gap-4">
+                    {canModify && <Button variant="secondary" className="w-full py-4" onClick={() => handleSave(false)}><Save size={18} /> {t('SIMPAN DRAFT', 'SAVE DRAFT')}</Button>}
+                    <Button variant="secondary" className="w-full py-4" onClick={() => handleSave(false, true)}><Printer size={18} /> {t('CETAK', 'PRINT')}</Button>
+                  </div>
                 </div>
-              </div>
           </div>
         </div>
       </div>
@@ -353,35 +379,34 @@ export const SalesPage: React.FC = () => {
             { header: '', accessor: (s: any) => (
               <div className="flex gap-2 justify-end">
                 {s.status === 'Draft' && canModify && (
-                  <Button variant="primary" size="sm" onClick={() => handleSave(true)}>
-                    <Send size={16} /> POST
+                  <Button variant="primary" size="sm" className="bg-emerald-600 hover:bg-emerald-700 shadow-sm" onClick={() => handleQuickPost(s)}>
+                    <Send size={14} /> POST
                   </Button>
                 )}
                 {s.status === 'Posted' && s.dispatchStatus !== 'Dispatched' && canModify && (
-                  <Button variant="primary" size="sm" className="bg-orange-600 hover:bg-orange-700 border-none" onClick={() => handleDispatch(s.id)}>
-                    <Truck size={16} /> {t('KIRIM', 'DISPATCH')}
+                  <Button variant="primary" size="sm" className="bg-orange-600 hover:bg-orange-700 shadow-sm border-none" onClick={() => handleDispatch(s.id)}>
+                    <Truck size={14} /> {t('KIRIM', 'DISPATCH')}
                   </Button>
                 )}
                 {s.status === 'Posted' && (
-                  <Button variant="ghost" size="sm" onClick={() => setHistoryModal({isOpen: true, sale: s})} title="Payment History">
-                    <History size={16} />
+                  <Button variant="secondary" size="sm" className="bg-slate-100 hover:bg-slate-200" onClick={() => setHistoryModal({isOpen: true, sale: s})} title="Payment History">
+                    <History size={14} />
                   </Button>
                 )}
                 {s.status === 'Posted' && (!s.paymentStatus || s.paymentStatus !== 'Paid') && (
-                  <Button variant="secondary" size="sm" onClick={() => {
+                  <Button variant="primary" size="sm" className="bg-blue-600 hover:bg-blue-700 shadow-sm border-none" onClick={() => {
                     const bal = s.balanceDue !== undefined ? s.balanceDue : (s.totalAmount || 0);
                     setPaymentModal({isOpen: true, saleId: s.id, balanceDue: bal});
                     setPaymentAmount(bal);
                   }}>
-                    <DollarSign size={16} className="text-emerald-600" />
+                    <DollarSign size={14} className="text-white" /> {t('BAYAR', 'PAY')}
                   </Button>
                 )}
                 <Link to={`/print/sales/${s.id}`}>
-                  <Button variant="secondary" size="sm"><Printer size={16} /></Button>
+                  <Button variant="secondary" size="sm" className="bg-slate-100 hover:bg-slate-200"><Printer size={14} /></Button>
                 </Link>
-                <Button variant="secondary" size="sm" onClick={() => console.log(s)}><ChevronRight size={16} /></Button>
               </div>
-            ), className: 'text-right' }
+            ), className: 'text-right min-w-[280px]' }
           ]}
         />
       </Card>
@@ -409,8 +434,9 @@ export const SalesPage: React.FC = () => {
                 <input 
                   type="number" 
                   className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 text-2xl font-black text-emerald-600 focus:ring-4 ring-emerald-500/20 outline-none transition-all"
-                  value={paymentAmount}
-                  onChange={e => setPaymentAmount(Number(e.target.value))}
+                  onWheel={e => e.currentTarget.blur()}
+                  value={paymentAmount || ''}
+                  onChange={e => setPaymentAmount(e.target.value === '' ? 0 : Number(e.target.value))}
                   autoFocus
                 />
               </div>

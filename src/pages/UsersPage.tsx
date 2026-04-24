@@ -35,6 +35,11 @@ export const UsersPage: React.FC = () => {
       return;
     }
 
+    if (formData.role === 'Buyer' && !formData.linkedBuyerId) {
+      setSaveError(t('Role Buyer wajib memilih Link Pembeli', 'Buyer role must select a Linked Buyer'));
+      return;
+    }
+
     setSaving(true);
     try {
       if (isEdit) {

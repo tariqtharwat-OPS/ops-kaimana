@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Trash2, Send, Save, Printer, ChevronRight, DollarSign, X, RotateCcw, History } from 'lucide-react';
+import { Plus, Trash2, Send, Save, Printer, DollarSign, X, RotateCcw, History } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../../context/LanguageContext';
 import { useMasterData } from '../../hooks/useMasterData';
@@ -306,12 +306,16 @@ export const ReceivingPage: React.FC = () => {
                         <div className="col-span-1 space-y-1">
                           <label className="text-[10px] font-black text-slate-400 uppercase">QTY</label>
                           <input type="number" className="w-full bg-white border border-slate-200 rounded-lg p-2 text-[10px] font-bold text-right"
-                            value={line.quantity} onChange={e => updateLine(idx, 'quantity', Number(e.target.value))} />
+                            onWheel={e => e.currentTarget.blur()}
+                            value={line.quantity || ''} 
+                            onChange={e => updateLine(idx, 'quantity', e.target.value === '' ? 0 : Number(e.target.value))} />
                         </div>
                         <div className="col-span-2 space-y-1">
                           <label className="text-[10px] font-black text-slate-400 uppercase">PRICE/KG</label>
                           <input type="number" className="w-full bg-white border border-slate-200 rounded-lg p-2 text-[10px] font-bold text-right"
-                            value={line.pricePerKg} onChange={e => updateLine(idx, 'pricePerKg', Number(e.target.value))} />
+                            onWheel={e => e.currentTarget.blur()}
+                            value={line.pricePerKg || ''} 
+                            onChange={e => updateLine(idx, 'pricePerKg', e.target.value === '' ? 0 : Number(e.target.value))} />
                         </div>
                         <div className="col-span-2 space-y-1">
                           <label className="text-[10px] font-black text-slate-400 uppercase text-right block">TOTAL</label>
@@ -384,26 +388,30 @@ export const ReceivingPage: React.FC = () => {
             ) },
             { header: '', accessor: (r: any) => (
               <div className="flex gap-2 justify-end">
+                {r.status === 'Draft' && canModify && (
+                  <Button variant="primary" size="sm" className="bg-ocean-600 hover:bg-ocean-700 shadow-sm" onClick={() => handleSave(true)}>
+                    <Send size={14} /> POST
+                  </Button>
+                )}
                 {r.status === 'Posted' && (
-                  <Button variant="ghost" size="sm" onClick={() => setHistoryModal({isOpen: true, receiving: r})} title="Payment History">
-                    <History size={16} />
+                  <Button variant="secondary" size="sm" className="bg-slate-100 hover:bg-slate-200" onClick={() => setHistoryModal({isOpen: true, receiving: r})} title="Payment History">
+                    <History size={14} />
                   </Button>
                 )}
                 {r.status === 'Posted' && (!r.paymentStatus || r.paymentStatus !== 'Paid') && (
-                  <Button variant="secondary" size="sm" onClick={() => {
+                  <Button variant="primary" size="sm" className="bg-red-600 hover:bg-red-700 shadow-sm border-none" onClick={() => {
                     const bal = r.balanceDue !== undefined ? r.balanceDue : r.totalAmount;
                     setPaymentModal({isOpen: true, receivingId: r.id, balanceDue: bal});
                     setPaymentAmount(bal);
                   }}>
-                    <DollarSign size={16} className="text-ocean-600" />
+                    <DollarSign size={14} className="text-white" /> {t('BAYAR', 'PAY')}
                   </Button>
                 )}
                 <Link to={`/print/receivings/${r.id}`}>
-                  <Button variant="secondary" size="sm"><Printer size={16} /></Button>
+                  <Button variant="secondary" size="sm" className="bg-slate-100 hover:bg-slate-200"><Printer size={14} /></Button>
                 </Link>
-                <Button variant="secondary" size="sm" onClick={() => console.log(r)}><ChevronRight size={16} /></Button>
               </div>
-            ), className: 'text-right' }
+            ), className: 'text-right min-w-[250px]' }
           ]}
         />
       </Card>
@@ -431,8 +439,9 @@ export const ReceivingPage: React.FC = () => {
                 <input 
                   type="number" 
                   className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 text-2xl font-black text-red-600 focus:ring-4 ring-red-500/20 outline-none transition-all"
-                  value={paymentAmount}
-                  onChange={e => setPaymentAmount(Number(e.target.value))}
+                  onWheel={e => e.currentTarget.blur()}
+                  value={paymentAmount || ''}
+                  onChange={e => setPaymentAmount(e.target.value === '' ? 0 : Number(e.target.value))}
                   autoFocus
                 />
               </div>

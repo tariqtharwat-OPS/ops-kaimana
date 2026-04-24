@@ -395,14 +395,28 @@ export const transactionService = {
   recordPayment: async (invoiceId: string, type: 'sales' | 'receivings', paymentAmount: number) => {
     return runTransaction(db, async (transaction) => {
       const docRef = doc(db, type, invoiceId);
-      const snap = await transaction.get(docRef);
-      if (!snap.exists()) throw new Error("Document does not exist");
-      const invoiceData = snap.data();
+      const invoiceSnap = await transaction.get(docRef);
+      if (!invoiceSnap.exists()) throw new Error("Document does not exist");
+      const invoiceData = invoiceSnap.data();
 
-      // Read counters at the beginning of write phase (after invoice snap)
-      const preGeneratedPaymentIds = await generateDocIds('PAY', new Date(), 1, transaction);
-      const preGeneratedExpIds = await generateDocIds('E', new Date(), 1, transaction);
+      // FIXED: All reads must happen first
+      const date = new Date();
+      const day = String(date.getDate()).padStart(2, '0');
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const year = date.getFullYear();
       
+      const payCounterId = `PAY_${year}${month}${day}`;
+      const expCounterId = `E_${year}${month}${day}`;
+      const payCounterRef = doc(db, 'doc_numbers', payCounterId);
+      const expCounterRef = doc(db, 'doc_numbers', expCounterId);
+      
+      const paySnap = await transaction.get(payCounterRef);
+      const expSnap = await transaction.get(expCounterRef);
+      
+      const lastPayCount = paySnap.exists() ? (paySnap.data().last_count || 0) : 0;
+      const lastExpCount = expSnap.exists() ? (expSnap.data().last_count || 0) : 0;
+      
+      // Calculate data
       const total = invoiceData.totalAmount || invoiceData.totalValue || 0;
       const balanceDue = invoiceData.balanceDue !== undefined ? invoiceData.balanceDue : (total - (invoiceData.amountPaid || 0));
       if (paymentAmount <= 0) throw new Error("Invalid payment amount");
@@ -412,12 +426,16 @@ export const transactionService = {
       const newBalanceDue = balanceDue - paymentAmount;
       const newPaymentStatus = newBalanceDue <= 0 ? 'Paid' : 'Partial';
 
-      const paymentId = preGeneratedPaymentIds[0];
-      const journalId = preGeneratedExpIds[0];
+      const paymentId = `PAY-${day}-${month}-${String(lastPayCount + 1).padStart(3, '0')}`;
+      const journalId = `E-${day}-${month}-${String(lastExpCount + 1).padStart(3, '0')}`;
 
       const paymentHistory = invoiceData.paymentHistory || [];
       paymentHistory.push({ id: paymentId, date: new Date().toISOString().split('T')[0], amount: paymentAmount, journalId: journalId, reversed: false });
 
+      // WRITE PHASE
+      transaction.set(payCounterRef, { last_count: lastPayCount + 1, updatedAt: new Date().toISOString() }, { merge: true });
+      transaction.set(expCounterRef, { last_count: lastExpCount + 1, updatedAt: new Date().toISOString() }, { merge: true });
+      
       transaction.update(docRef, { amountPaid: newAmountPaid, balanceDue: newBalanceDue, paymentStatus: newPaymentStatus, paymentHistory });
       transaction.set(doc(db, 'expenses', journalId), {
         id: journalId, date: new Date().toISOString().split('T')[0], reference: paymentId,
@@ -434,9 +452,9 @@ export const transactionService = {
   reversePayment: async (invoiceId: string, type: 'sales' | 'receivings', paymentId: string) => {
     return runTransaction(db, async (transaction) => {
       const docRef = doc(db, type, invoiceId);
-      const snap = await transaction.get(docRef);
-      if (!snap.exists()) throw new Error("Document does not exist");
-      const invoiceData = snap.data();
+      const invoiceSnap = await transaction.get(docRef);
+      if (!invoiceSnap.exists()) throw new Error("Document does not exist");
+      const invoiceData = invoiceSnap.data();
       
       const paymentHistory = invoiceData.paymentHistory || [];
       const paymentIndex = paymentHistory.findIndex((p: any) => p.id === paymentId);
@@ -444,16 +462,27 @@ export const transactionService = {
       const payment = paymentHistory[paymentIndex];
       if (payment.reversed) throw new Error("Payment is already reversed");
 
+      // FIXED: Read counter first
+      const date = new Date();
+      const day = String(date.getDate()).padStart(2, '0');
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const year = date.getFullYear();
+      const adjCounterId = `ADJ_${year}${month}${day}`;
+      const adjCounterRef = doc(db, 'doc_numbers', adjCounterId);
+      const adjSnap = await transaction.get(adjCounterRef);
+      const lastAdjCount = adjSnap.exists() ? (adjSnap.data().last_count || 0) : 0;
+
       const newAmountPaid = (invoiceData.amountPaid || 0) - payment.amount;
       const total = invoiceData.totalAmount || invoiceData.totalValue || 0;
       const newBalanceDue = total - newAmountPaid;
       const newPaymentStatus = newAmountPaid <= 0 ? 'Unpaid' : (newBalanceDue <= 0 ? 'Paid' : 'Partial');
 
+      const revId = `ADJ-${day}-${month}-${String(lastAdjCount + 1).padStart(3, '0')}`;
       paymentHistory[paymentIndex].reversed = true;
-      transaction.update(docRef, { amountPaid: newAmountPaid, balanceDue: newBalanceDue, paymentStatus: newPaymentStatus, paymentHistory });
 
-      const preGeneratedAdjIds = await generateDocIds('ADJ', new Date(), 1, transaction);
-      const revId = preGeneratedAdjIds[0];
+      // WRITE PHASE
+      transaction.set(adjCounterRef, { last_count: lastAdjCount + 1, updatedAt: new Date().toISOString() }, { merge: true });
+      transaction.update(docRef, { amountPaid: newAmountPaid, balanceDue: newBalanceDue, paymentStatus: newPaymentStatus, paymentHistory });
 
       transaction.set(doc(db, 'expenses', revId), {
         id: revId,
