@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Trash2, Save, Printer, Send, DollarSign, X, RotateCcw, History, Truck } from 'lucide-react';
+import { Plus, Trash2, Save, Printer, Send, DollarSign, X, RotateCcw, History, Truck, AlertTriangle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../../context/LanguageContext';
 import { useMasterData } from '../../hooks/useMasterData';
@@ -45,6 +45,7 @@ export const SalesPage: React.FC = () => {
   const [paymentModal, setPaymentModal] = useState<{isOpen: boolean, saleId: string, balanceDue: number}>({isOpen: false, saleId: '', balanceDue: 0});
   const [paymentAmount, setPaymentAmount] = useState<number>(0);
   const [historyModal, setHistoryModal] = useState<{isOpen: boolean, sale: any}>({isOpen: false, sale: null});
+  const [dispatchModal, setDispatchModal] = useState<{isOpen: boolean, sale: any | null}>({isOpen: false, sale: null});
 
   const getStockKey = (itemId: string, gradeId: string, sizeId: string) => {
     return `${itemId}_${gradeId || 'no'}_${sizeId || 'no'}`;
@@ -173,10 +174,10 @@ export const SalesPage: React.FC = () => {
   };
 
   const handleDispatch = async (saleId: string) => {
-    if (!window.confirm(t('Konfirmasi Pengiriman Barang? Ini akan memotong stok fisik gudang.', 'Confirm Item Dispatch? This will deduct physical warehouse stock.'))) return;
     try {
       await transactionService.postDispatch(saleId);
       alert(t('Barang berhasil dikirim!', 'Items dispatched successfully!'));
+      setDispatchModal({isOpen: false, sale: null});
     } catch (e: any) {
       alert(e.message);
     }
@@ -384,7 +385,7 @@ export const SalesPage: React.FC = () => {
                   </Button>
                 )}
                 {s.status === 'Posted' && s.dispatchStatus !== 'Dispatched' && canModify && (
-                  <Button variant="primary" size="sm" className="bg-orange-600 hover:bg-orange-700 shadow-sm border-none" onClick={() => handleDispatch(s.id)}>
+                  <Button variant="primary" size="sm" className="bg-orange-600 hover:bg-orange-700 shadow-sm border-none" onClick={() => setDispatchModal({isOpen: true, sale: s})}>
                     <Truck size={14} /> {t('KIRIM', 'DISPATCH')}
                   </Button>
                 )}
@@ -447,6 +448,59 @@ export const SalesPage: React.FC = () => {
               >
                 {t('KONFIRMASI PEMBAYARAN', 'CONFIRM PAYMENT')}
               </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Dispatch Modal */}
+      {dispatchModal.isOpen && dispatchModal.sale && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex justify-between items-center mb-8">
+              <div>
+                <h3 className="text-xl font-black text-slate-900">{t('Konfirmasi Pengiriman', 'Confirm Dispatch')}</h3>
+                <p className="text-sm font-bold text-slate-500">Invoice: #{dispatchModal.sale.id.substring(0,8).toUpperCase()}</p>
+              </div>
+              <button onClick={() => setDispatchModal({isOpen: false, sale: null})} className="p-2 text-slate-400 hover:text-slate-600 bg-slate-100 rounded-full transition-colors"><X size={20}/></button>
+            </div>
+            
+            <div className="space-y-6">
+              <div className="p-4 bg-orange-50 text-orange-900 rounded-2xl border border-orange-100">
+                <p className="text-xs font-black uppercase tracking-widest mb-1">{t('PEMBELI', 'BUYER')}</p>
+                <p className="text-lg font-black">{buyers.find(b => b.id === dispatchModal.sale.buyerId)?.name || 'Unknown'}</p>
+              </div>
+
+              <div className="space-y-2 max-h-40 overflow-y-auto pr-2">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('RINGKASAN BARANG', 'ITEM SUMMARY')}</p>
+                {dispatchModal.sale.lines?.map((line: any, idx: number) => (
+                  <div key={idx} className="flex justify-between items-center bg-slate-50 p-2 rounded-lg border border-slate-100">
+                    <span className="text-xs font-bold text-slate-700 truncate mr-2">
+                      {getItemLabel(items.find(i => i.id === line.itemId))} ({grades.find(g => g.id === line.gradeId)?.name || '-'}, {sizes.find(s => s.id === line.sizeId)?.name || '-'})
+                    </span>
+                    <span className="text-xs font-black text-slate-900 shrink-0">{line.quantity} kg</span>
+                  </div>
+                ))}
+              </div>
+              
+              <div className="flex justify-between items-end border-t border-slate-100 pt-4">
+                 <span className="text-sm font-medium opacity-80">{t('Total Qty', 'Total Qty')}</span>
+                 <span className="text-xl font-black text-orange-600">{dispatchModal.sale.totalQty?.toLocaleString()} kg</span>
+               </div>
+
+              <div className="pt-2">
+                <p className="text-[10px] text-center font-bold text-orange-600 mb-4 bg-orange-50 p-2 rounded-lg border border-orange-100 flex items-center justify-center">
+                  <AlertTriangle className="inline-block w-4 h-4 mr-2" />
+                  {t('Tindakan ini akan memotong stok fisik secara permanen.', 'This action will permanently deduct physical stock.')}
+                </p>
+                <Button 
+                  className="w-full py-4 text-sm bg-orange-600 hover:bg-orange-700 shadow-orange-600/20 border-none" 
+                  onClick={() => handleDispatch(dispatchModal.sale.id)}
+                >
+                  <Truck size={18} className="mr-2" />
+                  {t('KONFIRMASI PENGIRIMAN', 'CONFIRM DISPATCH')}
+                </Button>
+              </div>
             </div>
           </div>
         </div>
