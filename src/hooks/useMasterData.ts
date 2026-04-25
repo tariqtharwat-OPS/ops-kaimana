@@ -14,7 +14,14 @@ export function useMasterData(collectionName: string, includeInactive = false) {
     let constraints = includeInactive ? [] : [where('active_status', '==', true)];
     
     // SCOPING: If user is a Buyer, restrict visibility of transactional collections
-    if (currentUser?.role === 'Buyer' && currentUser.linkedBuyerId) {
+    if (currentUser?.role === 'Buyer') {
+      if (!currentUser.linkedBuyerId) {
+        console.error("SECURITY BLOCK: Buyer account lacks linkedBuyerId.");
+        setData([]);
+        setLoading(false);
+        return () => {};
+      }
+
       const transactionalCollections = ['sales', 'buyerAllocations', 'dispatches', 'buyerCredits'];
       if (transactionalCollections.includes(collectionName)) {
         constraints.push(where('buyerId', '==', currentUser.linkedBuyerId));

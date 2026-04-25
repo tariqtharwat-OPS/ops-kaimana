@@ -10,14 +10,23 @@ import { useLanguage } from '../context/LanguageContext';
 import { useMasterData } from '../hooks/useMasterData';
 import { Button, Card, Header, Badge } from '../components/ui/DesignSystem';
 import { Table } from '../components/ui/Table';
+import { useAuth } from '../context/AuthContext';
 
 export const BuyerView: React.FC = () => {
   const { t } = useLanguage();
+  const { currentUser } = useAuth();
   const { data: items } = useMasterData('items', true);
   const { data: allocations } = useMasterData('buyerAllocations', true);
   const { data: buyers } = useMasterData('buyers', true);
   
   const [selectedBuyerId, setSelectedBuyerId] = React.useState('');
+
+  // Lock selectedBuyerId to linkedBuyerId if user is a Buyer
+  React.useEffect(() => {
+    if (currentUser?.role === 'Buyer' && currentUser.linkedBuyerId) {
+      setSelectedBuyerId(currentUser.linkedBuyerId);
+    }
+  }, [currentUser]);
 
   const buyerAllocations = allocations.filter(a => !selectedBuyerId || a.buyerId === selectedBuyerId);
 
@@ -33,14 +42,20 @@ export const BuyerView: React.FC = () => {
         title={t('Portal Buyer', 'Buyer Portal')} 
         subtitle={t('Pantau alokasi stok dan pesanan Anda', 'Monitor your stock allocations and orders')}
         action={
-          <select 
-            className="bg-white border border-slate-200 rounded-xl px-4 py-2 font-bold text-sm shadow-sm"
-            value={selectedBuyerId}
-            onChange={e => setSelectedBuyerId(e.target.value)}
-          >
-            <option value="">-- {t('Semua Buyer', 'All Buyers')} --</option>
-            {buyers.map((b: any) => <option key={b.id} value={b.id}>{b.name}</option>)}
-          </select>
+          currentUser?.role === 'Buyer' ? (
+            <div className="bg-ocean-50 border border-ocean-100 rounded-xl px-4 py-2 font-black text-sm shadow-sm text-ocean-800">
+              {buyers.find(b => b.id === currentUser.linkedBuyerId)?.name || 'My Portal'}
+            </div>
+          ) : (
+            <select 
+              className="bg-white border border-slate-200 rounded-xl px-4 py-2 font-bold text-sm shadow-sm"
+              value={selectedBuyerId}
+              onChange={e => setSelectedBuyerId(e.target.value)}
+            >
+              <option value="">-- {t('Semua Buyer', 'All Buyers')} --</option>
+              {buyers.map((b: any) => <option key={b.id} value={b.id}>{b.name}</option>)}
+            </select>
+          )
         }
       />
 
