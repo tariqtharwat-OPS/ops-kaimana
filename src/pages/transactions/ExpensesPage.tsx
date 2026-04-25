@@ -130,8 +130,8 @@ export const ExpensesPage: React.FC = () => {
                 </div>
                 <div className="space-y-3">
                   {formData.lines.map((line: any, idx: number) => (
-                    <div key={idx} className="grid grid-cols-12 gap-2 items-end bg-slate-50 p-3 rounded-xl border border-slate-100/50">
-                      <div className="col-span-3 space-y-1">
+                    <div key={idx} className="grid grid-cols-[3fr_2fr_1.5fr_2fr_2fr_auto] gap-3 items-end bg-slate-50 p-3 rounded-xl border border-slate-100/50 min-w-[800px] overflow-x-auto">
+                      <div className="space-y-1">
                         <label className="text-[10px] font-black text-slate-400 uppercase">{t('KATEGORI', 'CATEGORY')}</label>
                         <select className="w-full bg-white border border-slate-200 rounded-lg p-2 text-sm font-bold"
                           value={line.categoryId} onChange={e => updateLine(idx, 'categoryId', e.target.value)}>
@@ -146,28 +146,30 @@ export const ExpensesPage: React.FC = () => {
                           </optgroup>
                         </select>
                       </div>
-                      <div className="col-span-2 space-y-1">
+                      <div className="space-y-1">
                         <label className="text-[10px] font-black text-slate-400 uppercase">{t('DESKRIPSI', 'DESC')}</label>
                         <input type="text" className="w-full bg-white border border-slate-200 rounded-lg p-2 text-sm font-bold"
                           value={line.description} onChange={e => updateLine(idx, 'description', e.target.value)} />
                       </div>
-                      <div className="col-span-2 space-y-1">
+                      <div className="space-y-1">
                         <label className="text-[10px] font-black text-slate-400 uppercase">{t('QTY', 'QTY')}</label>
                         <input type="number" className="w-full bg-white border border-slate-200 rounded-lg p-2 text-sm font-bold text-right"
-                          value={line.qty} onChange={e => updateLine(idx, 'qty', Number(e.target.value))} />
+                          onWheel={e => e.currentTarget.blur()}
+                          value={line.qty || ''} onChange={e => updateLine(idx, 'qty', e.target.value === '' ? 0 : Number(e.target.value))} />
                       </div>
-                      <div className="col-span-2 space-y-1">
+                      <div className="space-y-1">
                         <label className="text-[10px] font-black text-slate-400 uppercase">{t('HARGA SATUAN', 'PRICE')}</label>
                         <input type="number" className={`w-full bg-white border border-slate-200 rounded-lg p-2 text-sm font-bold text-right ${formData.transactionType === 'Money In' ? 'text-emerald-700' : 'text-red-700'}`}
-                          value={line.amount} onChange={e => updateLine(idx, 'amount', Number(e.target.value))} />
+                          onWheel={e => e.currentTarget.blur()}
+                          value={line.amount || ''} onChange={e => updateLine(idx, 'amount', e.target.value === '' ? 0 : Number(e.target.value))} />
                       </div>
-                      <div className="col-span-2 space-y-1">
+                      <div className="space-y-1">
                         <label className="text-[10px] font-black text-slate-400 uppercase text-right block">TOTAL</label>
                         <div className={`w-full bg-slate-100/50 border border-transparent rounded-lg p-2 text-sm font-black text-right ${formData.transactionType === 'Money In' ? 'text-emerald-700' : 'text-red-700'}`}>
                           Rp {((line.qty || 0) * (line.amount || 0)).toLocaleString()}
                         </div>
                       </div>
-                      <div className="col-span-1 pb-0.5 text-right">
+                      <div className="pb-0.5 text-right flex items-center h-[38px]">
                         <button className="p-2 text-red-300 hover:text-red-500 transition-colors" onClick={() => removeLine(idx)}><Trash2 size={16} /></button>
                       </div>
                     </div>

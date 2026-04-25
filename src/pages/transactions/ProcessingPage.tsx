@@ -252,7 +252,7 @@ export const ProcessingPage: React.FC = () => {
                             </div>
                             <input 
                               type="number" 
-                              className={`w-full p-2.5 rounded-xl border text-sm font-black focus:ring-2 outline-none ${hasShortfall ? 'border-amber-300 focus:ring-amber-500/20' : hasSurplus ? 'border-emerald-300 focus:ring-emerald-500/20' : 'border-slate-200 focus:ring-ocean-500/20'}`}
+                              className={`w-full min-w-[100px] p-2.5 rounded-xl border text-sm font-black focus:ring-2 outline-none ${hasShortfall ? 'border-amber-300 focus:ring-amber-500/20' : hasSurplus ? 'border-emerald-300 focus:ring-emerald-500/20' : 'border-slate-200 focus:ring-ocean-500/20'}`}
                               onWheel={e => e.currentTarget.blur()}
                               value={line.actualQty || ''}
                               onChange={e => updateLine(line.id, 'actualQty', e.target.value === '' ? 0 : Number(e.target.value))}

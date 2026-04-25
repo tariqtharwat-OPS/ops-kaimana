@@ -260,8 +260,8 @@ export const ReceivingPage: React.FC = () => {
                     const item = items.find(i => i.id === line.itemId);
                     
                     return (
-                      <div key={idx} className="grid grid-cols-12 gap-2 items-end bg-slate-50 p-3 rounded-xl border border-slate-100/50">
-                        <div className="col-span-2 space-y-1">
+                      <div key={idx} className="grid grid-cols-[2fr_2fr_2fr_1.5fr_2fr_2fr_auto] gap-3 items-end bg-slate-50 p-3 rounded-xl border border-slate-100/50 min-w-[800px] overflow-x-auto">
+                        <div className="space-y-1">
                           <label className="text-[10px] font-black text-slate-400 uppercase">{t('ITEM', 'ITEM')}</label>
                           <select className="w-full bg-white border border-slate-200 rounded-lg p-2 text-sm font-bold"
                             value={line.itemId} onChange={e => updateLine(idx, 'itemId', e.target.value)}>
@@ -275,7 +275,7 @@ export const ReceivingPage: React.FC = () => {
                             )}
                           </select>
                         </div>
-                        <div className="col-span-2 space-y-1">
+                        <div className="space-y-1">
                           <label className="text-[10px] font-black text-slate-400 uppercase">GRADE / SIZE</label>
                           <div className="flex gap-1">
                             <select disabled={!item?.hasGrade}
@@ -291,7 +291,7 @@ export const ReceivingPage: React.FC = () => {
                             </select>
                           </div>
                         </div>
-                        <div className="col-span-2 space-y-1">
+                        <div className="space-y-1">
                           <label className="text-[10px] font-black text-slate-400 uppercase">{t('BUYER', 'BUYER')}</label>
                           <select className="w-full bg-white border border-slate-200 rounded-lg p-2 text-[10px] font-bold"
                             value={line.buyerId || ''} onChange={e => updateLine(idx, 'buyerId', e.target.value)}>
@@ -303,27 +303,27 @@ export const ReceivingPage: React.FC = () => {
                             )}
                           </select>
                         </div>
-                        <div className="col-span-1 space-y-1">
+                        <div className="space-y-1">
                           <label className="text-[10px] font-black text-slate-400 uppercase">QTY</label>
-                          <input type="number" className="w-full bg-white border border-slate-200 rounded-lg p-2 text-[10px] font-bold text-right"
+                          <input type="number" className="w-full bg-white border border-slate-200 rounded-lg p-2 text-sm font-bold text-right"
                             onWheel={e => e.currentTarget.blur()}
                             value={line.quantity || ''} 
                             onChange={e => updateLine(idx, 'quantity', e.target.value === '' ? 0 : Number(e.target.value))} />
                         </div>
-                        <div className="col-span-2 space-y-1">
+                        <div className="space-y-1">
                           <label className="text-[10px] font-black text-slate-400 uppercase">PRICE/KG</label>
-                          <input type="number" className="w-full bg-white border border-slate-200 rounded-lg p-2 text-[10px] font-bold text-right"
+                          <input type="number" className="w-full bg-white border border-slate-200 rounded-lg p-2 text-sm font-bold text-right"
                             onWheel={e => e.currentTarget.blur()}
                             value={line.pricePerKg || ''} 
                             onChange={e => updateLine(idx, 'pricePerKg', e.target.value === '' ? 0 : Number(e.target.value))} />
                         </div>
-                        <div className="col-span-2 space-y-1">
+                        <div className="space-y-1">
                           <label className="text-[10px] font-black text-slate-400 uppercase text-right block">TOTAL</label>
-                          <div className="w-full bg-slate-100/50 border border-transparent rounded-lg p-2 text-[10px] font-black text-right text-ocean-700">
+                          <div className="w-full bg-slate-100/50 border border-transparent rounded-lg p-2 text-sm font-black text-right text-ocean-700">
                             Rp {((line.quantity || 0) * (line.pricePerKg || 0)).toLocaleString()}
                           </div>
                         </div>
-                        <div className="col-span-1 pb-0.5 text-right">
+                        <div className="pb-0.5 text-right flex items-center h-[38px]">
                           <button className="p-2 text-red-300 hover:text-red-500 transition-colors" onClick={() => removeLine(idx)}><Trash2 size={16} /></button>
                         </div>
                       </div>
