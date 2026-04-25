@@ -207,15 +207,17 @@ export const ProcessingPage: React.FC = () => {
                 </div>
                 <div className="space-y-4">
                   {formData.lines.map((line: any) => {
-                    const itemName = items.find((i: any) => i.id === line.itemId)?.name || '';
+                    const item = items.find((i: any) => i.id === line.itemId);
+                    const itemName = item?.nameEn || item?.nameId || item?.name || item?.item_code || 'Unknown Item';
                     const hasShortfall = line.actualQty < line.invoiceQty;
                     const hasSurplus = line.actualQty > line.invoiceQty;
                     return (
                       <div key={line.id} className={`p-4 rounded-2xl border transition-all ${hasShortfall ? 'border-amber-200 bg-amber-50/30' : hasSurplus ? 'border-emerald-200 bg-emerald-50/30' : 'border-slate-100 bg-slate-50/50'}`}>
-                        <div className="grid grid-cols-12 gap-4 items-center">
-                          <div className="col-span-4">
+                        <div className="grid grid-cols-[3fr_2fr_3fr] gap-4 items-center">
+                          <div>
                             <p className="text-[10px] font-black text-slate-400 uppercase">Inv: #{line.receivingId.substring(0,8).toUpperCase()}</p>
-                            <p className="font-bold text-sm text-slate-900">{itemName}</p>
+                            {/* P1-F5: Show resolved item name */}
+                            <p className="font-black text-sm text-slate-900">{itemName}</p>
                             <div className="flex gap-1 mt-1">
                               <select 
                                 className="text-[10px] bg-white px-1 py-0.5 rounded font-black text-slate-500 border border-slate-200 uppercase outline-none focus:ring-1 focus:ring-ocean-500/20"
@@ -240,12 +242,12 @@ export const ProcessingPage: React.FC = () => {
                             </div>
                           </div>
                           
-                          <div className="col-span-3 text-center">
+                          <div className="text-center">
                             <p className="text-[10px] font-black text-slate-400 uppercase">{t('ESTIMASI AWAL', 'RAW ESTIMATE')}</p>
                             <p className="font-black text-lg text-slate-700">{line.invoiceQty} kg</p>
                           </div>
 
-                          <div className="col-span-5">
+                          <div>
                             <div className="flex justify-between items-center mb-1">
                                <p className="text-[10px] font-black text-slate-400 uppercase">{t('QTY AKTUAL (PROSES)', 'ACTUAL QTY (PROCESSED)')}</p>
                                {hasSurplus && <span className="text-[9px] font-black text-emerald-600 bg-emerald-100 px-1.5 py-0.5 rounded flex items-center gap-1 animate-pulse"><TrendingUp size={10}/> SURPLUS</span>}

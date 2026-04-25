@@ -357,7 +357,17 @@ export const SalesPage: React.FC = () => {
           compact
           data={sales}
           columns={[
-            { header: 'ID', accessor: (s: any) => <span className="font-bold text-[10px] opacity-50">#{s.id.substring(0,8)}</span> },
+            { 
+              header: 'ID', 
+              accessor: (s: any) => (
+                <span 
+                  className="font-bold text-[10px] text-slate-400 cursor-help border-b border-dotted border-slate-300" 
+                  title={s.id}
+                >
+                  #{s.id.length > 12 ? s.id.substring(0, 12) + '…' : s.id}
+                </span>
+              )
+            },
             { header: t('TANGGAL', 'DATE'), accessor: 'date', className: 'font-bold' },
             { header: t('PEMBELI', 'BUYER'), accessor: (s: any) => buyers.find(b => b.id === s.buyerId)?.name || 'Unknown' },
             { header: t('QTY', 'QTY'), accessor: (s: any) => `${(s.totalQty || 0).toLocaleString()} kg`, className: 'text-right' },

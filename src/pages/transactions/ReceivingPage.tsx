@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Trash2, Send, Save, Printer, DollarSign, X, RotateCcw, History } from 'lucide-react';
+import { Plus, Trash2, Send, Save, Printer, DollarSign, X, RotateCcw, History, Edit2, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../../context/LanguageContext';
 import { useMasterData } from '../../hooks/useMasterData';
@@ -17,13 +17,14 @@ export const ReceivingPage: React.FC = () => {
   const { data: items, loading: itemsLoading } = useMasterData('items', true);
   const { data: grades } = useMasterData('grades', true);
   const { data: sizes } = useMasterData('sizes', true);
-  
-  
   const { data: suppliers, loading: suppliersLoading } = useMasterData('suppliers', true);
   const { data: receivings } = useMasterData('receivings', true);
   const { data: buyers, loading: buyersLoading } = useMasterData('buyers', true);
+  const { data: allocations } = useMasterData('buyerAllocations', true);
 
   const [isCreating, setIsCreating] = useState(false);
+  // editingDoc: when set, the form is in edit mode for an existing Draft
+  const [editingDoc, setEditingDoc] = useState<any>(null);
   const [formData, setFormData] = useState<any>({
     date: new Date().toISOString().split('T')[0],
     supplierId: '',
@@ -34,8 +35,27 @@ export const ReceivingPage: React.FC = () => {
 
   const [paymentModal, setPaymentModal] = useState<{isOpen: boolean, receivingId: string, balanceDue: number}>({isOpen: false, receivingId: '', balanceDue: 0});
   const [paymentAmount, setPaymentAmount] = useState<number>(0);
-  
   const [historyModal, setHistoryModal] = useState<{isOpen: boolean, receiving: any}>({isOpen: false, receiving: null});
+
+  // P1-F2: Open an existing Draft for editing
+  const handleEdit = (doc: any) => {
+    setEditingDoc(doc);
+    setFormData({
+      date: doc.date || new Date().toISOString().split('T')[0],
+      supplierId: doc.supplierId || '',
+      vehicleNo: doc.vehicleNo || '',
+      notes: doc.notes || '',
+      lines: (doc.lines || []).map((l: any) => ({ ...l }))
+    });
+    setIsCreating(true);
+  };
+
+  // P1-F4: Compute allocation summary per receiving doc
+  const getAllocationSummary = (receivingId: string, totalQty: number) => {
+    const docAllocs = allocations.filter((a: any) => a.receivingId === receivingId && a.buyerId);
+    const assignedQty = docAllocs.reduce((sum: number, a: any) => sum + (a.allocatedQty || 0), 0);
+    return { assignedQty, totalQty: totalQty || 0 };
+  };
 
   const addLine = () => {
     setFormData((p: any) => ({
@@ -85,17 +105,12 @@ export const ReceivingPage: React.FC = () => {
 
   const handleSave = async (isPost: boolean, isPrint: boolean = false) => {
     try {
-      // Use functional update trick to get the absolute latest state if needed, 
-      // but in a click handler, formData from closure is usually sufficient.
-      // To be 100% sure against stale closures, we'll build from a snapshot.
       const snapshot = JSON.parse(JSON.stringify(formData));
       
-      // STRICT VALIDATION
       if (!snapshot.supplierId) {
         alert(t("Supplier is required", "Supplier harus dipilih"));
         return;
       }
-
       if (snapshot.lines.length === 0) {
         alert(t("At least one item is required", "Minimal satu item harus diisi"));
         return;
@@ -117,15 +132,12 @@ export const ReceivingPage: React.FC = () => {
 
       const hasMissingPrice = finalLines.some((l: any) => l.pricePerKg <= 0);
       if (hasMissingPrice) {
-        if (!window.confirm(t("Some items have 0 price. Continue?", "Ada item dengan harga 0. Lanjutkan?"))) {
-          return;
-        }
+        if (!window.confirm(t("Some items have 0 price. Continue?", "Ada item dengan harga 0. Lanjutkan?"))) return;
       }
 
       const totalQty = finalLines.reduce((sum: number, l: any) => sum + l.quantity, 0);
       const totalAmount = finalLines.reduce((sum: number, l: any) => sum + (l.quantity * l.pricePerKg), 0);
 
-      // Build payload EXPLICITLY to avoid carrying over unwanted state
       const docData = { 
         date: snapshot.date,
         supplierId: snapshot.supplierId,
@@ -142,28 +154,33 @@ export const ReceivingPage: React.FC = () => {
         updatedAt: new Date().toISOString()
       };
       
-      const id = await transactionService.createDocument('receivings', docData, 'R');
-      
-      if (isPost) {
-        await transactionService.postReceiving(id, docData);
-        alert(t("Document Posted Successfully", "Dokumen Berhasil di-Post"));
+      let id: string;
+
+      // P1-F2: If editing an existing Draft, update instead of create
+      if (editingDoc) {
+        id = editingDoc.id;
+        await transactionService.updateDocument('receivings', id, docData);
+        if (isPost) {
+          await transactionService.postReceiving(id, { ...docData, status: 'Draft' });
+          alert(t("Document Posted Successfully", "Dokumen Berhasil di-Post"));
+        } else {
+          alert(t("Draft Updated Successfully", "Draft Berhasil Diperbarui"));
+        }
       } else {
-        alert(t("Draft Saved Successfully", "Draft Berhasil Disimpan"));
+        id = await transactionService.createDocument('receivings', docData, 'R');
+        if (isPost) {
+          await transactionService.postReceiving(id, docData);
+          alert(t("Document Posted Successfully", "Dokumen Berhasil di-Post"));
+        } else {
+          alert(t("Draft Saved Successfully", "Draft Berhasil Disimpan"));
+        }
       }
 
-      if (isPrint) {
-        window.open(`/print/receivings/${id}`, '_blank');
-      }
+      if (isPrint) window.open(`/print/receivings/${id}`, '_blank');
 
-      // RESET AND CLOSE
+      setEditingDoc(null);
       setIsCreating(false);
-      setFormData({ 
-        date: new Date().toISOString().split('T')[0], 
-        supplierId: '', 
-        vehicleNo: '', 
-        notes: '', 
-        lines: [] 
-      });
+      setFormData({ date: new Date().toISOString().split('T')[0], supplierId: '', vehicleNo: '', notes: '', lines: [] });
     } catch (e: any) {
       console.error("CRITICAL ERROR in handleSave:", e);
       alert(t('Gagal menyimpan: ', 'Failed to save: ') + e.message);
@@ -206,13 +223,19 @@ export const ReceivingPage: React.FC = () => {
     return sizes.filter(s => s.profileId === item.sizeProfileId && s.active_status !== false);
   };
 
+  const handleCancelForm = () => {
+    setIsCreating(false);
+    setEditingDoc(null);
+    setFormData({ date: new Date().toISOString().split('T')[0], supplierId: '', vehicleNo: '', notes: '', lines: [] });
+  };
+
   if (isCreating) {
     return (
       <div className="space-y-8 pb-20">
         <Header 
-          title={t('Penerimaan Baru', 'New Receiving')} 
-          subtitle={t('Catat pembelian bahan baku dari supplier', 'Record raw material purchase from supplier')}
-          action={<Button variant="secondary" onClick={() => setIsCreating(false)}>{t('Batal', 'Cancel')}</Button>}
+          title={editingDoc ? t('Edit Draft Penerimaan', 'Edit Draft Receiving') : t('Penerimaan Baru', 'New Receiving')}
+          subtitle={editingDoc ? `✏️ Editing Draft: #${editingDoc.id}` : t('Catat pembelian bahan baku dari supplier', 'Record raw material purchase from supplier')}
+          action={<Button variant="secondary" onClick={handleCancelForm}>{t('Batal', 'Cancel')}</Button>}
         />
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
@@ -372,10 +395,39 @@ export const ReceivingPage: React.FC = () => {
           compact
           data={receivings}
           columns={[
+            { 
+              header: 'ID', 
+              accessor: (r: any) => (
+                <span 
+                  className="font-bold text-[10px] text-slate-400 cursor-help border-b border-dotted border-slate-300" 
+                  title={r.id}
+                >
+                  #{r.id.length > 12 ? r.id.substring(0, 12) + '…' : r.id}
+                </span>
+              )
+            },
             { header: t('TANGGAL', 'DATE'), accessor: 'date', className: 'font-bold' },
             { header: t('SUPPLIER', 'SUPPLIER'), accessor: (r: any) => suppliers.find(s => s.id === r.supplierId)?.name || 'Unknown' },
             { header: t('TOTAL QTY', 'TOTAL QTY'), accessor: (r: any) => `${(r.totalQty || r.lines?.reduce((sum: number, l: any) => sum + l.quantity, 0))?.toLocaleString()} kg`, className: 'text-right' },
             { header: t('TOTAL NILAI', 'TOTAL VALUE'), accessor: (r: any) => `Rp ${(r.totalAmount || r.lines?.reduce((sum: number, l: any) => sum + (l.quantity * l.pricePerKg), 0))?.toLocaleString()}`, className: 'text-right font-bold text-ocean-700' },
+            {
+              header: t('ALOKASI', 'ALLOCATION'),
+              accessor: (r: any) => {
+                if (r.status !== 'Posted') return <span className="text-slate-300 text-xs font-bold">—</span>;
+                const { assignedQty, totalQty } = getAllocationSummary(r.id, r.totalQty || 0);
+                const isFullyAssigned = assignedQty >= totalQty && totalQty > 0;
+                const hasAny = assignedQty > 0;
+                return (
+                  <span className={`inline-flex items-center gap-1 text-[10px] font-black px-2 py-1 rounded-full ${
+                    isFullyAssigned ? 'bg-emerald-50 text-emerald-700' :
+                    hasAny ? 'bg-amber-50 text-amber-700' : 'bg-slate-50 text-slate-400'
+                  }`}>
+                    <Users size={10} />
+                    {assignedQty.toLocaleString()}/{totalQty.toLocaleString()} kg
+                  </span>
+                );
+              }
+            },
             { header: 'STATUS', accessor: (r: any) => (
               <div className="flex gap-2">
                 <Badge variant={r.status === 'Posted' ? 'posted' : 'draft'}>{r.status}</Badge>
@@ -389,9 +441,16 @@ export const ReceivingPage: React.FC = () => {
             { header: '', accessor: (r: any) => (
               <div className="flex gap-2 justify-end">
                 {r.status === 'Draft' && canModify && (
-                  <Button variant="primary" size="sm" className="bg-ocean-600 hover:bg-ocean-700 shadow-sm" onClick={() => handleSave(true)}>
-                    <Send size={14} /> POST
-                  </Button>
+                  <>
+                    <Button variant="secondary" size="sm" className="bg-amber-50 hover:bg-amber-100 text-amber-700 border-amber-200" onClick={() => handleEdit(r)}>
+                      <Edit2 size={14} /> {t('EDIT', 'EDIT')}
+                    </Button>
+                    <Button variant="primary" size="sm" className="bg-ocean-600 hover:bg-ocean-700 shadow-sm" onClick={() => {
+                      handleEdit(r);
+                    }}>
+                      <Send size={14} /> POST
+                    </Button>
+                  </>
                 )}
                 {r.status === 'Posted' && (
                   <Button variant="secondary" size="sm" className="bg-slate-100 hover:bg-slate-200" onClick={() => setHistoryModal({isOpen: true, receiving: r})} title="Payment History">
@@ -411,7 +470,7 @@ export const ReceivingPage: React.FC = () => {
                   <Button variant="secondary" size="sm" className="bg-slate-100 hover:bg-slate-200"><Printer size={14} /></Button>
                 </Link>
               </div>
-            ), className: 'text-right min-w-[250px]' }
+            ), className: 'text-right min-w-[300px]' }
           ]}
         />
       </Card>

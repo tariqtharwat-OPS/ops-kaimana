@@ -81,7 +81,10 @@ export const StockPage: React.FC = () => {
             <AlertCircle className="text-amber-500" size={16} />
             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('STOK RENDAH', 'LOW STOCK')}</span>
           </div>
-          <h3 className="text-2xl font-black text-slate-900">{stock.filter((s: any) => (s.physicalQty || 0) < 100).length} Items</h3>
+          <h3 className="text-2xl font-black text-slate-900">
+            {stock.filter((s: any) => ((s.physicalQty || 0) - (s.reservedQty || 0)) < 50 && (s.physicalQty || 0) > 0).length} Items
+          </h3>
+          <p className="text-[10px] font-bold text-amber-500 mt-1">{t('Tersedia < 50 kg', 'Available < 50 kg')}</p>
         </Card>
       </div>
 
@@ -138,13 +141,16 @@ export const StockPage: React.FC = () => {
             ] : []),
             { 
               header: t('STATUS', 'STATUS'), 
-              accessor: (s: any) => (
-                <Badge variant={((s.physicalQty || s.quantity || s.allocatedQty) > 500) ? 'posted' : 'pending'}>
-                  {activeTab === 'available' 
-                    ? ((s.physicalQty || 0) > 500 ? t('Aman', 'Safe') : t('Rendah', 'Low'))
-                    : s.status}
-                </Badge>
-              ), 
+              accessor: (s: any) => {
+                const avail = (s.physicalQty || 0) - (s.reservedQty || 0);
+                const isLow = avail < 50 && (s.physicalQty || 0) > 0;
+                if (activeTab === 'assigned') return <Badge variant={s.status === 'Provisional' ? 'pending' : 'posted'}>{s.status}</Badge>;
+                return (
+                  <Badge variant={isLow ? 'pending' : 'posted'}>
+                    {isLow ? t('⚠ Rendah', '⚠ Low') : t('Aman', 'Safe')}
+                  </Badge>
+                );
+              },
               className: 'text-center' 
             },
             { 

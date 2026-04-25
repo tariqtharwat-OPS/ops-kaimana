@@ -4,7 +4,8 @@ import {
   runTransaction, 
   serverTimestamp, 
   increment,
-  setDoc
+  setDoc,
+  updateDoc
 } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { generateDocId, generateDocIds } from '../utils/docNumbering';
@@ -22,6 +23,15 @@ export const transactionService = {
       active_status: true
     });
     return id;
+  },
+
+  // UPDATE EXISTING DRAFT DOCUMENT (P1-F2: Draft editing)
+  updateDocument: async (collectionName: string, id: string, data: any) => {
+    const docRef = doc(db, collectionName, id);
+    await updateDoc(docRef, {
+      ...data,
+      updated_at: new Date().toISOString()
+    });
   },
 
   // POST PROCESSING
