@@ -248,7 +248,13 @@ export const SalesPage: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           <div className="lg:col-span-3 space-y-8">
              <Card>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('ID DOKUMEN', 'DOCUMENT ID')}</label>
+                    <div className="w-full bg-slate-100/50 border border-slate-100 rounded-xl p-3 font-bold text-slate-500 h-[46px] flex items-center overflow-hidden text-ellipsis whitespace-nowrap">
+                      {editingDoc ? `#${editingDoc.id.toUpperCase()}` : t('AUTO-GENERATED', 'AUTO-GENERATED')}
+                    </div>
+                  </div>
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('PEMBELI', 'BUYER')}</label>
                     <select className="w-full bg-slate-50 border border-slate-100 rounded-xl p-3 font-bold"
@@ -393,9 +399,10 @@ export const SalesPage: React.FC = () => {
                   className="font-bold text-[10px] text-slate-400 cursor-help border-b border-dotted border-slate-300" 
                   title={s.id}
                 >
-                  #{s.id.length > 12 ? s.id.substring(0, 12) + '…' : s.id}
+                  #{s.id}
                 </span>
-              )
+              ),
+              className: 'whitespace-nowrap min-w-[120px]'
             },
             { header: t('TANGGAL', 'DATE'), accessor: 'date', className: 'font-bold' },
             { header: t('PEMBELI', 'BUYER'), accessor: (s: any) => buyers.find(b => b.id === s.buyerId)?.name || 'Unknown' },

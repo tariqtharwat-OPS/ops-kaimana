@@ -305,6 +305,12 @@ export const ProcessingPage: React.FC = () => {
           <div className="space-y-8">
             <Card className="space-y-6">
                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('ID DOKUMEN', 'DOCUMENT ID')}</label>
+                  <div className="w-full bg-slate-100/50 border border-slate-100 rounded-xl p-3 font-bold text-slate-500 h-[46px] flex items-center overflow-hidden text-ellipsis whitespace-nowrap">
+                    {editingDoc ? `#${editingDoc.id.toUpperCase()}` : t('AUTO-GENERATED', 'AUTO-GENERATED')}
+                  </div>
+               </div>
+               <div className="space-y-1.5">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('TANGGAL', 'DATE')}</label>
                   <input type="date" className="w-full bg-slate-50 border border-slate-100 rounded-xl p-3 font-bold" 
                     value={formData.date} onChange={e => setFormData((p: any) => ({ ...p, date: e.target.value }))} />
@@ -344,6 +350,18 @@ export const ProcessingPage: React.FC = () => {
         <Table 
           data={logs}
           columns={[
+            { 
+              header: 'ID', 
+              accessor: (l: any) => (
+                <span 
+                  className="font-bold text-[10px] text-slate-400 cursor-help border-b border-dotted border-slate-300" 
+                  title={l.id}
+                >
+                  #{l.id}
+                </span>
+              ),
+              className: 'whitespace-nowrap min-w-[120px]'
+            },
             { header: t('TANGGAL', 'DATE'), accessor: 'date', className: 'font-bold' },
             { header: t('SUMBER INVOICE', 'SOURCE INVOICES'), accessor: (l: any) => (
               <div className="flex flex-wrap gap-1">

@@ -307,7 +307,13 @@ export const ReceivingPage: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           <div className="lg:col-span-3 space-y-8">
              <Card>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('ID DOKUMEN', 'DOCUMENT ID')}</label>
+                    <div className="w-full bg-slate-100/50 border border-slate-100 rounded-xl p-3 font-bold text-slate-500 h-[46px] flex items-center overflow-hidden text-ellipsis whitespace-nowrap">
+                      {editingDoc ? `#${editingDoc.id.toUpperCase()}` : t('AUTO-GENERATED', 'AUTO-GENERATED')}
+                    </div>
+                  </div>
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('SUPPLIER', 'SUPPLIER')}</label>
                     <select 
@@ -516,9 +522,10 @@ export const ReceivingPage: React.FC = () => {
                   className="font-bold text-[10px] text-slate-400 cursor-help border-b border-dotted border-slate-300" 
                   title={r.id}
                 >
-                  #{r.id.length > 12 ? r.id.substring(0, 12) + '…' : r.id}
+                  #{r.id}
                 </span>
-              )
+              ),
+              className: 'whitespace-nowrap min-w-[120px]'
             },
             { header: t('TANGGAL', 'DATE'), accessor: 'date', className: 'font-bold' },
             { header: t('SUPPLIER', 'SUPPLIER'), accessor: (r: any) => suppliers.find(s => s.id === r.supplierId)?.name || 'Unknown' },
