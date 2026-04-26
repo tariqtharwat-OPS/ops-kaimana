@@ -252,7 +252,7 @@ export const SalesPage: React.FC = () => {
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('ID DOKUMEN', 'DOCUMENT ID')}</label>
                     <div className="w-full bg-slate-100/50 border border-slate-100 rounded-xl p-3 font-bold text-slate-500 h-[46px] flex items-center overflow-hidden text-ellipsis whitespace-nowrap">
-                      {editingDoc ? `#${editingDoc.id.toUpperCase()}` : t('AUTO-GENERATED', 'AUTO-GENERATED')}
+                      {t('AUTO-GENERATED', 'AUTO-GENERATED')}
                     </div>
                   </div>
                   <div className="space-y-1.5">
