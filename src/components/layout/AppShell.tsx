@@ -232,8 +232,8 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
         <div className="p-10 flex items-center justify-center">
           <div className="relative group w-full">
             <div className="absolute -inset-2 bg-gradient-to-br from-ocean-500/10 to-accent-500/10 rounded-3xl blur opacity-0 group-hover:opacity-100 transition duration-500"></div>
-            <div className="bg-white p-6 rounded-3xl shadow-xl shadow-slate-200/50 border border-white relative flex justify-center items-center">
-              <img src="/images/logo.png" alt="Logo" className={`${collapsed ? 'h-10' : 'h-24'} transition-all duration-500 object-contain hover:scale-105`} />
+            <div className="bg-white p-2 rounded-3xl shadow-xl shadow-slate-200/50 border border-white relative flex justify-center items-center">
+              <img src="/images/logo.png" alt="Logo" className={`${collapsed ? 'h-10' : 'h-28'} transition-all duration-500 object-contain hover:scale-105 mix-blend-multiply`} />
             </div>
           </div>
         </div>
