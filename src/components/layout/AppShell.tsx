@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   LayoutDashboard, ArrowDownCircle, CreditCard, RefreshCcw,
   Database, Users, Settings, LogOut, ChevronLeft, ChevronRight,
-  User as UserIcon, BarChart, Loader2, Sparkles, Globe
+  User as UserIcon, BarChart, Loader2, Sparkles, Globe, Shield
 } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useLanguage } from '../../context/LanguageContext';
@@ -221,6 +221,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
   const adminNav = [
     { icon: Users, label: t('Master Data', 'Master Data'), path: '/master', roles: ['Admin'] },
     { icon: UserIcon, label: t('Pengguna', 'Users'), path: '/users', roles: ['Admin'] },
+    { icon: Shield, label: t('Log Audit', 'Audit Log'), path: '/audit-log', roles: ['Admin'] },
     { icon: Settings, label: t('Pengaturan', 'Settings'), path: '/settings', roles: ['Admin'] },
   ].filter(n => n.roles.includes(currentUser.role));
 

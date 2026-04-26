@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Trash2, Save, Printer, Send, DollarSign, X, RotateCcw, History, Truck, AlertTriangle } from 'lucide-react';
+import { Plus, Trash2, Save, Printer, Send, DollarSign, X, RotateCcw, History, Truck, AlertTriangle, Ban } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../../context/LanguageContext';
 import { useMasterData } from '../../hooks/useMasterData';
@@ -142,7 +142,9 @@ export const SalesPage: React.FC = () => {
         paymentStatus: 'Unpaid',
         amountPaid: 0,
         balanceDue: totalAmount,
-        paymentHistory: []
+        paymentHistory: [],
+        postedBy: currentUser?.fullName || 'Admin',
+        userEmail: currentUser?.email || ''
       };
       const id = await transactionService.createDocument('sales', docData, 'S');
       if (isPost) {
@@ -166,7 +168,7 @@ export const SalesPage: React.FC = () => {
       if (!sale.buyerId || !sale.lines || sale.lines.length === 0) {
         throw new Error(t("Data invoice tidak lengkap (Buyer/Lines missing)", "Invoice data incomplete (Buyer/Lines missing)"));
       }
-      await transactionService.postSales(sale.id, sale);
+      await transactionService.postSales(sale.id, { ...sale, postedBy: currentUser?.fullName || 'Admin', userEmail: currentUser?.email || '' });
       alert(t("Invoice berhasil di-POST!", "Invoice posted successfully!"));
     } catch (e: any) {
       alert(e.message);
@@ -190,8 +192,26 @@ export const SalesPage: React.FC = () => {
         return;
       }
       await transactionService.recordPayment(paymentModal.saleId, 'sales', paymentAmount);
+      
+      // P5: Audit Log for payment
+      await transactionService.writeAuditLog(paymentModal.saleId, 'sales', 'PAYMENT', currentUser?.id || 'System', currentUser?.email || '', `Paid Rp ${paymentAmount.toLocaleString()}`);
+
       setPaymentModal({isOpen: false, saleId: '', balanceDue: 0});
       setPaymentAmount(0);
+    } catch (e: any) {
+      alert(e.message);
+    }
+  };
+
+  const handleVoid = async (id: string) => {
+    const reason = window.prompt(t("Masukkan alasan void:", "Enter reason for voiding:"));
+    if (!reason) return;
+    
+    if (!window.confirm(t("Apakah Anda yakin ingin membatalkan (VOID) dokumen ini?", "Are you sure you want to VOID this document?"))) return;
+    
+    try {
+      await transactionService.voidDocument('sales', id, currentUser?.id || 'System', currentUser?.email || '', reason);
+      alert(t("Dokumen berhasil di-VOID", "Document VOIDED successfully"));
     } catch (e: any) {
       alert(e.message);
     }
@@ -374,7 +394,7 @@ export const SalesPage: React.FC = () => {
             { header: t('NILAI', 'VALUE'), accessor: (s: any) => `Rp ${(s.totalAmount || 0).toLocaleString()}`, className: 'text-right font-bold text-emerald-700' },
             { header: 'INVOICE', accessor: (s: any) => (
               <div className="flex gap-2">
-                <Badge variant={s.status === 'Posted' ? 'posted' : 'draft'}>{s.status}</Badge>
+                <Badge variant={s.status === 'Posted' ? 'posted' : s.status === 'Void' ? 'pending' : 'draft'}>{s.status}</Badge>
                 {s.status === 'Posted' && (
                   <Badge variant={s.paymentStatus === 'Paid' ? 'posted' : s.paymentStatus === 'Partial' ? 'draft' : 'pending'}>
                     {s.paymentStatus || 'Unpaid'}
@@ -412,6 +432,11 @@ export const SalesPage: React.FC = () => {
                   }}>
                     <DollarSign size={14} className="text-white" /> {t('BAYAR', 'PAY')}
                   </Button>
+                )}
+                {s.status === 'Posted' && currentUser?.role === 'Admin' && (
+                   <Button variant="secondary" size="sm" className="bg-slate-100 hover:bg-rose-50 hover:text-rose-600" onClick={() => handleVoid(s.id)} title="Void Document">
+                      <Ban size={14} />
+                   </Button>
                 )}
                 <Link to={`/print/sales/${s.id}`}>
                   <Button variant="secondary" size="sm" className="bg-slate-100 hover:bg-slate-200"><Printer size={14} /></Button>

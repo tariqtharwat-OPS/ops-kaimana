@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Trash2, Send, Save, Printer, DollarSign, X, RotateCcw, History, Edit2, Users } from 'lucide-react';
+import { Plus, Trash2, Send, Save, Printer, DollarSign, X, RotateCcw, History, Edit2, Users, Ban } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../../context/LanguageContext';
 import { useMasterData } from '../../hooks/useMasterData';
@@ -19,7 +19,7 @@ export const ReceivingPage: React.FC = () => {
   const { data: sizes } = useMasterData('sizes', true);
   const { data: suppliers, loading: suppliersLoading } = useMasterData('suppliers', true);
   const { data: receivings } = useMasterData('receivings', true);
-  const { data: buyers, loading: buyersLoading } = useMasterData('buyers', true);
+  const { data: buyers } = useMasterData('buyers', true);
   const { data: allocations } = useMasterData('buyerAllocations', true);
 
   const [isCreating, setIsCreating] = useState(false);
@@ -60,8 +60,38 @@ export const ReceivingPage: React.FC = () => {
   const addLine = () => {
     setFormData((p: any) => ({
       ...p,
-      lines: [...p.lines, { itemId: '', gradeId: '', sizeId: '', quantity: 0, pricePerKg: 0, buyerId: '' }]
+      lines: [...p.lines, { id: Date.now(), itemId: '', gradeId: '', sizeId: '', quantity: 0, pricePerKg: 0, buyerAllocations: [] }]
     }));
+  };
+
+  // Add a blank buyer allocation row to a specific line
+  const addBuyerAllocation = (lineIdx: number) => {
+    setFormData((p: any) => {
+      const lines = [...p.lines];
+      lines[lineIdx] = { ...lines[lineIdx], buyerAllocations: [...(lines[lineIdx].buyerAllocations || []), { buyerId: '', qty: 0 }] };
+      return { ...p, lines };
+    });
+  };
+
+  // Update a buyer allocation row
+  const updateBuyerAllocation = (lineIdx: number, allocIdx: number, field: string, value: any) => {
+    setFormData((p: any) => {
+      const lines = [...p.lines];
+      const allocs = [...(lines[lineIdx].buyerAllocations || [])];
+      allocs[allocIdx] = { ...allocs[allocIdx], [field]: value };
+      lines[lineIdx] = { ...lines[lineIdx], buyerAllocations: allocs };
+      return { ...p, lines };
+    });
+  };
+
+  // Remove a buyer allocation row
+  const removeBuyerAllocation = (lineIdx: number, allocIdx: number) => {
+    setFormData((p: any) => {
+      const lines = [...p.lines];
+      const allocs = (lines[lineIdx].buyerAllocations || []).filter((_: any, i: number) => i !== allocIdx);
+      lines[lineIdx] = { ...lines[lineIdx], buyerAllocations: allocs };
+      return { ...p, lines };
+    });
   };
 
   const updateLine = (idx: number, field: string, value: any) => {
@@ -122,12 +152,19 @@ export const ReceivingPage: React.FC = () => {
         sizeId: l.sizeId || '',
         quantity: Number(l.quantity) || 0,
         pricePerKg: Number(l.pricePerKg) || 0,
-        buyerId: l.buyerId || null
+        // P2: carry buyerAllocations (filter out blank entries)
+        buyerAllocations: (l.buyerAllocations || []).filter((a: any) => a.buyerId && Number(a.qty) > 0).map((a: any) => ({ buyerId: a.buyerId, qty: Number(a.qty) }))
       })).filter((l: any) => l.itemId !== '' && l.quantity > 0);
 
-      if (finalLines.length === 0) {
-        alert(t("Valid items with quantity > 0 are required", "Item valid dengan jumlah > 0 diperlukan"));
-        return;
+      // Validate over-assignment for all lines
+      for (let i = 0; i < finalLines.length; i++) {
+        const l = finalLines[i];
+        const assignedSum = (l.buyerAllocations || []).reduce((sum: number, a: any) => sum + (Number(a.qty) || 0), 0);
+        if (assignedSum > l.quantity) {
+          alert(t(`Line ${i+1}: Buyer allocation (${assignedSum} kg) exceeds line quantity (${l.quantity} kg). Please fix before saving.`,
+                   `Baris ${i+1}: Total alokasi buyer (${assignedSum} kg) melebihi jumlah item (${l.quantity} kg).`));
+          return;
+        }
       }
 
       const hasMissingPrice = finalLines.some((l: any) => l.pricePerKg <= 0);
@@ -151,7 +188,9 @@ export const ReceivingPage: React.FC = () => {
         amountPaid: 0,
         balanceDue: totalAmount,
         paymentHistory: [],
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
+        postedBy: currentUser?.fullName || 'Admin',
+        userEmail: currentUser?.email || ''
       };
       
       let id: string;
@@ -194,8 +233,26 @@ export const ReceivingPage: React.FC = () => {
         return;
       }
       await transactionService.recordPayment(paymentModal.receivingId, 'receivings', paymentAmount);
+      
+      // P5: Audit Log for payment
+      await transactionService.writeAuditLog(paymentModal.receivingId, 'receivings', 'PAYMENT', currentUser?.id || 'System', currentUser?.email || '', `Paid Rp ${paymentAmount.toLocaleString()}`);
+
       setPaymentModal({isOpen: false, receivingId: '', balanceDue: 0});
       setPaymentAmount(0);
+    } catch (e: any) {
+      alert(e.message);
+    }
+  };
+
+  const handleVoid = async (id: string) => {
+    const reason = window.prompt(t("Masukkan alasan void:", "Enter reason for voiding:"));
+    if (!reason) return;
+    
+    if (!window.confirm(t("Apakah Anda yakin ingin membatalkan (VOID) dokumen ini?", "Are you sure you want to VOID this document?"))) return;
+    
+    try {
+      await transactionService.voidDocument('receivings', id, currentUser?.id || 'System', currentUser?.email || '', reason);
+      alert(t("Dokumen berhasil di-VOID", "Document VOIDED successfully"));
     } catch (e: any) {
       alert(e.message);
     }
@@ -280,74 +337,122 @@ export const ReceivingPage: React.FC = () => {
                   {formData.lines.map((line: any, idx: number) => {
                     const filteredGrades = getFilteredGrades(line.itemId);
                     const filteredSizes = getFilteredSizes(line.itemId);
-                    const item = items.find(i => i.id === line.itemId);
+                    const item = items.find((i: any) => i.id === line.itemId);
+                    const lineQty = Number(line.quantity) || 0;
+                    const assignedSum = (line.buyerAllocations || []).reduce((s: number, a: any) => s + (Number(a.qty) || 0), 0);
+                    const unassigned = lineQty - assignedSum;
+                    const isOverAssigned = assignedSum > lineQty;
                     
                     return (
-                      <div key={idx} className="grid grid-cols-[2fr_2fr_2fr_1.5fr_2fr_2fr_auto] gap-3 items-end bg-slate-50 p-3 rounded-xl border border-slate-100/50 min-w-[800px] overflow-x-auto">
-                        <div className="space-y-1">
-                          <label className="text-[10px] font-black text-slate-400 uppercase">{t('ITEM', 'ITEM')}</label>
-                          <select className="w-full bg-white border border-slate-200 rounded-lg p-2 text-sm font-bold"
-                            value={line.itemId} onChange={e => updateLine(idx, 'itemId', e.target.value)}>
-                            <option value="">--</option>
-                            {itemsLoading ? (
-                              <option disabled>Loading...</option>
-                            ) : (
-                              items.map((it: any) => (
+                      <div key={line.id || idx} className="rounded-2xl border border-slate-200 overflow-hidden">
+                        {/* Line Header Row */}
+                        <div className="grid grid-cols-[2fr_2fr_1.5fr_2fr_2fr_auto] gap-3 items-end bg-slate-50 p-3">
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-black text-slate-400 uppercase">{t('ITEM', 'ITEM')}</label>
+                            <select className="w-full bg-white border border-slate-200 rounded-lg p-2 text-sm font-bold"
+                              value={line.itemId} onChange={e => updateLine(idx, 'itemId', e.target.value)}>
+                              <option value="">--</option>
+                              {itemsLoading ? <option disabled>Loading...</option> : items.map((it: any) => (
                                 <option key={it.id} value={it.id}>{getItemLabel(it)}</option>
-                              ))
-                            )}
-                          </select>
-                        </div>
-                        <div className="space-y-1">
-                          <label className="text-[10px] font-black text-slate-400 uppercase">GRADE / SIZE</label>
-                          <div className="flex gap-1">
-                            <select disabled={!item?.hasGrade}
-                              className="w-full bg-white border border-slate-200 rounded-lg p-2 text-[10px] font-bold disabled:opacity-30"
-                              value={line.gradeId} onChange={e => updateLine(idx, 'gradeId', e.target.value)}>
-                              <option value="">G</option>
-                              {filteredGrades.map((g: any) => <option key={g.id} value={g.id}>{g.name}</option>)}
-                            </select>
-                            <select className="w-full bg-white border border-slate-200 rounded-lg p-2 text-[10px] font-bold"
-                              value={line.sizeId} onChange={e => updateLine(idx, 'sizeId', e.target.value)}>
-                              <option value="">S</option>
-                              {filteredSizes.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                              ))}
                             </select>
                           </div>
-                        </div>
-                        <div className="space-y-1">
-                          <label className="text-[10px] font-black text-slate-400 uppercase">{t('BUYER', 'BUYER')}</label>
-                          <select className="w-full bg-white border border-slate-200 rounded-lg p-2 text-[10px] font-bold"
-                            value={line.buyerId || ''} onChange={e => updateLine(idx, 'buyerId', e.target.value)}>
-                            <option value="">-- {t('Opsional', 'Optional')} --</option>
-                            {buyersLoading ? (
-                              <option disabled>Loading...</option>
-                            ) : (
-                              buyers.map((b: any) => <option key={b.id} value={b.id}>{b.name}</option>)
-                            )}
-                          </select>
-                        </div>
-                        <div className="space-y-1">
-                          <label className="text-[10px] font-black text-slate-400 uppercase">QTY</label>
-                          <input type="number" className="w-full bg-white border border-slate-200 rounded-lg p-2 text-sm font-bold text-right"
-                            onWheel={e => e.currentTarget.blur()}
-                            value={line.quantity || ''} 
-                            onChange={e => updateLine(idx, 'quantity', e.target.value === '' ? 0 : Number(e.target.value))} />
-                        </div>
-                        <div className="space-y-1">
-                          <label className="text-[10px] font-black text-slate-400 uppercase">PRICE/KG</label>
-                          <input type="number" className="w-full bg-white border border-slate-200 rounded-lg p-2 text-sm font-bold text-right"
-                            onWheel={e => e.currentTarget.blur()}
-                            value={line.pricePerKg || ''} 
-                            onChange={e => updateLine(idx, 'pricePerKg', e.target.value === '' ? 0 : Number(e.target.value))} />
-                        </div>
-                        <div className="space-y-1">
-                          <label className="text-[10px] font-black text-slate-400 uppercase text-right block">TOTAL</label>
-                          <div className="w-full bg-slate-100/50 border border-transparent rounded-lg p-2 text-sm font-black text-right text-ocean-700">
-                            Rp {((line.quantity || 0) * (line.pricePerKg || 0)).toLocaleString()}
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-black text-slate-400 uppercase">GRADE / SIZE</label>
+                            <div className="flex gap-1">
+                              <select disabled={!item?.hasGrade}
+                                className="w-full bg-white border border-slate-200 rounded-lg p-2 text-[10px] font-bold disabled:opacity-30"
+                                value={line.gradeId} onChange={e => updateLine(idx, 'gradeId', e.target.value)}>
+                                <option value="">G</option>
+                                {filteredGrades.map((g: any) => <option key={g.id} value={g.id}>{g.name}</option>)}
+                              </select>
+                              <select className="w-full bg-white border border-slate-200 rounded-lg p-2 text-[10px] font-bold"
+                                value={line.sizeId} onChange={e => updateLine(idx, 'sizeId', e.target.value)}>
+                                <option value="">S</option>
+                                {filteredSizes.map((s: any) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                              </select>
+                            </div>
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-black text-slate-400 uppercase">QTY</label>
+                            <input type="number" className="w-full bg-white border border-slate-200 rounded-lg p-2 text-sm font-bold text-right"
+                              onWheel={e => e.currentTarget.blur()}
+                              value={line.quantity || ''}
+                              onChange={e => updateLine(idx, 'quantity', e.target.value === '' ? 0 : Number(e.target.value))} />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-black text-slate-400 uppercase">PRICE/KG</label>
+                            <input type="number" className="w-full bg-white border border-slate-200 rounded-lg p-2 text-sm font-bold text-right"
+                              onWheel={e => e.currentTarget.blur()}
+                              value={line.pricePerKg || ''}
+                              onChange={e => updateLine(idx, 'pricePerKg', e.target.value === '' ? 0 : Number(e.target.value))} />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-black text-slate-400 uppercase text-right block">TOTAL</label>
+                            <div className="w-full bg-slate-100/50 rounded-lg p-2 text-sm font-black text-right text-ocean-700">
+                              Rp {((line.quantity || 0) * (line.pricePerKg || 0)).toLocaleString()}
+                            </div>
+                          </div>
+                          <div className="pb-0.5 flex items-center h-[38px]">
+                            <button className="p-2 text-red-300 hover:text-red-500 transition-colors" onClick={() => removeLine(idx)}><Trash2 size={16} /></button>
                           </div>
                         </div>
-                        <div className="pb-0.5 text-right flex items-center h-[38px]">
-                          <button className="p-2 text-red-300 hover:text-red-500 transition-colors" onClick={() => removeLine(idx)}><Trash2 size={16} /></button>
+
+                        {/* P2: Buyer Allocation Sub-section */}
+                        <div className="bg-white border-t border-slate-100 p-3">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <Users size={12} className="text-slate-400" />
+                              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('ALOKASI BUYER', 'BUYER ALLOCATION')}</span>
+                              <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
+                                isOverAssigned ? 'bg-red-100 text-red-700' :
+                                unassigned === 0 && lineQty > 0 ? 'bg-emerald-100 text-emerald-700' :
+                                unassigned > 0 ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-400'
+                              }`}>
+                                {isOverAssigned
+                                  ? `⚠ Over-assigned by ${(assignedSum - lineQty).toLocaleString()} kg`
+                                  : lineQty > 0
+                                  ? `${unassigned.toLocaleString()} kg ${t('belum dialokasi', 'unassigned')}`
+                                  : t('Set qty first', 'Isi QTY dulu')}
+                              </span>
+                            </div>
+                            <button
+                              onClick={() => addBuyerAllocation(idx)}
+                              className="text-[10px] font-black text-ocean-600 hover:text-ocean-800 flex items-center gap-1 transition-colors"
+                            >
+                              <Plus size={10} /> {t('Tambah Buyer', 'Add Buyer')}
+                            </button>
+                          </div>
+                          {(line.buyerAllocations || []).length === 0 && (
+                            <p className="text-[10px] text-slate-300 font-bold italic">{t('Tidak ada alokasi — seluruh qty masuk pool tidak teralokasi.', 'No allocations — all qty goes to unassigned pool.')}</p>
+                          )}
+                          {(line.buyerAllocations || []).map((alloc: any, aIdx: number) => (
+                            <div key={aIdx} className="flex items-center gap-2 mt-1.5">
+                              <select
+                                className="flex-1 bg-slate-50 border border-slate-200 rounded-lg p-1.5 text-xs font-bold"
+                                value={alloc.buyerId}
+                                onChange={e => updateBuyerAllocation(idx, aIdx, 'buyerId', e.target.value)}
+                              >
+                                <option value="">-- {t('Pilih Buyer', 'Select Buyer')} --</option>
+                                {buyers.map((b: any) => <option key={b.id} value={b.id}>{b.name}</option>)}
+                              </select>
+                              <input
+                                type="number"
+                                className="w-24 bg-slate-50 border border-slate-200 rounded-lg p-1.5 text-xs font-black text-right"
+                                onWheel={e => e.currentTarget.blur()}
+                                placeholder="kg"
+                                value={alloc.qty || ''}
+                                onChange={e => updateBuyerAllocation(idx, aIdx, 'qty', e.target.value === '' ? 0 : Number(e.target.value))}
+                              />
+                              <span className="text-[10px] text-slate-400 font-bold">kg</span>
+                              <button
+                                onClick={() => removeBuyerAllocation(idx, aIdx)}
+                                className="p-1 text-red-300 hover:text-red-500 transition-colors"
+                              >
+                                <X size={12} />
+                              </button>
+                            </div>
+                          ))}
                         </div>
                       </div>
                     );
@@ -430,7 +535,7 @@ export const ReceivingPage: React.FC = () => {
             },
             { header: 'STATUS', accessor: (r: any) => (
               <div className="flex gap-2">
-                <Badge variant={r.status === 'Posted' ? 'posted' : 'draft'}>{r.status}</Badge>
+                <Badge variant={r.status === 'Posted' ? 'posted' : r.status === 'Void' ? 'pending' : 'draft'}>{r.status}</Badge>
                 {r.status === 'Posted' && (
                   <Badge variant={r.paymentStatus === 'Paid' ? 'posted' : r.paymentStatus === 'Partial' ? 'draft' : 'pending'}>
                     {r.paymentStatus || 'Unpaid'}
@@ -465,6 +570,11 @@ export const ReceivingPage: React.FC = () => {
                   }}>
                     <DollarSign size={14} className="text-white" /> {t('BAYAR', 'PAY')}
                   </Button>
+                )}
+                {r.status === 'Posted' && (currentUser?.role === 'Admin' || currentUser?.role === 'Operator') && (
+                   <Button variant="secondary" size="sm" className="bg-slate-100 hover:bg-rose-50 hover:text-rose-600" onClick={() => handleVoid(r.id)} title="Void Document">
+                      <Ban size={14} />
+                   </Button>
                 )}
                 <Link to={`/print/receivings/${r.id}`}>
                   <Button variant="secondary" size="sm" className="bg-slate-100 hover:bg-slate-200"><Printer size={14} /></Button>

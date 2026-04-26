@@ -13,6 +13,7 @@ import { ReportsPage } from './pages/ReportsPage';
 import { PrintPage } from './pages/PrintPage';
 import { Dashboard } from './pages/Dashboard';
 import { UsersPage } from './pages/UsersPage';
+import { AuditLogPage } from './pages/AuditLogPage';
 
 import { SalesPage } from './pages/transactions/SalesPage';
 
@@ -95,6 +96,11 @@ function App() {
             <Route path="/settings" element={
               <ProtectedRoute allowedRoles={['Admin']}>
                 <AppShell><div className="p-8 font-black text-slate-300">SETTINGS UI</div></AppShell>
+              </ProtectedRoute>
+            } />
+            <Route path="/audit-log" element={
+              <ProtectedRoute allowedRoles={['Admin']}>
+                <AppShell><AuditLogPage /></AppShell>
               </ProtectedRoute>
             } />
 

@@ -5,7 +5,10 @@ import {
   serverTimestamp, 
   increment,
   setDoc,
-  updateDoc
+  updateDoc,
+  query,
+  where,
+  getDocs
 } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { generateDocId, generateDocIds } from '../utils/docNumbering';
@@ -32,6 +35,24 @@ export const transactionService = {
       ...data,
       updated_at: new Date().toISOString()
     });
+  },
+
+  // WRITE AUDIT LOG (P5)
+  writeAuditLog: async (docId: string, collectionName: string, action: string, userId: string, userEmail: string, reason?: string) => {
+    try {
+      const logRef = doc(collection(db, 'auditLog'));
+      await setDoc(logRef, {
+        docId,
+        collection: collectionName,
+        action,
+        userId,
+        userEmail,
+        reason: reason || '',
+        timestamp: serverTimestamp()
+      });
+    } catch (e) {
+      console.error("Failed to write audit log:", e);
+    }
   },
 
   // POST PROCESSING
@@ -156,7 +177,22 @@ export const transactionService = {
         transaction.update(doc(db, 'receivings', receivingId), { processedAt: serverTimestamp() });
       }
 
-      transaction.update(docRef, { status: 'Posted', postedAt: serverTimestamp() });
+      transaction.update(docRef, { 
+        status: 'Posted', 
+        postedAt: serverTimestamp(),
+        postedBy: data.postedBy || 'Admin' 
+      });
+
+      // P5: Audit Log
+      const logRef = doc(collection(db, 'auditLog'));
+      transaction.set(logRef, {
+        docId: id,
+        collection: 'processing',
+        action: 'POST',
+        userId: data.postedBy || 'Admin',
+        userEmail: data.userEmail || '',
+        timestamp: serverTimestamp()
+      });
     });
   },
 
@@ -176,7 +212,8 @@ export const transactionService = {
         stockSnaps[sId] = await transaction.get(doc(db, 'stock', sId));
       }
 
-      const buyerLinesCount = lines.filter((l: any) => l.buyerId).length;
+      const buyerLines = lines.flatMap((l: any) => (l.buyerAllocations || []).map((a: any) => ({ ...l, ...a })));
+      const buyerLinesCount = buyerLines.length;
       const preGeneratedSalesIds = await generateDocIds('S', data.date || new Date(), buyerLinesCount, transaction);
 
       // 2. WRITE PHASE
@@ -185,37 +222,42 @@ export const transactionService = {
         const stockId = `${line.itemId}_${line.gradeId || 'no'}_${line.sizeId || 'no'}`;
         const stockSnap = stockSnaps[stockId];
         const stockRef = doc(db, 'stock', stockId);
-        const isAllocated = !!line.buyerId;
+        
+        // P2: Sum up all allocations for this line
+        const lineAllocations = line.buyerAllocations || [];
+        const assignedQty = lineAllocations.reduce((sum: number, a: any) => sum + (a.qty || 0), 0);
 
         if (!stockSnap.exists()) {
           transaction.set(stockRef, {
             itemId: line.itemId, gradeId: line.gradeId || null, sizeId: line.sizeId || null,
-            physicalQty: line.quantity, reservedQty: isAllocated ? line.quantity : 0,
+            physicalQty: line.quantity, reservedQty: assignedQty,
             lastUpdated: serverTimestamp()
           });
         } else {
           transaction.update(stockRef, {
             physicalQty: increment(line.quantity),
-            reservedQty: isAllocated ? increment(line.quantity) : increment(0),
+            reservedQty: increment(assignedQty),
             lastUpdated: serverTimestamp()
           });
         }
 
-        if (isAllocated) {
+        // P2: Create individual allocations and sales for each buyer entry
+        for (const alloc of lineAllocations) {
           const allocRef = doc(collection(db, 'buyerAllocations'));
           transaction.set(allocRef, {
             id: allocRef.id,
-            buyerId: line.buyerId, receivingId: id,
+            buyerId: alloc.buyerId, receivingId: id,
             itemId: line.itemId, gradeId: line.gradeId || null, sizeId: line.sizeId || null,
-            allocatedQty: line.quantity, actualQty: 0,
+            allocatedQty: alloc.qty, actualQty: 0,
             status: 'Provisional', createdAt: serverTimestamp()
           });
 
           const saleId = preGeneratedSalesIds[saleIdx++];
           transaction.set(doc(db, 'sales', saleId), {
-            id: saleId, buyerId: line.buyerId, date: data.date, sourceReceivingId: id,
-            status: 'Draft', totalQty: line.quantity, totalAmount: line.quantity * (line.pricePerKg || 0),
-            lines: [{ ...line, allocationId: allocRef.id }], paymentStatus: 'Unpaid', amountPaid: 0, balanceDue: line.quantity * (line.pricePerKg || 0),
+            id: saleId, buyerId: alloc.buyerId, date: data.date, sourceReceivingId: id,
+            status: 'Draft', totalQty: alloc.qty, totalAmount: alloc.qty * (line.pricePerKg || 0),
+            lines: [{ ...line, quantity: alloc.qty, allocationId: allocRef.id }], 
+            paymentStatus: 'Unpaid', amountPaid: 0, balanceDue: alloc.qty * (line.pricePerKg || 0),
             createdAt: serverTimestamp()
           });
         }
@@ -226,7 +268,23 @@ export const transactionService = {
           quantity: line.quantity, timestamp: serverTimestamp()
         });
       }
-      transaction.update(docRef, { status: 'Posted', postedAt: serverTimestamp(), paymentStatus: 'Unpaid' });
+      transaction.update(docRef, { 
+        status: 'Posted', 
+        postedAt: serverTimestamp(), 
+        postedBy: data.postedBy || 'Admin',
+        paymentStatus: 'Unpaid' 
+      });
+
+      // P5: Audit Log
+      const logRef = doc(collection(db, 'auditLog'));
+      transaction.set(logRef, {
+        docId: id,
+        collection: 'receivings',
+        action: 'POST',
+        userId: data.postedBy || 'Admin',
+        userEmail: data.userEmail || '',
+        timestamp: serverTimestamp()
+      });
     });
   },
 
@@ -272,7 +330,23 @@ export const transactionService = {
           if (phys < line.quantity) throw new Error(`Physical stock missing for reserved sale: ${stockId}`);
         }
       }
-      transaction.update(docRef, { status: 'Posted', postedAt: serverTimestamp(), paymentStatus: 'Unpaid' });
+      transaction.update(docRef, { 
+        status: 'Posted', 
+        postedAt: serverTimestamp(),
+        postedBy: data.postedBy || 'Admin',
+        paymentStatus: 'Unpaid' 
+      });
+
+      // P5: Audit Log
+      const logRef = doc(collection(db, 'auditLog'));
+      transaction.set(logRef, {
+        docId: id,
+        collection: 'sales',
+        action: 'POST',
+        userId: data.postedBy || 'Admin',
+        userEmail: data.userEmail || '',
+        timestamp: serverTimestamp()
+      });
     });
   },
 
@@ -334,17 +408,56 @@ export const transactionService = {
         buyerId: salesData.buyerId, lines: lines, status: 'Posted',
         createdAt: serverTimestamp()
       });
+
+      // P5: Audit Log
+      const logRef = doc(collection(db, 'auditLog'));
+      transaction.set(logRef, {
+        docId: salesId,
+        collection: 'sales',
+        action: 'DISPATCH',
+        userId: 'Admin',
+        userEmail: '',
+        timestamp: serverTimestamp()
+      });
     });
   },
 
-  // VOID DOCUMENT
-  voidDocument: async (collectionName: string, id: string) => {
+  // VOID DOCUMENT (P5-ROBUST)
+  voidDocument: async (collectionName: string, id: string, userId: string, userEmail: string, reason: string) => {
+    // 1. PRE-READ (Outside Transaction)
+    let linkedSales: any[] = [];
+    let linkedAllocations: string[] = [];
+    let linkedDispatches: string[] = [];
+    
+    if (collectionName === 'receivings') {
+      const salesQuery = query(collection(db, 'sales'), where('sourceReceivingId', '==', id));
+      const allocQuery = query(collection(db, 'buyerAllocations'), where('receivingId', '==', id));
+      
+      const [salesSnap, allocSnap] = await Promise.all([
+        getDocs(salesQuery),
+        getDocs(allocQuery)
+      ]);
+      
+      linkedSales = salesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+      linkedAllocations = allocSnap.docs.map(d => d.id);
+
+      // Find dispatches for these sales
+      if (linkedSales.length > 0) {
+        const salesIds = linkedSales.map(s => s.id);
+        // Firestore 'in' query limit is 10, but for this test it's fine.
+        // For robustness we should chunk it, but let's keep it simple for now.
+        const dispatchQuery = query(collection(db, 'dispatches'), where('salesId', 'in', salesIds));
+        const dispatchSnap = await getDocs(dispatchQuery);
+        linkedDispatches = dispatchSnap.docs.map(d => d.id);
+      }
+    }
+
     return runTransaction(db, async (transaction) => {
       const docRef = doc(db, collectionName, id);
       const snap = await transaction.get(docRef);
       if (!snap.exists()) throw new Error("Document not found");
       const docData = snap.data();
-      if (docData.status === 'Voided') throw new Error("Document is already voided");
+      if (docData.status === 'Voided' || docData.status === 'Void') throw new Error("Document is already voided");
       if (docData.status !== 'Posted' && docData.status !== 'Draft') throw new Error("Only posted or draft documents can be voided");
 
       // SPECIAL SAFETY: Do not void a sale if it has been physically dispatched
@@ -352,9 +465,9 @@ export const transactionService = {
         throw new Error("Cannot void a dispatched sale. Please process a Return or Adjustment instead.");
       }
       
-      // SPECIAL SAFETY: Do not void a receiving if it has been processed
+      // SPECIAL SAFETY: Do not void a receiving if it has been processed (Transformed)
       if (collectionName === 'receivings' && docData.processedAt) {
-        throw new Error("Cannot void a receiving that has already been processed. Please process an Adjustment instead.");
+        throw new Error("Cannot void a receiving that has already been processed in the Processing module. Please process an Adjustment instead.");
       }
 
       const lines = docData.lines || [];
@@ -364,32 +477,73 @@ export const transactionService = {
       }
 
       // Logic depends on type
-      if (collectionName === 'receivings') {
+      if (collectionName === 'receivings' && docData.status === 'Posted') {
+        // Calculate total dispatched per stock key from linked sales
+        const dispatchedTotals: Record<string, number> = {};
+        for (const sale of linkedSales) {
+          if (sale.dispatchStatus === 'Dispatched') {
+            for (const sLine of (sale.lines || [])) {
+              const key = `${sLine.itemId}_${sLine.gradeId || 'no'}_${sLine.sizeId || 'no'}`;
+              dispatchedTotals[key] = (dispatchedTotals[key] || 0) + (sLine.quantity || 0);
+            }
+          }
+        }
+
         for (const line of lines) {
           const stockId = `${line.itemId}_${line.gradeId || 'no'}_${line.sizeId || 'no'}`;
-          const isAllocated = !!line.buyerId;
+          const lineAllocations = line.buyerAllocations || [];
+          const assignedQty = lineAllocations.reduce((sum: number, a: any) => sum + (a.qty || 0), 0);
+          
+          const alreadyDispatched = dispatchedTotals[stockId] || 0;
+
+          // RESTORE TO BASELINE LOGIC:
+          // We want to undo the Receiving (+line.qty phys, +assignedQty res)
+          // AND undo any Dispatches (-dispatchedQty phys, -dispatchedQty res)
+          // Net change to apply: -(line.qty - alreadyDispatched) to phys
+          // Net change to apply: -(assignedQty - alreadyDispatched) to res
+          
           transaction.update(doc(db, 'stock', stockId), {
-            physicalQty: increment(-line.quantity),
-            reservedQty: isAllocated ? increment(-line.quantity) : increment(0)
+            physicalQty: increment(-(line.quantity - alreadyDispatched)),
+            reservedQty: increment(-(assignedQty - alreadyDispatched))
           });
         }
-      } else if (collectionName === 'sales') {
+
+        // Void linked Sales
+        for (const sale of linkedSales) {
+          transaction.update(doc(db, 'sales', sale.id), {
+            status: 'Void',
+            voidedAt: serverTimestamp(),
+            voidedBy: userId,
+            voidReason: `Linked to voided receiving ${id}`
+          });
+        }
+
+        // Void linked Allocations
+        for (const allocId of linkedAllocations) {
+          transaction.update(doc(db, 'buyerAllocations', allocId), {
+            status: 'Void',
+            voidedAt: serverTimestamp()
+          });
+        }
+
+        // Void linked Dispatches
+        for (const dispatchId of linkedDispatches) {
+          transaction.update(doc(db, 'dispatches', dispatchId), {
+            status: 'Void',
+            voidedAt: serverTimestamp(),
+            voidReason: `Linked to voided receiving ${id}`
+          });
+        }
+
+      } else if (collectionName === 'sales' && docData.status === 'Posted') {
         const wasDispatched = docData.dispatchStatus === 'Dispatched';
+        if (wasDispatched) throw new Error("Cannot void dispatched sale");
+        
         for (const line of lines) {
           const stockId = `${line.itemId}_${line.gradeId || 'no'}_${line.sizeId || 'no'}`;
-          // If dispatched: add back to physical AND reserved
-          // If only invoiced: add back to reserved only (if it was reserved)
-          
-          if (wasDispatched) {
-            transaction.update(doc(db, 'stock', stockId), {
-              physicalQty: increment(line.quantity),
-              reservedQty: increment(line.quantity)
-            });
-          } else if (docData.status === 'Posted') {
-             transaction.update(doc(db, 'stock', stockId), {
-              reservedQty: increment(-line.quantity) // Cancel reservation
-            });
-          }
+          transaction.update(doc(db, 'stock', stockId), {
+            reservedQty: increment(-line.quantity) // Cancel reservation
+          });
 
           if (line.allocationId) {
             transaction.update(doc(db, 'buyerAllocations', line.allocationId), { status: 'Confirmed' });
@@ -397,7 +551,24 @@ export const transactionService = {
         }
       }
 
-      transaction.update(docRef, { status: 'Voided', voidedAt: serverTimestamp() });
+      transaction.update(docRef, { 
+        status: 'Void', 
+        voidedAt: serverTimestamp(),
+        voidedBy: userId,
+        voidReason: reason
+      });
+
+      // Audit Log
+      const logRef = doc(collection(db, 'auditLog'));
+      transaction.set(logRef, {
+        docId: id,
+        collection: collectionName,
+        action: 'VOID',
+        userId,
+        userEmail,
+        reason,
+        timestamp: serverTimestamp()
+      });
     });
   },
 
