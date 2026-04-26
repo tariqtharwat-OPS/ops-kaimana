@@ -230,10 +230,10 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
       {/* Sidebar Refinement */}
       <aside className={`print:hidden ${collapsed ? 'w-24' : 'w-80'} bg-white border-r border-slate-100 transition-all duration-500 ease-in-out flex flex-col fixed inset-y-0 z-50 shadow-[4px_0_24px_rgba(0,0,0,0.02)]`}>
         <div className="p-10 flex items-center justify-center">
-          <div className="relative group">
-            <div className="absolute -inset-2 bg-gradient-to-br from-ocean-500/10 to-accent-500/10 rounded-2xl blur opacity-0 group-hover:opacity-100 transition duration-500"></div>
-            <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 relative">
-              <img src="/images/logo.png" alt="Logo" className={`${collapsed ? 'h-8' : 'h-16'} transition-all object-contain`} />
+          <div className="relative group w-full">
+            <div className="absolute -inset-2 bg-gradient-to-br from-ocean-500/10 to-accent-500/10 rounded-3xl blur opacity-0 group-hover:opacity-100 transition duration-500"></div>
+            <div className="bg-white p-6 rounded-3xl shadow-xl shadow-slate-200/50 border border-white relative flex justify-center items-center">
+              <img src="/images/logo.png" alt="Logo" className={`${collapsed ? 'h-10' : 'h-24'} transition-all duration-500 object-contain hover:scale-105`} />
             </div>
           </div>
         </div>
@@ -274,9 +274,13 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
         </div>
       </aside>
 
-      <main className={`flex-1 print:ml-0 ${collapsed ? 'ml-24' : 'ml-80'} transition-all duration-500`}>
+      <main className={`flex-1 print:ml-0 ${collapsed ? 'ml-24' : 'ml-80'} transition-all duration-500 relative min-h-screen`}>
+        {/* Subtle Background Glow Effects for Inner Pages */}
+        <div className="absolute top-[-10%] right-[-5%] w-[800px] h-[800px] bg-ocean-400/5 rounded-full blur-[120px] pointer-events-none -z-10"></div>
+        <div className="absolute bottom-[-10%] left-[-5%] w-[800px] h-[800px] bg-accent-400/5 rounded-full blur-[120px] pointer-events-none -z-10"></div>
+
         {/* Glass Header */}
-        <header className="print:hidden h-24 sticky top-0 z-40 px-6 md:px-12 flex items-center justify-between glass-effect border-b border-slate-100/50">
+        <header className="print:hidden h-24 sticky top-0 z-40 px-6 md:px-12 flex items-center justify-between bg-white/70 backdrop-blur-2xl border-b border-white shadow-[0_4px_30px_rgba(0,0,0,0.02)]">
           <div className="animate-slide-up">
             <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">{t('Sistem Operasional', 'Operational System')}</h2>
             <div className="flex items-center gap-3 mt-1">
