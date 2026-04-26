@@ -287,7 +287,7 @@ export const SalesPage: React.FC = () => {
                 </div>
                 <div className="space-y-3">
                   {formData.lines.map((line: any, idx: number) => (
-                    <div key={idx} className="grid grid-cols-[3fr_2fr_2fr_2fr_2fr_auto] gap-3 items-end bg-slate-50 p-3 rounded-xl border border-slate-100/50 min-w-[800px] overflow-x-auto">
+                    <div key={idx} className="grid grid-cols-[3fr_2fr_2fr_2fr_2fr_auto] gap-3 items-end bg-slate-50 p-3 rounded-xl border border-slate-100/50 min-w-[800px] overflow-x-auto no-scrollbar">
                       <div className="space-y-1">
                         <label className="text-[10px] font-black text-slate-400 uppercase">{t('ITEM', 'ITEM')}</label>
                         <select className="w-full bg-white border border-slate-200 rounded-lg p-2 text-sm font-bold"

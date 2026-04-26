@@ -13,6 +13,7 @@ import { db, auth } from '../../firebase/config';
 
 export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { t, language, setLanguage } = useLanguage();
@@ -226,9 +227,11 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
   ].filter(n => n.roles.includes(currentUser.role));
 
   return (
-    <div className="flex min-h-screen bg-[#f8fafc]">
+    <div className="flex h-screen bg-[#f8fafc] overflow-hidden">
       {/* Sidebar Refinement */}
-      <aside className={`print:hidden ${collapsed ? 'w-24' : 'w-80'} bg-white border-r border-slate-100 transition-all duration-500 ease-in-out flex flex-col fixed inset-y-0 z-50 shadow-[4px_0_24px_rgba(0,0,0,0.02)]`}>
+      <aside className={`print:hidden fixed inset-y-0 z-50 transition-all duration-500 ease-in-out flex flex-col bg-white border-r border-slate-100 shadow-[4px_0_24px_rgba(0,0,0,0.02)]
+        ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} 
+        lg:translate-x-0 ${collapsed ? 'lg:w-24' : 'lg:w-80'} w-80`}>
         <div className="p-10 flex items-center justify-center">
           <div className="relative group w-full">
             <div className="absolute -inset-2 bg-gradient-to-br from-ocean-500/10 to-accent-500/10 rounded-3xl blur opacity-0 group-hover:opacity-100 transition duration-500"></div>
@@ -242,7 +245,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
           {navigation.map(item => {
             const active = location.pathname === item.path;
             return (
-              <Link key={item.path} to={item.path}
+              <Link key={item.path} to={item.path} onClick={() => setMobileMenuOpen(false)}
                 className={`flex items-center gap-4 px-5 py-4 rounded-2xl transition-all duration-300 group ${active ? 'bg-ocean-600 text-white shadow-xl shadow-ocean-600/20 translate-x-1' : 'text-slate-500 hover:bg-slate-50 hover:text-ocean-600'}`}>
                 <item.icon size={20} className={`transition-transform duration-300 ${active ? 'scale-110' : 'group-hover:scale-110'}`} />
                 {!collapsed && <span className="text-sm font-bold tracking-tight">{item.label}</span>}
@@ -255,7 +258,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
               {adminNav.map(item => {
                 const active = location.pathname === item.path;
                 return (
-                  <Link key={item.path} to={item.path}
+                  <Link key={item.path} to={item.path} onClick={() => setMobileMenuOpen(false)}
                     className={`flex items-center gap-4 px-5 py-4 rounded-2xl transition-all duration-300 group ${active ? 'bg-ocean-600 text-white shadow-xl shadow-ocean-600/20 translate-x-1' : 'text-slate-500 hover:bg-slate-50 hover:text-ocean-600'}`}>
                     <item.icon size={20} className={`transition-transform duration-300 ${active ? 'scale-110' : 'group-hover:scale-110'}`} />
                     {!collapsed && <span className="text-sm font-bold tracking-tight">{item.label}</span>}
@@ -266,7 +269,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
           )}
         </nav>
 
-        <div className="p-6">
+        <div className="p-6 lg:block hidden">
           <button onClick={() => setCollapsed(!collapsed)}
             className="w-full flex items-center justify-center p-4 bg-slate-50 hover:bg-slate-100 rounded-2xl transition-all duration-300 text-slate-400 hover:text-ocean-600">
             {collapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
@@ -274,14 +277,29 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
         </div>
       </aside>
 
-      <main className={`flex-1 print:ml-0 ${collapsed ? 'ml-24' : 'ml-80'} transition-all duration-500 relative min-h-screen`}>
+      {/* Mobile Overlay */}
+      {mobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40 lg:hidden"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
+
+      <main className={`flex-1 print:ml-0 ${collapsed ? 'lg:ml-24' : 'lg:ml-80'} ml-0 transition-all duration-500 relative h-full overflow-y-auto no-scrollbar`}>
         {/* Subtle Background Glow Effects for Inner Pages */}
         <div className="absolute top-[-10%] right-[-5%] w-[800px] h-[800px] bg-ocean-400/5 rounded-full blur-[120px] pointer-events-none -z-10"></div>
         <div className="absolute bottom-[-10%] left-[-5%] w-[800px] h-[800px] bg-accent-400/5 rounded-full blur-[120px] pointer-events-none -z-10"></div>
 
         {/* Glass Header */}
-        <header className="print:hidden h-24 sticky top-0 z-40 px-6 md:px-12 flex items-center justify-between bg-white/70 backdrop-blur-2xl border-b border-white shadow-[0_4px_30px_rgba(0,0,0,0.02)]">
-          <div className="animate-slide-up">
+        <header className="print:hidden h-24 sticky top-0 z-40 px-4 md:px-12 flex items-center justify-between bg-white/70 backdrop-blur-2xl border-b border-white shadow-[0_4px_30px_rgba(0,0,0,0.02)]">
+          <div className="flex items-center gap-4">
+            <button 
+              onClick={() => setMobileMenuOpen(true)}
+              className="lg:hidden p-2 text-slate-500 hover:bg-slate-100 rounded-xl transition-colors"
+            >
+              <ChevronRight size={24} />
+            </button>
+            <div className="animate-slide-up">
             <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">{t('Sistem Operasional', 'Operational System')}</h2>
             <div className="flex items-center gap-3 mt-1">
               <span className="text-xl md:text-2xl font-black text-slate-900 tracking-tighter">{currentUser.fullName}</span>

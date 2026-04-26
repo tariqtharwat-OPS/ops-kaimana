@@ -213,7 +213,7 @@ export const ProcessingPage: React.FC = () => {
                     const hasSurplus = line.actualQty > line.invoiceQty;
                     return (
                       <div key={line.id} className={`p-4 rounded-2xl border transition-all ${hasShortfall ? 'border-amber-200 bg-amber-50/30' : hasSurplus ? 'border-emerald-200 bg-emerald-50/30' : 'border-slate-100 bg-slate-50/50'}`}>
-                        <div className="grid grid-cols-[3fr_2fr_3fr] gap-4 items-center">
+                        <div className="grid grid-cols-[3fr_2fr_3fr] gap-4 items-center overflow-x-auto no-scrollbar min-w-[500px]">
                           <div>
                             <p className="text-[10px] font-black text-slate-400 uppercase">Inv: #{line.receivingId.substring(0,8).toUpperCase()}</p>
                             {/* P1-F5: Show resolved item name */}

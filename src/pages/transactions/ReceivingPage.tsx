@@ -361,7 +361,7 @@ export const ReceivingPage: React.FC = () => {
                     return (
                       <div key={line.id || idx} className="rounded-2xl border border-slate-200 overflow-hidden">
                         {/* Line Header Row */}
-                        <div className="grid grid-cols-[2fr_2fr_1.5fr_2fr_2fr_auto] gap-3 items-end bg-slate-50 p-3">
+                        <div className="grid grid-cols-[2fr_2fr_1.5fr_2fr_2fr_auto] gap-3 items-end bg-slate-50 p-3 overflow-x-auto no-scrollbar min-w-[600px]">
                           <div className="space-y-1">
                             <label className="text-[10px] font-black text-slate-400 uppercase">{t('ITEM', 'ITEM')}</label>
                             <select className="w-full bg-white border border-slate-200 rounded-lg p-2 text-sm font-bold"

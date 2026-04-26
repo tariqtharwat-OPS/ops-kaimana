@@ -16,7 +16,7 @@ interface TableProps<T> {
 
 export function Table<T>({ data, columns, onRowClick, className = '', compact = false }: TableProps<T>) {
   return (
-    <div className={`overflow-x-auto ${className}`}>
+    <div className={`overflow-x-auto no-scrollbar ${className}`}>
       <table className="w-full text-left border-collapse">
         <thead>
           <tr className="border-b border-slate-100">
