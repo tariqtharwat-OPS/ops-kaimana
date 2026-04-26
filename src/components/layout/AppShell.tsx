@@ -306,8 +306,9 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
               <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.5)] animate-pulse"></div>
             </div>
           </div>
+        </div>
 
-          <div className="flex items-center gap-4 md:gap-10">
+        <div className="flex items-center gap-4 md:gap-10">
             <div className="hidden sm:flex bg-slate-100/50 p-1.5 rounded-2xl border border-slate-200/50">
               <button onClick={() => setLanguage('id')}
                 className={`px-5 py-2 rounded-xl text-[11px] font-black transition-all duration-300 ${language === 'id' ? 'bg-white text-ocean-600 shadow-sm ring-1 ring-slate-100' : 'text-slate-400 hover:text-slate-600'}`}>ID</button>
