@@ -36,6 +36,8 @@ export const ReceivingPage: React.FC = () => {
   const [paymentModal, setPaymentModal] = useState<{isOpen: boolean, receivingId: string, balanceDue: number}>({isOpen: false, receivingId: '', balanceDue: 0});
   const [paymentAmount, setPaymentAmount] = useState<number>(0);
   const [historyModal, setHistoryModal] = useState<{isOpen: boolean, receiving: any}>({isOpen: false, receiving: null});
+  const [voidModal, setVoidModal] = useState<{isOpen: boolean, doc: any}>({isOpen: false, doc: null});
+  const [voidReason, setVoidReason] = useState<string>('');
 
   // P1-F2: Open an existing Draft for editing
   const handleEdit = (doc: any) => {
@@ -244,15 +246,22 @@ export const ReceivingPage: React.FC = () => {
     }
   };
 
-  const handleVoid = async (id: string) => {
-    const reason = window.prompt(t("Masukkan alasan void:", "Enter reason for voiding:"));
-    if (!reason) return;
-    
-    if (!window.confirm(t("Apakah Anda yakin ingin membatalkan (VOID) dokumen ini?", "Are you sure you want to VOID this document?"))) return;
+  const handleVoidClick = (doc: any) => {
+    setVoidModal({isOpen: true, doc});
+    setVoidReason('');
+  };
+
+  const confirmVoid = async () => {
+    if (!voidReason) {
+      alert(t("Alasan wajib diisi.", "Reason is required."));
+      return;
+    }
     
     try {
-      await transactionService.voidDocument('receivings', id, currentUser?.id || 'System', currentUser?.email || '', reason);
+      await transactionService.voidDocument('receivings', voidModal.doc.id, currentUser?.id || 'System', currentUser?.email || '', voidReason);
       alert(t("Dokumen berhasil di-VOID", "Document VOIDED successfully"));
+      setVoidModal({isOpen: false, doc: null});
+      setVoidReason('');
     } catch (e: any) {
       alert(e.message);
     }
@@ -571,8 +580,8 @@ export const ReceivingPage: React.FC = () => {
                     <DollarSign size={14} className="text-white" /> {t('BAYAR', 'PAY')}
                   </Button>
                 )}
-                {r.status === 'Posted' && (currentUser?.role === 'Admin' || currentUser?.role === 'Operator') && (
-                   <Button variant="secondary" size="sm" className="bg-slate-100 hover:bg-rose-50 hover:text-rose-600" onClick={() => handleVoid(r.id)} title="Void Document">
+                {r.status === 'Posted' && currentUser?.role === 'Admin' && !r.processedAt && (
+                   <Button variant="secondary" size="sm" className="bg-slate-100 hover:bg-rose-50 hover:text-rose-600" onClick={() => handleVoidClick(r)} title="Void Document">
                       <Ban size={14} />
                    </Button>
                 )}
@@ -662,6 +671,53 @@ export const ReceivingPage: React.FC = () => {
                   </div>
                 ))
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Void Modal */}
+      {voidModal.isOpen && voidModal.doc && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl animate-in fade-in zoom-in-95 duration-200 border-2 border-rose-500">
+            <div className="flex justify-between items-center mb-6">
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-rose-100 text-rose-600 rounded-full">
+                  <Ban size={24} />
+                </div>
+                <div>
+                  <h3 className="text-xl font-black text-rose-600">{t('Void Dokumen', 'Void Document')}</h3>
+                  <p className="text-sm font-bold text-slate-500">#{voidModal.doc.id.substring(0,8).toUpperCase()}</p>
+                </div>
+              </div>
+              <button onClick={() => setVoidModal({isOpen: false, doc: null})} className="p-2 text-slate-400 hover:text-slate-600 bg-slate-100 rounded-full transition-colors"><X size={20}/></button>
+            </div>
+            
+            <div className="space-y-6">
+              <div className="p-4 bg-rose-50 rounded-xl border border-rose-100">
+                <p className="text-sm font-bold text-rose-900 mb-2">
+                  {t('Tindakan ini akan membatalkan dokumen secara permanen dan mengembalikan stok yang terkait. Transaksi finansial yang terkait dengan dokumen ini (termasuk riwayat pembayaran) mungkin perlu disesuaikan secara manual.', 'This action will permanently void the document and reverse associated stock. Associated financial transactions (including payment history) may need manual adjustment.')}
+                </p>
+                <p className="text-xs font-black text-rose-700 uppercase tracking-widest">{t('PERINGATAN: TINDAKAN INI TIDAK DAPAT DIBATALKAN!', 'WARNING: THIS ACTION CANNOT BE UNDONE!')}</p>
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('ALASAN VOID', 'REASON FOR VOIDING')}</label>
+                <textarea 
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm font-bold outline-none focus:ring-2 focus:ring-rose-500/20 transition-all h-24"
+                  placeholder={t('Wajib diisi...', 'Required...')}
+                  value={voidReason}
+                  onChange={e => setVoidReason(e.target.value)}
+                />
+              </div>
+
+              <Button 
+                className="w-full py-4 text-sm bg-rose-600 hover:bg-rose-700 shadow-rose-600/20 border-none" 
+                onClick={confirmVoid}
+                disabled={!voidReason}
+              >
+                {t('KONFIRMASI VOID DOKUMEN', 'CONFIRM VOID DOCUMENT')}
+              </Button>
             </div>
           </div>
         </div>

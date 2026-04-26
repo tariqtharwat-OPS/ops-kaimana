@@ -91,10 +91,14 @@ service cloud.firestore {
       allow read, write: if isSignedIn() && (isAdmin() || isOperator());
     }
 
-    // 6. Reports
+    // 6. Reports & Audit
     match /reports/{id} {
       allow read: if isSignedIn();
       allow write: if isAdmin();
+    }
+    match /auditLog/{id} {
+      allow read: if isSignedIn() && isAdmin();
+      allow write: if isSignedIn() && (isAdmin() || isOperator());
     }
 
     // Catch-all: Default to deny
