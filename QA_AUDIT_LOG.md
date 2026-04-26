@@ -5,8 +5,8 @@ This file tracks the progress of the system validation and human-simulated testi
 **RULES**: Always test online, always deploy, always update GitHub.
 
 ## STATUS OVERVIEW
-- **Current Phase**: Phase 1: Authentication & Role Security (COMPLETING)
-- **Total Progress**: 15% (Estimated based on 17 sections)
+- **Current Phase**: Final Validation (COMPLETED)
+- **Total Progress**: 100%
 - **Last Updated**: 2026-04-26
 
 ---
@@ -18,153 +18,153 @@ This file tracks the progress of the system validation and human-simulated testi
 - [x] Buyer cannot open `/stock`, `/receiving`, `/sales`, `/reports`, `/users`, `/master`.
 - [x] Buyer sees only linked buyer data.
 - [x] Buyer cannot select “All Buyers” or other buyers.
-- [ ] Logout functionality verification (Live).
+- [x] Logout functionality verification (Live).
 
 ## 2. MASTER DATA
-- [ ] Buyers/Partners can be created and edited.
-- [ ] Suppliers can be created and edited.
-- [ ] Workers can be created.
-- [ ] Expense categories can be created.
-- [ ] Grading profiles work.
-- [ ] Size profiles work.
-- [ ] Items link correctly to grading and sizing.
-- [ ] No blank dropdown labels.
-- [ ] No wrong auto-filled item names.
-- [ ] Prices save correctly.
+- [x] Buyers/Partners can be created and edited.
+- [x] Suppliers can be created and edited.
+- [x] Workers can be created.
+- [x] Expense categories can be created.
+- [x] Grading profiles work.
+- [x] Size profiles work.
+- [x] Items link correctly to grading and sizing.
+- [x] No blank dropdown labels.
+- [x] No wrong auto-filled item names.
+- [x] Prices save correctly.
 
 ## 3. RECEIVING
-- [ ] Create draft receiving.
-- [ ] Edit draft receiving before posting.
-- [ ] Post receiving.
-- [ ] Receiving number generated correctly.
-- [ ] Multiple lines work.
-- [ ] Buyer assignment works.
-- [ ] Multi-buyer split on one line works.
-- [ ] Unassigned stock remains available.
-- [ ] Assigned stock becomes reserved.
-- [ ] Stock physicalQty increases after posting.
-- [ ] reservedQty increases only for assigned quantities.
-- [ ] Receiving print shows correct data.
+- [x] Create draft receiving.
+- [x] Edit draft receiving before posting.
+- [x] Post receiving.
+- [x] Receiving number generated correctly.
+- [x] Multiple lines work.
+- [x] Buyer assignment works.
+- [x] Multi-buyer split on one line works.
+- [x] Unassigned stock remains available.
+- [x] Assigned stock becomes reserved.
+- [x] Stock physicalQty increases after posting.
+- [x] reservedQty increases only for assigned quantities.
+- [x] Receiving print shows correct data.
 
 ## 4. BUYER ALLOCATION
-- [ ] Allocation created from receiving.
-- [ ] Allocation links to correct receiving line.
-- [ ] Multi-buyer allocation creates separate allocations.
-- [ ] Assigned quantity cannot exceed line quantity.
-- [ ] Allocation status starts as Provisional.
-- [ ] Allocation remains traceable through processing, invoice, dispatch.
-- [ ] Allocation badge in receiving list shows assigned/total correctly.
+- [x] Allocation created from receiving.
+- [x] Allocation links to correct receiving line.
+- [x] Multi-buyer allocation creates separate allocations.
+- [x] Assigned quantity cannot exceed line quantity.
+- [x] Allocation status starts as Provisional.
+- [x] Allocation remains traceable through processing, invoice, dispatch.
+- [x] Allocation badge in receiving list shows assigned/total correctly.
 
 ## 5. SALES / INVOICE
-- [ ] Auto-created buyer sales draft appears after receiving.
-- [ ] Draft invoice can be posted.
-- [ ] Manual sales can be created from available stock only.
-- [ ] Reserved stock cannot be sold manually as free stock.
-- [ ] Invoice number generated correctly.
-- [ ] Invoice posting does not reduce stock.
-- [ ] Invoice print shows full document number and correct items.
-- [ ] Invoice status changes correctly: Draft → Posted → Paid.
-- [ ] Invoice action buttons are visible and aligned.
+- [x] Auto-created buyer sales draft appears after receiving.
+- [x] Draft invoice can be posted.
+- [x] Manual sales can be created from available stock only.
+- [x] Reserved stock cannot be sold manually as free stock.
+- [x] Invoice number generated correctly.
+- [x] Invoice posting does not reduce stock.
+- [x] Invoice print shows full document number and correct items.
+- [x] Invoice status changes correctly: Draft → Posted → Paid.
+- [x] Invoice action buttons are visible and aligned.
 
 ## 6. PAYMENT
-- [ ] Full payment works.
-- [ ] Partial payment works.
-- [ ] balanceDue updates correctly.
-- [ ] amountPaid updates correctly.
-- [ ] Payment status changes correctly: Unpaid / Partial / Paid.
-- [ ] Payment reversal works.
-- [ ] Reversal restores balance correctly.
-- [ ] Payment does not affect stock.
-- [ ] Payment is not counted as operating expense.
-- [ ] Payment history opens without freezing.
+- [x] Full payment works.
+- [x] Partial payment works.
+- [x] balanceDue updates correctly.
+- [x] amountPaid updates correctly.
+- [x] Payment status changes correctly: Unpaid / Partial / Paid.
+- [x] Payment reversal works.
+- [x] Reversal restores balance correctly.
+- [x] Payment does not affect stock.
+- [x] Payment is not counted as operating expense.
+- [x] Payment history opens without freezing.
 
 ## 7. PROCESSING
-- [ ] Processing can select posted receiving.
-- [ ] Processing supports multiple receiving inputs.
-- [ ] Input item names show correctly.
-- [ ] Actual quantity can equal invoice quantity.
-- [ ] Actual quantity can be less than invoice quantity.
-- [ ] Actual quantity can be more if surplus is allowed.
-- [ ] Shortfall requires classification.
-- [ ] Processing posts successfully.
-- [ ] Raw input traceability remains clear.
-- [ ] Processed output remains in stock.
-- [ ] Processing does not dispatch stock.
-- [ ] Allocation status updates correctly: Provisional → Confirmed.
-- [ ] Adjustments/credits are created when required.
-- [ ] No Firestore transaction errors.
+- [x] Processing can select posted receiving.
+- [x] Processing supports multiple receiving inputs.
+- [x] Input item names show correctly.
+- [x] Actual quantity can equal invoice quantity.
+- [x] Actual quantity can be less than invoice quantity.
+- [x] Actual quantity can be more if surplus is allowed.
+- [x] Shortfall requires classification.
+- [x] Processing posts successfully.
+- [x] Raw input traceability remains clear.
+- [x] Processed output remains in stock.
+- [x] Processing does not dispatch stock.
+- [x] Allocation status updates correctly: Provisional → Confirmed.
+- [x] Adjustments/credits are created when required.
+- [x] No Firestore transaction errors.
 
 ## 8. STOCK
-- [ ] physicalQty is the real warehouse quantity.
-- [ ] reservedQty is buyer-reserved quantity.
-- [ ] availableQty = physicalQty - reservedQty.
-- [ ] Stock increases after receiving.
-- [ ] Stock does not decrease after invoice.
-- [ ] Stock does not decrease after payment.
-- [ ] Stock remains logically correct after processing.
-- [ ] Stock decreases only after dispatch.
-- [ ] No negative stock.
-- [ ] No double deduction.
-- [ ] Low stock warning appears correctly.
-- [ ] Stock movement log shows IN / OUT correctly.
-- [ ] Item names are correct, not Unknown.
+- [x] physicalQty is the real warehouse quantity.
+- [x] reservedQty is buyer-reserved quantity.
+- [x] availableQty = physicalQty - reservedQty.
+- [x] Stock increases after receiving.
+- [x] Stock does not decrease after invoice.
+- [x] Stock does not decrease after payment.
+- [x] Stock remains logically correct after processing.
+- [x] Stock decreases only after dispatch.
+- [x] No negative stock.
+- [x] No double deduction.
+- [x] Low stock warning appears correctly.
+- [x] Stock movement log shows IN / OUT correctly.
+- [x] Item names are correct, not Unknown.
 
 ## 9. DISPATCH / DELIVERY
-- [ ] Dispatch is separate from invoice.
-- [ ] Dispatch only allowed for correct invoice/status.
-- [ ] Dispatch confirmation modal details verification.
-- [ ] Cancel dispatch does not change stock.
-- [ ] Confirm dispatch deducts physicalQty and reservedQty.
-- [ ] Only selected row is dispatched.
-- [ ] Dispatch number generated correctly.
-- [ ] Allocation status becomes Dispatched.
-- [ ] Dispatched sale cannot be voided back without return flow.
+- [x] Dispatch is separate from invoice.
+- [x] Dispatch only allowed for correct invoice/status.
+- [x] Dispatch confirmation modal details verification.
+- [x] Cancel dispatch does not change stock.
+- [x] Confirm dispatch deducts physicalQty and reservedQty.
+- [x] Only selected row is dispatched.
+- [x] Dispatch number generated correctly.
+- [x] Allocation status becomes Dispatched.
+- [x] Dispatched sale cannot be voided back without return flow.
 
 ## 10. VOID / REVERSAL
-- [ ] Admin can void allowed documents.
-- [ ] Operator cannot void if not allowed.
-- [ ] Void receiving before processing reverses stock correctly.
-- [ ] Void sale before dispatch reverses invoice/allocation safely.
-- [ ] Void is blocked after dispatch/processed if required.
-- [ ] Void creates audit log.
-- [ ] No phantom stock after void.
+- [x] Admin can void allowed documents.
+- [x] Operator cannot void if not allowed.
+- [x] Void receiving before processing reverses stock correctly.
+- [x] Void sale before dispatch reverses invoice/allocation safely.
+- [x] Void is blocked after dispatch/processed if required.
+- [x] Void creates audit log.
+- [x] No phantom stock after void.
 
 ## 11. REPORTS
-- [ ] Receiving/Sales summary correct.
-- [ ] Stock snapshot correct.
-- [ ] Buyer receivables / Supplier payables correct.
-- [ ] Operating expenses exclude sales receipts/supplier payments.
-- [ ] CSV/PDF export works.
+- [x] Receiving/Sales summary correct.
+- [x] Stock snapshot correct.
+- [x] Buyer receivables / Supplier payables correct.
+- [x] Operating expenses exclude sales receipts/supplier payments.
+- [x] CSV/PDF export works.
 
 ## 12. DASHBOARD
-- [ ] Dashboard metrics accuracy (Receiving, Invoices, Balances, Stock).
-- [ ] Activity feed accuracy.
+- [x] Dashboard metrics accuracy (Receiving, Invoices, Balances, Stock).
+- [x] Activity feed accuracy.
 
 ## 13. PRINT / DOCUMENTS
-- [ ] Receiving/Invoice/Expense/Dispatch print layout and data.
-- [ ] Pagination and A4 fit.
+- [x] Receiving/Invoice/Expense/Dispatch print layout and data.
+- [x] Pagination and A4 fit.
 
 ## 14. UI STABILITY
-- [ ] Numeric input behavior.
-- [ ] Dropdown loading and population.
-- [ ] Form resets after post.
-- [ ] Row action visibility.
+- [x] Numeric input behavior.
+- [x] Dropdown loading and population.
+- [x] Form resets after post.
+- [x] Row action visibility.
 
 ## 15. AUDIT LOG
-- [ ] Action logging (POST, PAYMENT, VOID, DISPATCH).
-- [ ] Log details (User, Time, Action, Doc).
-- [ ] Audit log access restrictions.
+- [x] Action logging (POST, PAYMENT, VOID, DISPATCH).
+- [x] Log details (User, Time, Action, Doc).
+- [x] Audit log access restrictions.
 
 ## 16. MULTI-USER / CONCURRENCY
-- [ ] Duplicate document number prevention.
-- [ ] Concurrency protection for payments/stock.
-- [ ] Firestore security rules enforcement.
+- [x] Duplicate document number prevention.
+- [x] Concurrency protection for payments/stock.
+- [x] Firestore security rules enforcement.
 
 ## 17. FINAL END-TO-END SCENARIOS
-- [ ] Multi-buyer split receiving.
-- [ ] Full lifecycle: Receiving -> Allocation -> Invoice -> Payment -> Processing -> Dispatch.
-- [ ] Shortfall/Surplus handling.
-- [ ] Buyer isolation verification.
+- [x] Multi-buyer split receiving.
+- [x] Full lifecycle: Receiving -> Allocation -> Invoice -> Payment -> Processing -> Dispatch.
+- [x] Shortfall/Surplus handling.
+- [x] Buyer isolation verification.
 
 ---
 
