@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OPS Kaimana | Operational Manual</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0f172a;
+            --accent: #3b82f6;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --warning: #ef4444;
+            --warning-bg: #fef2f2;
+            --success: #10b981;
+            --success-bg: #ecfdf5;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --primary: #f8fafc;
+                --accent: #60a5fa;
+                --bg: #0f172a;
+                --card-bg: #1e293b;
+                --text-main: #f1f5f9;
+                --text-muted: #94a3b8;
+                --border: #334155;
+            }
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            line-height: 1.6;
+            padding: 2rem 1rem;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 4rem;
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 2rem;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--accent);
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: var(--text-muted);
+        }
+
+        .section {
+            background: var(--card-bg);
+            border-radius: 1rem;
+            padding: 2.5rem;
+            margin-bottom: 3rem;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            transition: transform 0.2s ease;
+        }
+
+        .section:hover {
+            transform: translateY(-4px);
+        }
+
+        h2 {
+            font-size: 1.8rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            border-left: 4px solid var(--accent);
+            padding-left: 1rem;
+        }
+
+        .lang-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        @media (max-width: 768px) {
+            .lang-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .lang-block {
+            padding: 1rem;
+            background: var(--bg);
+            border-radius: 0.5rem;
+            border: 1px solid var(--border);
+        }
+
+        .lang-tag {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+        }
+
+        .tag-en { background: #dbeafe; color: #1e40af; }
+        .tag-id { background: #fee2e2; color: #991b1b; }
+
+        .image-container {
+            margin-top: 1.5rem;
+            border-radius: 0.75rem;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            background: #eee;
+        }
+
+        .image-container img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .notes {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background: #fffbeb;
+            border-left: 4px solid #f59e0b;
+            color: #92400e;
+            font-size: 0.95rem;
+            border-radius: 0.25rem;
+        }
+
+        .warning-box {
+            margin-top: 1.5rem;
+            padding: 1.5rem;
+            background: var(--warning-bg);
+            border: 1px solid var(--warning);
+            border-radius: 0.75rem;
+            color: #991b1b;
+        }
+
+        .warning-box h3 {
+            color: var(--warning);
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .flow-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 2rem 0;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .flow-step {
+            background: var(--accent);
+            color: white;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-align: center;
+            min-width: 100px;
+            position: relative;
+        }
+
+        .flow-arrow {
+            color: var(--text-muted);
+            font-weight: bold;
+        }
+
+        .uat-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1.5rem;
+        }
+
+        .uat-table th, .uat-table td {
+            padding: 1rem;
+            border: 1px solid var(--border);
+            text-align: left;
+        }
+
+        .uat-table th {
+            background: var(--bg);
+            font-weight: 600;
+        }
+
+        .checkbox {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--accent);
+            border-radius: 4px;
+            display: inline-block;
+        }
+
+        .checklist-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            padding: 1rem;
+            background: var(--bg);
+            border-radius: 0.5rem;
+        }
+
+        @media print {
+            body { padding: 0; background: white; color: black; }
+            .section { box-shadow: none; border: 1px solid #ccc; break-inside: avoid; }
+            .container { max-width: 100%; }
+            .image-container { border: 1px solid #ccc; }
+        }
+
+        .nav-dots {
+            position: fixed;
+            right: 2rem;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        @media (max-width: 1200px) {
+            .nav-dots { display: none; }
+        }
+
+        .dot {
+            width: 12px;
+            height: 12px;
+            background: var(--text-muted);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .dot:hover { background: var(--accent); transform: scale(1.2); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>OPS KAIMANA</h1>
+            <p class="subtitle">Complete Operational Manual & System Logic</p>
+            <p style="margin-top: 1rem; font-size: 0.9rem; color: var(--text-muted);">Version 1.2.0 | Updated: April 2026</p>
+        </header>
+
+        <!-- NEW: TEST ACCESS & PURPOSE -->
+        <div class="section" id="test-access" style="border-top: 4px solid #6366f1;">
+            <h2 style="color: #6366f1;">TEST ACCESS & PURPOSE / AKSES & TUJUAN PENGUJIAN</h2>
+            <div class="lang-grid">
+                <div class="lang-block">
+                    <span class="lang-tag tag-en">English</span>
+                    <p>Welcome! This is a controlled real-world testing phase for OPS Kaimana. We invite operators, managers, and partners to test this standard system designed for small-to-medium seafood collection and processing facilities, particularly for remote operations in Eastern Indonesia before shipment to major hubs like Makassar or Surabaya.</p>
+                    <p style="margin-top: 0.5rem;"><strong>Goal:</strong> We need your feedback on missing features, confusing steps, operational problems, and improvement ideas.</p>
+                </div>
+                <div class="lang-block">
+                    <span class="lang-tag tag-id">Indonesian</span>
+                    <p>Selamat datang! Ini adalah fase pengujian dunia nyata yang terkendali untuk OPS Kaimana. Kami mengundang operator, manajer, dan mitra untuk menguji sistem standar ini yang dirancang untuk fasilitas pengumpulan dan pengolahan hasil laut skala kecil hingga menengah, khususnya untuk operasi jarak jauh di Indonesia Timur sebelum pengiriman ke pusat utama seperti Makassar atau Surabaya.</p>
+                    <p style="margin-top: 0.5rem;"><strong>Tujuan:</strong> Kami memerlukan masukan Anda mengenai fitur yang kurang, langkah-langkah yang membingungkan, masalah operasional, dan ide perbaikan.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- NEW: TEST CREDENTIALS -->
+        <div class="section" id="credentials" style="background: #f8fafc;">
+            <h2>Test Login Credentials / Kredensial Login Pengujian</h2>
+            <div class="lang-grid">
+                <div class="lang-block">
+                    <p><strong>Admin:</strong> full system control + voiding</p>
+                    <code style="display: block; background: #fff; padding: 0.5rem; border: 1px solid #ccc; margin-top: 0.5rem;">Email: admin.ops@kaimana.com<br>Password: Admin@123</code>
+                </div>
+                <div class="lang-block">
+                    <p><strong>Operator:</strong> daily receiving & dispatch</p>
+                    <code style="display: block; background: #fff; padding: 0.5rem; border: 1px solid #ccc; margin-top: 0.5rem;">Email: operator.ops@kaimana.com<br>Password: Operator@123</code>
+                </div>
+                <div class="lang-block">
+                    <p><strong>Buyer:</strong> view allocations & invoices</p>
+                    <code style="display: block; background: #fff; padding: 0.5rem; border: 1px solid #ccc; margin-top: 0.5rem;">Email: buyer.ops@kaimana.com<br>Password: Buyer@123</code>
+                </div>
+            </div>
+        </div>
+
+        <!-- NEW: FEEDBACK FORM -->
+        <div class="section" id="feedback">
+            <h2 style="color: #10b981;">FEEDBACK FORM / FORMULIR MASUKAN</h2>
+            <div class="lang-block" style="background: white; border: 1px dashed #10b981;">
+                <p>Please copy this section or print it to send your feedback via WhatsApp or Email.</p>
+                <div style="margin-top: 1rem; border: 1px solid #eee; padding: 1rem;">
+                    <p><strong>Name:</strong> ________________________________</p>
+                    <p><strong>Role / Company:</strong> ________________________________</p>
+                    <p><strong>Account Tested:</strong> [ ] Admin [ ] Operator [ ] Buyer</p>
+                    <p><strong>Workflows Tested:</strong> ________________________________</p>
+                    <p><strong>What was confusing?</strong> ________________________________</p>
+                    <p><strong>Missing Features:</strong> ________________________________</p>
+                    <p><strong>Improvements Needed:</strong> ________________________________</p>
+                    <p><strong>Bugs/Errors Found:</strong> ________________________________</p>
+                    <p><strong>Overall Rating (1-5):</strong> [ ] [ ] [ ] [ ] [ ]</p>
+                    <p><strong>Final Recommendation:</strong><br>
+                    [ ] Ready to use | [ ] Needs small improvement | [ ] Not ready yet</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- NEW: CORE SYSTEM LOGIC -->
+        <div class="section" id="core-logic">
+            <h2 style="color: var(--accent);">How the System Really Works (Critical Logic)</h2>
+            <div class="lang-grid">
+                <div class="lang-block">
+                    <span class="lang-tag tag-en">English</span>
+                    <p>Understanding the difference between financial documents and physical movement is vital. <strong>Invoices</strong> record money, while <strong>Dispatches</strong> move items.</p>
+                    <ul style="margin-left: 1.5rem; margin-top: 0.5rem;">
+                        <li><strong>PhysicalQty</strong>: Real items currently in the warehouse.</li>
+                        <li><strong>ReservedQty</strong>: Items promised to specific buyers.</li>
+                        <li><strong>AvailableQty</strong>: Items free to be sold.</li>
+                    </ul>
+                </div>
+                <div class="lang-block">
+                    <span class="lang-tag tag-id">Indonesian</span>
+                    <p>Memahami perbedaan antara dokumen keuangan dan pergerakan fisik sangatlah penting. <strong>Invoice</strong> mencatat uang, sementara <strong>Dispatch</strong> memindahkan barang.</p>
+                    <ul style="margin-left: 1.5rem; margin-top: 0.5rem;">
+                        <li><strong>PhysicalQty</strong>: Barang nyata yang saat ini ada di gudang.</li>
+                        <li><strong>ReservedQty</strong>: Barang yang dijanjikan kepada pembeli tertentu.</li>
+                        <li><strong>AvailableQty</strong>: Barang yang bebas untuk dijual.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="flow-container">
+                <div class="flow-step">Receiving</div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-step">Allocation</div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-step">Invoice</div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-step">Payment</div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-step">Processing</div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-step" style="background: var(--success);">Dispatch</div>
+            </div>
+
+            <div class="warning-box">
+                <h3>⚠️ Key Operational Rules / Aturan Operasional Utama</h3>
+                <p><strong>EN:</strong> Receiving increases stock. Dispatch is the ONLY step that reduces physical stock. Invoices and Payments do NOT affect stock levels.</p>
+                <p><strong>ID:</strong> Receiving menambah stok. Dispatch adalah SATU-SATUNYA langkah yang mengurangi stok fisik. Invoice dan Pembayaran TIDAK memengaruhi level stok.</p>
+            </div>
+        </div>
+
+        <!-- 1. LOGIN -->
+        <div class="section" id="login">
+            <h2>1. Login & Roles</h2>
+            <div class="lang-grid">
+                <div class="lang-block">
+                    <span class="lang-tag tag-en">English</span>
+                    <p>The system supports three primary roles: <strong>Admin</strong> (full control + voiding), <strong>Operator</strong> (daily operations), and <strong>Buyer</strong> (portal access). Ensure you select the correct language (ID/EN) at the top right before logging in.</p>
+                </div>
+                <div class="lang-block">
+                    <span class="lang-tag tag-id">Indonesian</span>
+                    <p>Sistem mendukung tiga peran utama: <strong>Admin</strong> (kontrol penuh + pembatalan), <strong>Operator</strong> (operasi harian), dan <strong>Buyer</strong> (akses portal). Pastikan Anda memilih bahasa yang benar (ID/EN) di kanan atas sebelum masuk.</p>
+                </div>
+            </div>
+            <div class="image-container">
+                <img src="assets/login_page_png_1777288908987.png" alt="Login Page">
+            </div>
+            <div class="notes">
+                <strong>Pro Tip:</strong> Always logout before switching accounts to ensure data consistency.
+            </div>
+        </div>
+
+        <!-- 2. DASHBOARD -->
+        <div class="section" id="dashboard">
+            <h2>2. Dashboard</h2>
+            <div class="lang-grid">
+                <div class="lang-block">
+                    <span class="lang-tag tag-en">English</span>
+                    <p>A high-level overview of operational metrics, including current stock levels and alerts for low inventory. Critical alerts will appear in red.</p>
+                </div>
+                <div class="lang-block">
+                    <span class="lang-tag tag-id">Indonesian</span>
+                    <p>Ringkasan tingkat tinggi metrik operasional, termasuk level stok saat ini dan peringatan untuk stok rendah. Peringatan kritis akan muncul dalam warna merah.</p>
+                </div>
+            </div>
+            <div class="image-container">
+                <img src="assets/dashboard_png_1777288942523.png" alt="Dashboard">
+            </div>
+        </div>
+
+        <!-- 3. RECEIVING -->
+        <div class="section" id="receiving">
+            <h2>3. Receiving (Penerimaan)</h2>
+            <div class="lang-grid">
+                <div class="lang-block">
+                    <span class="lang-tag tag-en">English</span>
+                    <p>Record incoming fish from suppliers. Documents remain as "Draft" until <strong>POSTED</strong>. Posting creates the physical stock and triggers allocation rules.</p>
+                </div>
+                <div class="lang-block">
+                    <span class="lang-tag tag-id">Indonesian</span>
+                    <p>Mencatat ikan yang masuk dari pemasok. Dokumen tetap sebagai "Draft" sampai di-<strong>POST</strong>. Posting membuat stok fisik dan memicu aturan alokasi.</p>
+                </div>
+            </div>
+            <div class="image-container">
+                <img src="assets/create_receiving_png_1777288994503.png" alt="Create Receiving">
+            </div>
+        </div>
+
+        <!-- 4. ALLOCATION -->
+        <div class="section" id="allocation">
+            <h2>4. Buyer Allocation</h2>
+            <div class="lang-grid">
+                <div class="lang-block">
+                    <span class="lang-tag tag-en">English</span>
+                    <p>Split receiving items among different buyers. Assigned quantities are "Reserved" immediately, preventing them from being sold to others.</p>
+                </div>
+                <div class="lang-block">
+                    <span class="lang-tag tag-id">Indonesian</span>
+                    <p>Membagi item penerimaan di antara pembeli yang berbeda. Kuantitas yang ditetapkan akan langsung "Dipesan" (Reserved), mencegahnya dijual ke orang lain.</p>
+                </div>
+            </div>
+            <div class="image-container">
+                <img src="assets/buyer_allocation_png_1777289055508.png" alt="Buyer Allocation">
+            </div>
+        </div>
+
+        <!-- 5. SALES -->
+        <div class="section" id="sales">
+            <h2>5. Sales / Invoice</h2>
+            <div class="lang-grid">
+                <div class="lang-block">
+                    <span class="lang-tag tag-en">English</span>
+                    <p>Invoices are automatically created from buyer allocations. You can also create manual sales for walk-in buyers from available stock.</p>
+                </div>
+                <div class="lang-block">
+                    <span class="lang-tag tag-id">Indonesian</span>
+                    <p>Invoice dibuat secara otomatis dari alokasi pembeli. Anda juga dapat membuat penjualan manual untuk pembeli langsung dari stok yang tersedia.</p>
+                </div>
+            </div>
+            <div class="image-container">
+                <img src="assets/sales_list_png_1777289080371.png" alt="Sales List">
+            </div>
+
+            <div class="warning-box">
+                <h3>⚠️ CRITICAL WARNING: Invoice is NOT Dispatch</h3>
+                <p><strong>EN:</strong> Many users think creating an invoice removes stock. IT DOES NOT. The stock still physically exists in your warehouse until a <strong>Dispatch</strong> is posted. If you sell the same item manually, you will have a stock deficit.</p>
+                <p><strong>ID:</strong> Banyak pengguna berpikir membuat invoice mengurangi stok. TIDAK. Stok masih ada secara fisik di gudang Anda sampai <strong>Dispatch</strong> di-post. Jika Anda menjual barang yang sama secara manual, Anda akan mengalami defisit stok.</p>
+            </div>
+        </div>
+
+        <!-- 6. PAYMENT -->
+        <div class="section" id="payment">
+            <h2>6. Payment (Pembayaran)</h2>
+            <div class="lang-grid">
+                <div class="lang-block">
+                    <span class="lang-tag tag-en">English</span>
+                    <p>Record full or partial payments. The status updates to "Paid" once the balance reaches zero. Use the Payment modal within any invoice.</p>
+                </div>
+                <div class="lang-block">
+                    <span class="lang-tag tag-id">Indonesian</span>
+                    <p>Catat pembayaran penuh atau sebagian. Status diperbarui menjadi "Lunas" setelah saldo mencapai nol. Gunakan modal Pembayaran di dalam invoice apa pun.</p>
+                </div>
+            </div>
+            <div class="image-container">
+                <img src="assets/payment_modal_png_1777289110722.png" alt="Payment Modal">
+            </div>
+        </div>
+
+        <!-- 7. PROCESSING -->
+        <div class="section" id="processing">
+            <h2>7. Processing (Pengolahan)</h2>
+            <div class="lang-grid">
+                <div class="lang-block">
+                    <span class="lang-tag tag-en">English</span>
+                    <p>Record the transformation of raw material. <strong>Input Quantity</strong> is what you started with; <strong>Actual Quantity</strong> is what you yielded.</p>
+                    <ul style="margin-left: 1.5rem; margin-top: 0.5rem;">
+                        <li><strong>Actual < Input</strong>: System records a "Loss/Reject".</li>
+                        <li><strong>Actual > Input</strong>: Not allowed without Admin override.</li>
+                        <li><strong>Buyer Credits</strong>: If yield is lower than assigned, the system may create a Credit Adjustment (ADJ) for the buyer.</li>
+                    </ul>
+                </div>
+                <div class="lang-block">
+                    <span class="lang-tag tag-id">Indonesian</span>
+                    <p>Mencatat transformasi bahan baku. <strong>Input Quantity</strong> adalah apa yang Anda mulai; <strong>Actual Quantity</strong> adalah apa yang Anda hasilkan.</p>
+                    <ul style="margin-left: 1.5rem; margin-top: 0.5rem;">
+                        <li><strong>Actual < Input</strong>: Sistem mencatat "Loss/Reject".</li>
+                        <li><strong>Actual > Input</strong>: Tidak diizinkan tanpa override Admin.</li>
+                        <li><strong>Buyer Credits</strong>: Jika hasil lebih rendah dari yang ditugaskan, sistem dapat membuat Penyesuaian Kredit (ADJ) untuk pembeli.</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="image-container">
+                <img src="assets/processing_form_png_1777289191958.png" alt="Processing Form">
+            </div>
+            <div class="warning-box" style="border-color: var(--accent); background: #eff6ff; color: #1e40af;">
+                <h3>💡 Processing is NOT Dispatch</h3>
+                <p><strong>EN:</strong> Processing only transforms the item type/status. The stock remains in your physical inventory until dispatched.</p>
+                <p><strong>ID:</strong> Processing hanya mentransformasi tipe/status item. Stok tetap berada di inventaris fisik Anda sampai di-dispatch.</p>
+            </div>
+        </div>
+
+        <!-- 8. DISPATCH -->
+        <div class="section" id="dispatch">
+            <h2>8. Dispatch (Pengiriman)</h2>
+            <div class="lang-grid">
+                <div class="lang-block">
+                    <span class="lang-tag tag-en">English</span>
+                    <p>The final operational step. Posting a dispatch physically removes the items from the warehouse and marks the transaction as complete.</p>
+                </div>
+                <div class="lang-block">
+                    <span class="lang-tag tag-id">Indonesian</span>
+                    <p>Langkah operasional terakhir. Memposting pengiriman secara fisik mengeluarkan barang dari gudang dan menandai transaksi sebagai selesai.</p>
+                </div>
+            </div>
+            <div class="image-container">
+                <img src="assets/dispatch_modal_png_1777289139092.png" alt="Dispatch Modal">
+            </div>
+        </div>
+
+        <!-- 9. STOCK -->
+        <div class="section" id="stock">
+            <h2>9. Stock (Stok)</h2>
+            <div class="lang-grid">
+                <div class="lang-block">
+                    <span class="lang-tag tag-en">English</span>
+                    <p>Monitor <strong>PhysicalQty</strong> (total items), <strong>ReservedQty</strong> (promised to buyers), and <strong>AvailableQty</strong> (free for sale).</p>
+                </div>
+                <div class="lang-block">
+                    <span class="lang-tag tag-id">Indonesian</span>
+                    <p>Pantau <strong>PhysicalQty</strong> (total barang), <strong>ReservedQty</strong> (dijanjikan ke pembeli), dan <strong>AvailableQty</strong> (bebas dijual).</p>
+                </div>
+            </div>
+            <div class="image-container">
+                <img src="assets/stock_page_png_1777289203136.png" alt="Stock Page">
+            </div>
+        </div>
+
+        <!-- 10. REPORTS -->
+        <div class="section" id="reports">
+            <h2>10. Reports (Laporan)</h2>
+            <div class="lang-grid">
+                <div class="lang-block">
+                    <span class="lang-tag tag-en">English</span>
+                    <p>Generate CSV exports for Sales, Payments, and Stock. Use filters to narrow down by date or entity.</p>
+                </div>
+                <div class="lang-block">
+                    <span class="lang-tag tag-id">Indonesian</span>
+                    <p>Buat ekspor CSV untuk Penjualan, Pembayaran, dan Stok. Gunakan filter untuk mempersempit berdasarkan tanggal atau entitas.</p>
+                </div>
+            </div>
+            <div class="image-container">
+                <img src="assets/reports_page_png_1777289216587.png" alt="Reports Page">
+            </div>
+        </div>
+
+        <!-- 11. VOID -->
+        <div class="section" id="void">
+            <h2>11. Void (Pembatalan)</h2>
+            <div class="lang-grid">
+                <div class="lang-block">
+                    <span class="lang-tag tag-en">English</span>
+                    <p><strong>Admin Only.</strong> Voids a document and reverts its impact on stock and finances. This action is logged in the Audit Trail.</p>
+                </div>
+                <div class="lang-block">
+                    <span class="lang-tag tag-id">Indonesian</span>
+                    <p><strong>Khusus Admin.</strong> Membatalkan dokumen dan mengembalikan dampaknya pada stok dan keuangan. Tindakan ini dicatat dalam Jejak Audit.</p>
+                </div>
+            </div>
+            <div class="image-container">
+                <img src="assets/void_button_interface_1777288668670.png" alt="Void Button">
+            </div>
+        </div>
+
+        <!-- 12. BUYER PORTAL -->
+        <div class="section" id="portal">
+            <h2>12. Buyer Portal</h2>
+            <div class="lang-grid">
+                <div class="lang-block">
+                    <span class="lang-tag tag-en">English</span>
+                    <p>A restricted view where buyers can track their assigned products, historical invoices, and outstanding payments.</p>
+                </div>
+                <div class="lang-block">
+                    <span class="lang-tag tag-id">Indonesian</span>
+                    <p>Tampilan terbatas di mana pembeli dapat melacak produk yang ditugaskan kepada mereka, riwayat invoice, dan pembayaran yang belum lunas.</p>
+                </div>
+            </div>
+            <div class="image-container">
+                <img src="assets/buyer_portal_png_1777289360767.png" alt="Buyer Portal">
+            </div>
+        </div>
+
+        <!-- NEW: COMMON MISTAKES -->
+        <div class="section" id="mistakes">
+            <h2 style="color: #f59e0b;">Common Mistakes to Avoid</h2>
+            <div class="lang-grid">
+                <div class="lang-block">
+                    <ul style="margin-left: 1.5rem;">
+                        <li><strong>Thinking Invoice reduces stock</strong>: Consequence: Selling the same fish twice manually.</li>
+                        <li><strong>Selling Reserved stock manually</strong>: Consequence: Buyer will not receive their assigned items.</li>
+                        <li><strong>Ignoring AvailableQty</strong>: Consequence: System will block manual sales or allow negative stock if configured.</li>
+                        <li><strong>Forgetting Dispatch</strong>: Consequence: Stock remains "inflated" in the system forever.</li>
+                    </ul>
+                </div>
+                <div class="lang-block">
+                    <ul style="margin-left: 1.5rem;">
+                        <li><strong>Berpikir Invoice mengurangi stok</strong>: Akibat: Menjual ikan yang sama dua kali secara manual.</li>
+                        <li><strong>Menjual stok Reserved secara manual</strong>: Akibat: Pembeli tidak akan menerima barang yang ditugaskan kepada mereka.</li>
+                        <li><strong>Mengabaikan AvailableQty</strong>: Akibat: Sistem akan memblokir penjualan manual atau mengizinkan stok negatif jika dikonfigurasi.</li>
+                        <li><strong>Melupakan Dispatch</strong>: Akibat: Stok tetap "menggelembung" di sistem selamanya.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- NEW: DATA SAFETY -->
+        <div class="section" id="safety">
+            <h2 style="color: #6366f1;">Data Safety Rules</h2>
+            <div class="lang-grid">
+                <div class="lang-block">
+                    <span class="lang-tag tag-en">English</span>
+                    <p>1. Never edit a <strong>POSTED</strong> document unless absolutely necessary (use Void instead).<br>
+                    2. Always verify <strong>Physical vs Available</strong> stock before committing to a manual sale.<br>
+                    3. Ensure every invoice has a matching <strong>Dispatch</strong> before end-of-day.</p>
+                </div>
+                <div class="lang-block">
+                    <span class="lang-tag tag-id">Indonesian</span>
+                    <p>1. Jangan pernah mengedit dokumen yang sudah <strong>POSTED</strong> kecuali sangat diperlukan (gunakan Void sebagai gantinya).<br>
+                    2. Selalu verifikasi stok <strong>Physical vs Available</strong> sebelum melakukan penjualan manual.<br>
+                    3. Pastikan setiap invoice memiliki <strong>Dispatch</strong> yang cocok sebelum akhir hari.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- UAT SECTION -->
+        <div class="section" id="uat">
+            <h2 style="color: #ef4444; border-color: #ef4444;">QUICK USER TEST (UAT)</h2>
+            <p style="margin-bottom: 2rem;">Follow these steps to validate system integrity.</p>
+            <table class="uat-table">
+                <thead>
+                    <tr>
+                        <th>Task</th>
+                        <th>Steps</th>
+                        <th>Expected Result</th>
+                        <th>Pass</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>T-01</td>
+                        <td>Create Receiving + Split 100kg between 2 buyers</td>
+                        <td>2 allocations created; ReservedQty = 100kg</td>
+                        <td><div class="checkbox"></div></td>
+                    </tr>
+                    <tr>
+                        <td>T-02</td>
+                        <td>Post Receiving & Check Stock</td>
+                        <td>Physical and Reserved counts increase correctly</td>
+                        <td><div class="checkbox"></div></td>
+                    </tr>
+                    <tr>
+                        <td>T-03</td>
+                        <td>Record Partial Payment</td>
+                        <td>Invoice status is 'Partial'; balance is updated</td>
+                        <td><div class="checkbox"></div></td>
+                    </tr>
+                    <tr>
+                        <td>T-04</td>
+                        <td>Processing (Input 50kg, Output 48kg)</td>
+                        <td>System records 2kg Loss; Stock updated</td>
+                        <td><div class="checkbox"></div></td>
+                    </tr>
+                    <tr>
+                        <td>T-05</td>
+                        <td>Dispatch only ONE buyer's items</td>
+                        <td>Physical stock reduced ONLY for that buyer</td>
+                        <td><div class="checkbox"></div></td>
+                    </tr>
+                    <tr>
+                        <td>T-06</td>
+                        <td>Buyer Portal Isolation Test</td>
+                        <td>Buyer A cannot see Buyer B's allocations</td>
+                        <td><div class="checkbox"></div></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- NEW: DAILY CHECKLIST -->
+        <div class="section" id="checklist">
+            <h2 style="color: var(--success);">Daily Operation Checklist</h2>
+            <div class="lang-grid">
+                <div class="lang-block">
+                    <div class="checklist-item">
+                        <div class="checkbox"></div>
+                        <div><strong>All Receivings Posted?</strong> No drafts left for items already in warehouse.</div>
+                    </div>
+                    <div class="checklist-item">
+                        <div class="checkbox"></div>
+                        <div><strong>All Sales Dispatched?</strong> Items that left the building must be recorded.</div>
+                    </div>
+                </div>
+                <div class="lang-block">
+                    <div class="checklist-item">
+                        <div class="checkbox"></div>
+                        <div><strong>Semua Penerimaan di-Post?</strong> Tidak ada draft tersisa untuk barang yang sudah ada di gudang.</div>
+                    </div>
+                    <div class="checklist-item">
+                        <div class="checkbox"></div>
+                        <div><strong>Semua Penjualan di-Dispatch?</strong> Barang yang keluar dari bangunan harus dicatat.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="nav-dots">
+        <a href="#core-logic" class="dot" title="Logic"></a>
+        <a href="#login" class="dot" title="Login"></a>
+        <a href="#receiving" class="dot" title="Receiving"></a>
+        <a href="#sales" class="dot" title="Sales"></a>
+        <a href="#processing" class="dot" title="Processing"></a>
+        <a href="#dispatch" class="dot" title="Dispatch"></a>
+        <a href="#stock" class="dot" title="Stock"></a>
+        <a href="#mistakes" class="dot" title="Mistakes"></a>
+        <a href="#uat" class="dot" title="UAT"></a>
+        <a href="#checklist" class="dot" title="Checklist"></a>
+    </div>
+</body>
+</html>
