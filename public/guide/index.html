@@ -232,6 +232,12 @@
             border-radius: 0.5rem;
         }
 
+        .scenario-step {
+            margin-bottom: 1.5rem;
+            padding-left: 1rem;
+            border-left: 2px solid var(--accent);
+        }
+
         @media print {
             body { padding: 0; background: white; color: black; }
             .section { box-shadow: none; border: 1px solid #ccc; break-inside: avoid; }
@@ -270,27 +276,25 @@
         <header>
             <h1>OPS KAIMANA</h1>
             <p class="subtitle">Complete Operational Manual & System Logic</p>
-            <p style="margin-top: 1rem; font-size: 0.9rem; color: var(--text-muted);">Version 1.2.0 | Updated: April 2026</p>
+            <p style="margin-top: 1rem; font-size: 0.9rem; color: var(--text-muted);">Version 1.3.0 | Updated: April 2026</p>
         </header>
 
-        <!-- NEW: TEST ACCESS & PURPOSE -->
+        <!-- TEST ACCESS & PURPOSE -->
         <div class="section" id="test-access" style="border-top: 4px solid #6366f1;">
             <h2 style="color: #6366f1;">TEST ACCESS & PURPOSE / AKSES & TUJUAN PENGUJIAN</h2>
             <div class="lang-grid">
                 <div class="lang-block">
                     <span class="lang-tag tag-en">English</span>
                     <p>Welcome! This is a controlled real-world testing phase for OPS Kaimana. We invite operators, managers, and partners to test this standard system designed for small-to-medium seafood collection and processing facilities, particularly for remote operations in Eastern Indonesia before shipment to major hubs like Makassar or Surabaya.</p>
-                    <p style="margin-top: 0.5rem;"><strong>Goal:</strong> We need your feedback on missing features, confusing steps, operational problems, and improvement ideas.</p>
                 </div>
                 <div class="lang-block">
                     <span class="lang-tag tag-id">Indonesian</span>
                     <p>Selamat datang! Ini adalah fase pengujian dunia nyata yang terkendali untuk OPS Kaimana. Kami mengundang operator, manajer, dan mitra untuk menguji sistem standar ini yang dirancang untuk fasilitas pengumpulan dan pengolahan hasil laut skala kecil hingga menengah, khususnya untuk operasi jarak jauh di Indonesia Timur sebelum pengiriman ke pusat utama seperti Makassar atau Surabaya.</p>
-                    <p style="margin-top: 0.5rem;"><strong>Tujuan:</strong> Kami memerlukan masukan Anda mengenai fitur yang kurang, langkah-langkah yang membingungkan, masalah operasional, dan ide perbaikan.</p>
                 </div>
             </div>
         </div>
 
-        <!-- NEW: TEST CREDENTIALS -->
+        <!-- TEST CREDENTIALS -->
         <div class="section" id="credentials" style="background: #f8fafc;">
             <h2>Test Login Credentials / Kredensial Login Pengujian</h2>
             <div class="lang-grid">
@@ -309,7 +313,7 @@
             </div>
         </div>
 
-        <!-- NEW: FEEDBACK FORM -->
+        <!-- FEEDBACK FORM -->
         <div class="section" id="feedback">
             <h2 style="color: #10b981;">FEEDBACK FORM / FORMULIR MASUKAN</h2>
             <div class="lang-block" style="background: white; border: 1px dashed #10b981;">
@@ -330,7 +334,7 @@
             </div>
         </div>
 
-        <!-- NEW: CORE SYSTEM LOGIC -->
+        <!-- CORE SYSTEM LOGIC -->
         <div class="section" id="core-logic">
             <h2 style="color: var(--accent);">How the System Really Works (Critical Logic)</h2>
             <div class="lang-grid">
@@ -367,11 +371,71 @@
                 <div class="flow-arrow">→</div>
                 <div class="flow-step" style="background: var(--success);">Dispatch</div>
             </div>
+        </div>
 
-            <div class="warning-box">
-                <h3>⚠️ Key Operational Rules / Aturan Operasional Utama</h3>
-                <p><strong>EN:</strong> Receiving increases stock. Dispatch is the ONLY step that reduces physical stock. Invoices and Payments do NOT affect stock levels.</p>
-                <p><strong>ID:</strong> Receiving menambah stok. Dispatch adalah SATU-SATUNYA langkah yang mengurangi stok fisik. Invoice dan Pembayaran TIDAK memengaruhi level stok.</p>
+        <!-- NEW: CRITICAL OPERATIONAL RULES -->
+        <div class="section" id="critical-rules">
+            <h2 style="color: var(--warning); border-color: var(--warning);">Critical Operational Rules / Aturan Operasional Utama</h2>
+            <div class="lang-grid">
+                <div class="lang-block">
+                    <ul style="margin-left: 1.5rem;">
+                        <li><strong>Invoice does NOT reduce stock</strong>: It only records a sale transaction.</li>
+                        <li><strong>Payment does NOT reduce stock</strong>: It only records money received.</li>
+                        <li><strong>Dispatch is the ONLY stock deduction</strong>: Stock only leaves system when dispatched.</li>
+                        <li><strong>Never sell reserved stock manually</strong>: If it's allocated to a buyer, don't sell it again!</li>
+                    </ul>
+                </div>
+                <div class="lang-block">
+                    <ul style="margin-left: 1.5rem;">
+                        <li><strong>Invoice TIDAK mengurangi stok</strong>: Hanya mencatat transaksi penjualan.</li>
+                        <li><strong>Pembayaran TIDAK mengurangi stok</strong>: Hanya mencatat uang yang diterima.</li>
+                        <li><strong>Dispatch ADALAH SATU-SATUNYA pengurangan stok</strong>: Stok keluar dari sistem hanya saat dispatch.</li>
+                        <li><strong>Jangan jual stok reserved secara manual</strong>: Jika sudah dialokasikan, jangan dijual lagi!</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- NEW: EXAMPLE FULL WORKFLOW -->
+        <div class="section" id="example-scenario">
+            <h2 style="color: var(--accent);">Example Full Workflow (100kg Scenario)</h2>
+            <div class="lang-grid">
+                <div class="lang-block">
+                    <div class="scenario-step">
+                        <strong>Step 1: Receiving</strong><br>
+                        Receive 100kg of Whole Fish. <em>Stock Physical: 100, Reserved: 0, Available: 100.</em>
+                    </div>
+                    <div class="scenario-step">
+                        <strong>Step 2: Allocation</strong><br>
+                        Assign 50kg to Buyer A and 50kg to Buyer B. <em>Stock Physical: 100, Reserved: 100, Available: 0.</em>
+                    </div>
+                    <div class="scenario-step">
+                        <strong>Step 3: Processing</strong><br>
+                        Process Buyer A's 50kg. Yield is 45kg. <em>Stock Physical: 95, Reserved: 95.</em> Buyer A gets 5kg Credit ADJ.
+                    </div>
+                    <div class="scenario-step">
+                        <strong>Step 4: Dispatch</strong><br>
+                        Dispatch Buyer A's 45kg. <em>Stock Physical: 50, Reserved: 50, Available: 0.</em>
+                    </div>
+                </div>
+                <div class="lang-block">
+                    <div class="scenario-step">
+                        <strong>Langkah 1: Penerimaan</strong><br>
+                        Terima 100kg Ikan Utuh. <em>Stok Physical: 100, Reserved: 0, Available: 100.</em>
+                    </div>
+                    <div class="scenario-step">
+                        <strong>Langkah 2: Alokasi</strong><br>
+                        Tugaskan 50kg ke Buyer A dan 50kg ke Buyer B. <em>Stok Physical: 100, Reserved: 100, Available: 0.</em>
+                    </div>
+                    <div class="scenario-step">
+                        <strong>Langkah 3: Pengolahan</strong><br>
+                        Olah 50kg milik Buyer A. Hasilnya 45kg. <em>Stok Physical: 95, Reserved: 95.</em> Buyer A mendapat 5kg Kredit ADJ.
+                    </div>
+                    <div class="scenario-step">
+                        <strong>Langkah 4: Pengiriman</strong><br>
+                        Dispatch 45kg milik Buyer A. <em>Stok Physical: 50, Reserved: 50, Available: 0.</em>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -466,12 +530,6 @@
             <div class="image-container">
                 <img src="assets/sales_list_png_1777289080371.png" alt="Sales List">
             </div>
-
-            <div class="warning-box">
-                <h3>⚠️ CRITICAL WARNING: Invoice is NOT Dispatch</h3>
-                <p><strong>EN:</strong> Many users think creating an invoice removes stock. IT DOES NOT. The stock still physically exists in your warehouse until a <strong>Dispatch</strong> is posted. If you sell the same item manually, you will have a stock deficit.</p>
-                <p><strong>ID:</strong> Banyak pengguna berpikir membuat invoice mengurangi stok. TIDAK. Stok masih ada secara fisik di gudang Anda sampai <strong>Dispatch</strong> di-post. Jika Anda menjual barang yang sama secara manual, Anda akan mengalami defisit stok.</p>
-            </div>
         </div>
 
         <!-- 6. PAYMENT -->
@@ -498,30 +556,25 @@
             <div class="lang-grid">
                 <div class="lang-block">
                     <span class="lang-tag tag-en">English</span>
-                    <p>Record the transformation of raw material. <strong>Input Quantity</strong> is what you started with; <strong>Actual Quantity</strong> is what you yielded.</p>
+                    <p>Record the transformation of raw material. <strong>Provisional Allocations</strong> move to <strong>Confirmed</strong> after processing.</p>
                     <ul style="margin-left: 1.5rem; margin-top: 0.5rem;">
                         <li><strong>Actual < Input</strong>: System records a "Loss/Reject".</li>
-                        <li><strong>Actual > Input</strong>: Not allowed without Admin override.</li>
-                        <li><strong>Buyer Credits</strong>: If yield is lower than assigned, the system may create a Credit Adjustment (ADJ) for the buyer.</li>
+                        <li><strong>Shortfall</strong>: May create a Credit Adjustment (ADJ) for the buyer.</li>
+                        <li><strong>Confirmed</strong>: Processing is required to finalize buyer items for dispatch.</li>
                     </ul>
                 </div>
                 <div class="lang-block">
                     <span class="lang-tag tag-id">Indonesian</span>
-                    <p>Mencatat transformasi bahan baku. <strong>Input Quantity</strong> adalah apa yang Anda mulai; <strong>Actual Quantity</strong> adalah apa yang Anda hasilkan.</p>
+                    <p>Mencatat transformasi bahan baku. <strong>Alokasi Sementara</strong> pindah ke <strong>Dikonfirmasi</strong> setelah pemrosesan.</p>
                     <ul style="margin-left: 1.5rem; margin-top: 0.5rem;">
                         <li><strong>Actual < Input</strong>: Sistem mencatat "Loss/Reject".</li>
-                        <li><strong>Actual > Input</strong>: Tidak diizinkan tanpa override Admin.</li>
-                        <li><strong>Buyer Credits</strong>: Jika hasil lebih rendah dari yang ditugaskan, sistem dapat membuat Penyesuaian Kredit (ADJ) untuk pembeli.</li>
+                        <li><strong>Shortfall</strong>: Dapat membuat Penyesuaian Kredit (ADJ) untuk pembeli.</li>
+                        <li><strong>Dikonfirmasi</strong>: Pengolahan diperlukan untuk memfinalisasi item pembeli untuk dikirim.</li>
                     </ul>
                 </div>
             </div>
             <div class="image-container">
                 <img src="assets/processing_form_png_1777289191958.png" alt="Processing Form">
-            </div>
-            <div class="warning-box" style="border-color: var(--accent); background: #eff6ff; color: #1e40af;">
-                <h3>💡 Processing is NOT Dispatch</h3>
-                <p><strong>EN:</strong> Processing only transforms the item type/status. The stock remains in your physical inventory until dispatched.</p>
-                <p><strong>ID:</strong> Processing hanya mentransformasi tipe/status item. Stok tetap berada di inventaris fisik Anda sampai di-dispatch.</p>
             </div>
         </div>
 
@@ -585,11 +638,19 @@
             <div class="lang-grid">
                 <div class="lang-block">
                     <span class="lang-tag tag-en">English</span>
-                    <p><strong>Admin Only.</strong> Voids a document and reverts its impact on stock and finances. This action is logged in the Audit Trail.</p>
+                    <p><strong>Admin Only.</strong> The Void button is visible in the transaction detail view. It allows reverting mistakes <strong>before</strong> items are processed or dispatched.</p>
+                    <ul style="margin-left: 1.5rem; margin-top: 0.5rem;">
+                        <li><strong>Confirmation</strong>: A modal will ask for confirmation.</li>
+                        <li><strong>Integrity</strong>: Voiding ensures no "phantom stock" is left in the system.</li>
+                    </ul>
                 </div>
                 <div class="lang-block">
                     <span class="lang-tag tag-id">Indonesian</span>
-                    <p><strong>Khusus Admin.</strong> Membatalkan dokumen dan mengembalikan dampaknya pada stok dan keuangan. Tindakan ini dicatat dalam Jejak Audit.</p>
+                    <p><strong>Khusus Admin.</strong> Tombol Void terlihat di tampilan detail transaksi. Ini memungkinkan membatalkan kesalahan <strong>sebelum</strong> barang diolah atau dikirim.</p>
+                    <ul style="margin-left: 1.5rem; margin-top: 0.5rem;">
+                        <li><strong>Konfirmasi</strong>: Modal akan meminta konfirmasi.</li>
+                        <li><strong>Integritas</strong>: Voiding memastikan tidak ada "stok hantu" yang tertinggal di sistem.</li>
+                    </ul>
                 </div>
             </div>
             <div class="image-container">
@@ -615,7 +676,7 @@
             </div>
         </div>
 
-        <!-- NEW: COMMON MISTAKES -->
+        <!-- COMMON MISTAKES -->
         <div class="section" id="mistakes">
             <h2 style="color: #f59e0b;">Common Mistakes to Avoid</h2>
             <div class="lang-grid">
@@ -638,7 +699,7 @@
             </div>
         </div>
 
-        <!-- NEW: DATA SAFETY -->
+        <!-- DATA SAFETY -->
         <div class="section" id="safety">
             <h2 style="color: #6366f1;">Data Safety Rules</h2>
             <div class="lang-grid">
@@ -711,7 +772,7 @@
             </table>
         </div>
 
-        <!-- NEW: DAILY CHECKLIST -->
+        <!-- DAILY CHECKLIST -->
         <div class="section" id="checklist">
             <h2 style="color: var(--success);">Daily Operation Checklist</h2>
             <div class="lang-grid">
@@ -741,6 +802,8 @@
 
     <div class="nav-dots">
         <a href="#core-logic" class="dot" title="Logic"></a>
+        <a href="#critical-rules" class="dot" title="Rules"></a>
+        <a href="#example-scenario" class="dot" title="Example"></a>
         <a href="#login" class="dot" title="Login"></a>
         <a href="#receiving" class="dot" title="Receiving"></a>
         <a href="#sales" class="dot" title="Sales"></a>
