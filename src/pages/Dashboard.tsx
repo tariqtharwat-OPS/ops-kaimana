@@ -13,10 +13,10 @@ export const Dashboard = () => {
   const { t } = useLanguage();
   // removed unused currentUser
 
-  const { data: stock } = useMasterData('stock');
-  const { data: receivings } = useMasterData('receivings');
-  const { data: sales } = useMasterData('sales');
-  const { data: movements } = useMasterData('stock_movements');
+  const { data: stock } = useMasterData('stock', true);
+  const { data: receivings } = useMasterData('receivings', true);
+  const { data: sales } = useMasterData('sales', true);
+  const { data: movements } = useMasterData('stock_movements', true);
   const { data: buyers } = useMasterData('buyers');
   const { data: items } = useMasterData('items');
 
