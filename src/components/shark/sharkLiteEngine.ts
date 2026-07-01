@@ -261,7 +261,8 @@ function buyerAllocation(ctx: SharkLiteContext) {
   }
 
   const lines = allocations.slice(0, 5).map((allocation) => {
-    return `${itemName(ctx, allocation.itemId)}: ${kg(Number(allocation.actualQty || allocation.allocatedQty || 0))}, status ${allocation.status || 'Unknown'}.`;
+    const safeName = allocation.productNameId || allocation.productNameEn || allocation.productName || allocation.itemName || itemName(ctx, allocation.itemId);
+    return `${safeName}: ${kg(Number(allocation.actualQty || allocation.allocatedQty || 0))}, status ${allocation.status || 'Unknown'}.`;
   });
 
   return [

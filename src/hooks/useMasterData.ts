@@ -22,7 +22,7 @@ export function useMasterData(collectionName: string, includeInactive = false) {
         return () => {};
       }
 
-      const buyerAllowedCollections = ['items', 'sales', 'buyerAllocations', 'dispatches', 'buyerCredits'];
+      const buyerAllowedCollections = ['sales', 'buyerAllocations', 'dispatches', 'buyerCredits'];
       if (!buyerAllowedCollections.includes(collectionName)) {
         console.warn(`SECURITY BLOCK: Buyer cannot subscribe to ${collectionName}.`);
         setData([]);

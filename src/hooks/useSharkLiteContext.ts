@@ -74,7 +74,7 @@ function getAllowedKeys(role?: string): ContextKey[] {
   }
 
   if (role === 'Buyer') {
-    return ['items', 'sales', 'buyerAllocations', 'buyerCredits'];
+    return ['sales', 'buyerAllocations', 'buyerCredits'];
   }
 
   return [];

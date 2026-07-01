@@ -98,10 +98,16 @@ export const BuyerView: React.FC = () => {
               header: t('PRODUK', 'PRODUCT'), 
               accessor: (a: any) => {
                 const item = items.find(i => i.id === a.itemId);
+                const productName = item?.nameId || item?.nameEn || a.productNameId || a.productNameEn || a.productName || a.itemName || a.itemId || '-';
+                const productMeta = [
+                  a.itemCode || item?.item_code,
+                  a.gradeLabel || a.gradeName || a.gradeId || 'STD',
+                  a.sizeLabel || a.sizeName || a.sizeId || 'STD',
+                ].filter(Boolean).join(' | ');
                 return (
                   <div className="flex flex-col">
-                    <span className="font-black text-slate-900">{t(item?.nameId || '', item?.nameEn || '')}</span>
-                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">{item?.item_code} | {a.gradeId || 'STD'} | {a.sizeId || 'STD'}</span>
+                    <span className="font-black text-slate-900">{productName}</span>
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">{productMeta}</span>
                   </div>
                 );
               }
