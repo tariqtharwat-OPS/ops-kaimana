@@ -10,6 +10,7 @@ import { useAuth } from '../../context/AuthContext';
 import { collection, getDocs, query, limit, doc, setDoc } from 'firebase/firestore';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { db, auth } from '../../firebase/config';
+import { SharkLitePanel } from '../shark/SharkLitePanel';
 
 export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [collapsed, setCollapsed] = useState(false);
@@ -337,6 +338,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
           {children}
         </div>
       </main>
+      <SharkLitePanel />
     </div>
   );
 };
