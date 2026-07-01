@@ -1,12 +1,12 @@
 import type { SharkLiteContext, SharkLiteRecord, SharkPrompt } from './sharkLiteTypes';
 
 export const SHARK_LITE_PROMPTS: SharkPrompt[] = [
-  { id: 'today', label: 'What happened today?', question: 'What happened today?', roles: ['Admin', 'Operator', 'Buyer'] },
+  { id: 'today', label: 'Apa yang terjadi hari ini?', question: 'Apa yang terjadi hari ini?', roles: ['Admin', 'Operator', 'Buyer'] },
   { id: 'control', label: 'Is this mini plant under control?', question: 'Is this mini plant under control?', roles: ['Admin', 'Operator'] },
-  { id: 'watch', label: 'What should management watch?', question: 'What should management watch?', roles: ['Admin', 'Operator'] },
+  { id: 'watch', label: 'Apa risiko yang harus diperhatikan?', question: 'Apa risiko yang harus diperhatikan?', roles: ['Admin', 'Operator'] },
   { id: 'investor', label: 'Explain this system to an investor.', question: 'Explain this system to an investor.', roles: ['Admin', 'Operator', 'Buyer'] },
   { id: 'receiving', label: 'Summarize receiving.', question: 'Summarize receiving.', roles: ['Admin'] },
-  { id: 'stock', label: 'Summarize stock.', question: 'Summarize stock.', roles: ['Admin'] },
+  { id: 'stock', label: 'Ringkas stock saat ini.', question: 'Ringkas stock saat ini.', roles: ['Admin'] },
   { id: 'processing', label: 'Summarize processing.', question: 'Summarize processing.', roles: ['Admin'] },
   { id: 'reports', label: 'Summarize reports.', question: 'Summarize reports.', roles: ['Admin'] },
   { id: 'audit', label: 'Summarize audit activity.', question: 'Summarize audit activity.', roles: ['Admin'] },
@@ -17,7 +17,7 @@ export const SHARK_LITE_PROMPTS: SharkPrompt[] = [
   { id: 'operator-processing', label: 'What processing happened?', question: 'What processing happened?', roles: ['Operator'] },
   { id: 'operator-posting', label: 'What should I check before posting?', question: 'What should I check before posting?', roles: ['Operator'] },
   { id: 'operator-note', label: 'Prepare a receiving note as text only.', question: 'Prepare a receiving note as text only.', roles: ['Operator'] },
-  { id: 'buyer-allocation', label: 'What is my allocation?', question: 'What is my allocation?', roles: ['Buyer'] },
+  { id: 'buyer-allocation', label: 'Apa allocation saya?', question: 'Apa allocation saya?', roles: ['Buyer'] },
   { id: 'buyer-provisional', label: 'What does provisional mean?', question: 'What does provisional mean?', roles: ['Buyer'] },
   { id: 'buyer-scope', label: 'Can I see only my own allocation?', question: 'Can I see only my own allocation?', roles: ['Buyer'] },
   { id: 'buyer-portal', label: 'Explain my buyer portal.', question: 'Explain my buyer portal.', roles: ['Buyer'] },
@@ -52,9 +52,9 @@ function summarizeReceiving(ctx: SharkLiteContext) {
   const todayPostedQty = totalQty(today.filter((record) => record.status === 'Posted'));
 
   return [
-    `Receiving is active. There are ${posted} posted receiving documents and ${drafts} draft receiving documents.`,
-    `Today posted receiving quantity: ${kg(todayPostedQty)}.`,
-    today.length > 0 ? `Today has ${today.length} receiving records.` : 'No receiving records dated today are visible to this role.',
+    `Penerimaan / Receiving: ${posted} posted, ${drafts} draft.`,
+    `Hari ini / Today posted quantity: ${kg(todayPostedQty)}.`,
+    today.length > 0 ? `Records hari ini: ${today.length}.` : 'No receiving records dated today are visible to this role.',
   ].join('\n');
 }
 
@@ -76,11 +76,11 @@ function summarizeStock(ctx: SharkLiteContext) {
     : 'No recent stock movement is visible.';
 
   return [
-    `Physical stock: ${kg(physical)}.`,
-    `Reserved stock: ${kg(reserved)}.`,
-    `Available stock: ${kg(physical - reserved)}.`,
+    `Stock fisik / Physical: ${kg(physical)}.`,
+    `Reserved: ${kg(reserved)}.`,
+    `Available: ${kg(physical - reserved)}.`,
     `Low stock items: ${low.length}.`,
-    `Recent movement:\n${recentText}`,
+    `Latest movement:\n${recentText}`,
   ].join('\n');
 }
 
@@ -91,9 +91,9 @@ function summarizeProcessing(ctx: SharkLiteContext) {
   const output = totalQty(ctx.processing.map((record) => ({ quantity: record.totalOutput || record.totalActual || record.totalInput || 0 })));
 
   return [
-    `Processing has ${posted} posted records and ${drafts} draft records.`,
-    `Today processing records visible: ${today.length}.`,
-    `Total processed quantity visible: ${kg(output)}.`,
+    `Processing: ${posted} posted, ${drafts} draft.`,
+    `Records hari ini / today: ${today.length}.`,
+    `Visible processed quantity: ${kg(output)}.`,
   ].join('\n');
 }
 
@@ -158,14 +158,14 @@ function findMismatches(ctx: SharkLiteContext) {
 
 function investorExplanation(ctx: SharkLiteContext) {
   if (ctx.currentUser.role === 'Buyer') {
-    return 'This Buyer Portal shows only your own allocation data: allocated product, quantity, and status. It proves the system can expose a safe customer-facing view without revealing internal receiving, stock, users, supplier costs, or audit data.';
+    return 'Buyer Portal ini hanya menampilkan allocation milik akun Anda: product, quantity, dan status. It proves OPS Kaimana can expose a safe customer-facing view without revealing internal receiving, stock, users, supplier costs, or audit data.';
   }
 
   return [
-    'OPS Kaimana is a live seafood operations platform, not a generic ERP demo.',
-    'It connects receiving, processing, stock movement, sales/dispatch, reports, audit log, and buyer allocation.',
-    'The important investor signal is traceability: a receiving post updates stock, processing creates movement, reports update, and audit records the action.',
-    'Shark Lite is a rule-based demo intelligence layer. It explains the current operation without Gemini, backend calls, or operational writes.',
+    'OPS Kaimana is a live seafood mini-plant system, not a generic ERP screen.',
+    'It connects penerimaan/receiving, processing, stock movement, sales/dispatch, reports, audit log, and buyer allocation.',
+    'Investor signal: posting receiving updates stock, processing creates movement, reports update, and audit records the action.',
+    'Shark Lite is demo intelligence: rule-based, read-only, no Gemini, no backend actions.',
   ].join('\n');
 }
 
@@ -179,10 +179,11 @@ function managementWatch(ctx: SharkLiteContext) {
   const mismatches = findMismatches(ctx);
 
   return [
-    `Watch receiving drafts: ${drafts}.`,
-    `Watch unpaid supplier receiving: ${unpaidReceiving}.`,
-    `Watch low stock items: ${lowStock}.`,
-    `Data checks: ${mismatches}`,
+    `Risiko / Watchlist:`,
+    `Receiving drafts: ${drafts}.`,
+    `Unpaid supplier receiving: ${unpaidReceiving}.`,
+    `Low stock items: ${lowStock}.`,
+    `Data check: ${mismatches}`,
   ].join('\n');
 }
 
@@ -202,9 +203,9 @@ function buyerAllocation(ctx: SharkLiteContext) {
 
   return [
     ctx.currentUser.role === 'Buyer'
-      ? 'Your buyer account is linked and scoped to your own buyer record.'
+      ? 'Akun buyer Anda hanya melihat allocation milik Anda.'
       : `Your buyer account is linked to ${buyerName(ctx, ctx.currentUser.linkedBuyerId)}.`,
-    `Total visible allocation: ${kg(total)}.`,
+    `Total allocation terlihat / visible: ${kg(total)}.`,
     `Provisional allocation lines: ${provisional}. Confirmed quantity: ${kg(confirmed)}.`,
     ...lines,
   ].join('\n');
@@ -239,7 +240,7 @@ export function answerSharkLite(question: string, ctx: SharkLiteContext): string
   const role = ctx.currentUser.role;
 
   if (role === 'Buyer') {
-    if (normalized.includes('provisional')) return 'Provisional means the allocation exists from receiving, but it is not yet confirmed as ready after processing or dispatch flow. It is visible to you, but it is not a final shipped quantity.';
+    if (normalized.includes('provisional')) return 'Provisional berarti allocation sudah tercatat dari receiving, tetapi belum final untuk dispatch/shipment. It is visible to you, but not yet final shipped quantity.';
     if (normalized.includes('only my own') || normalized.includes('see only') || normalized.includes('security')) return 'Yes. In Buyer mode, Shark Lite only uses your linked buyer allocation and buyer-safe records. It does not read admin users, receiving, processing, audit log, supplier payables, or other buyers.';
     if (normalized.includes('portal') || normalized.includes('explain')) return investorExplanation(ctx);
     return buyerAllocation(ctx);
@@ -247,7 +248,7 @@ export function answerSharkLite(question: string, ctx: SharkLiteContext): string
 
   if (normalized.includes('investor') || normalized.includes('explain this system')) return investorExplanation(ctx);
   if (normalized.includes('under control') || normalized.includes('mini plant')) return `${summarizeStock(ctx)}\n\n${managementWatch(ctx)}`;
-  if (normalized.includes('management') || normalized.includes('watch')) return managementWatch(ctx);
+  if (normalized.includes('management') || normalized.includes('watch') || normalized.includes('risiko') || normalized.includes('diperhatikan')) return managementWatch(ctx);
   if (normalized.includes('mismatch')) return findMismatches(ctx);
   if (normalized.includes('buyer') && normalized.includes('allocation')) return summarizeBuyerAllocations(ctx);
   if (normalized.includes('audit')) {
@@ -260,7 +261,7 @@ export function answerSharkLite(question: string, ctx: SharkLiteContext): string
   if (normalized.includes('processing') || normalized.includes('production')) return summarizeProcessing(ctx);
   if (normalized.includes('before posting') || normalized.includes('check before posting')) return operatorPostingChecklist();
   if (normalized.includes('receiving note')) return receivingNote(ctx);
-  if (normalized.includes('receiving') || normalized.includes('today')) return `${summarizeReceiving(ctx)}\n\n${summarizeStock(ctx)}`;
+  if (normalized.includes('receiving') || normalized.includes('today') || normalized.includes('hari ini') || normalized.includes('terjadi')) return `${summarizeReceiving(ctx)}\n\n${summarizeStock(ctx)}`;
 
   if (role === 'Operator') {
     return 'I can help with receiving, processing, stock, and operational reports. Try: "What receiving activity happened today?", "What stock changed?", or "What should I check before posting?"';
@@ -271,12 +272,12 @@ export function answerSharkLite(question: string, ctx: SharkLiteContext): string
 
 export function welcomeMessage(ctx: SharkLiteContext): string {
   if (ctx.currentUser.role === 'Buyer') {
-    return 'Shark Lite - Demo Intelligence is ready in buyer-safe mode. I can explain your allocation and portal only.';
+    return 'Shark Lite - Demo Intelligence siap dalam buyer-safe mode. I can explain your own allocation and portal only.';
   }
 
   if (ctx.currentUser.role === 'Operator') {
-    return 'Shark Lite - Demo Intelligence is ready for operations. I can summarize receiving, processing, stock, and reports without writing data.';
+    return 'Shark Lite - Demo Intelligence siap untuk operations. I can summarize receiving, processing, stock, and reports without writing data.';
   }
 
-  return 'Shark Lite - Demo Intelligence is ready for Admin. I can summarize operations, reports, audit activity, and data checks without writing data.';
+  return 'Shark Lite - Demo Intelligence siap untuk Admin. I can summarize operations, reports, audit activity, and data checks without writing data.';
 }

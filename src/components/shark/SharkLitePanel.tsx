@@ -123,13 +123,17 @@ export const SharkLitePanel: React.FC = () => {
           </div>
 
           <div className="border-t border-slate-100 bg-slate-50 p-4">
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">Quick questions</p>
+              <p className="text-[10px] font-bold text-slate-400">ID + EN</p>
+            </div>
             <div className="mb-3 flex max-h-28 flex-wrap gap-2 overflow-y-auto pr-1">
               {prompts.map((prompt) => (
                 <button
                   key={prompt.id}
                   type="button"
                   onClick={() => ask(prompt.question)}
-                  className="rounded-full border border-slate-200 bg-white px-3 py-2 text-left text-[10px] font-black uppercase tracking-wider text-slate-500 transition-colors hover:border-ocean-200 hover:text-ocean-700"
+                  className="rounded-full border border-slate-200 bg-white px-3 py-2 text-left text-[10px] font-black uppercase leading-snug tracking-wider text-slate-500 transition-colors hover:border-ocean-200 hover:text-ocean-700"
                 >
                   {prompt.label}
                 </button>

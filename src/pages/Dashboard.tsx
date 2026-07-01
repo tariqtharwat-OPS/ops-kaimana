@@ -2,16 +2,17 @@ import React, { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import {
   AlertCircle, TrendingUp, Package, Clock,
-  DollarSign, Truck, FileText, Activity
+  DollarSign, Truck, FileText, Activity, Bot, ShieldCheck, Users
 } from 'lucide-react';
 import { Card, Header, Badge } from '../components/ui/DesignSystem';
 import { useLanguage } from '../context/LanguageContext';
+import { useAuth } from '../context/AuthContext';
 import { useMasterData } from '../hooks/useMasterData';
 import { getItemLabel } from '../utils/itemMapping';
 
 export const Dashboard = () => {
   const { t } = useLanguage();
-  // removed unused currentUser
+  const { currentUser } = useAuth();
 
   const { data: stock } = useMasterData('stock', true);
   const { data: receivings } = useMasterData('receivings', true);
@@ -85,6 +86,48 @@ export const Dashboard = () => {
         title={t('Ringkasan Operasional', 'Operational Overview')}
         subtitle={t('Status real-time plant Kaimana', 'Real-time Kaimana plant status')}
       />
+
+      <Card className="border-ocean-100 bg-gradient-to-br from-ocean-50 to-white p-5 md:p-7">
+        <div className="grid gap-5 lg:grid-cols-[1.15fr_1fr] lg:items-center">
+          <div>
+            <div className="mb-3 flex flex-wrap items-center gap-2">
+              <Badge variant="posted" className="border-ocean-100 bg-ocean-50 text-ocean-700">
+                Investor Demo
+              </Badge>
+              <Badge variant="draft">{currentUser?.role || 'Role'} view</Badge>
+            </div>
+            <h2 className="text-xl font-black tracking-tight text-slate-900 md:text-2xl">
+              {t('Demo mini plant siap diuji', 'Mini plant demo ready to test')}
+            </h2>
+            <p className="mt-2 max-w-3xl text-sm font-semibold leading-6 text-slate-600">
+              {t(
+                'Gunakan data demo dengan hati-hati. Coba alur sesuai role, buka Shark Lite untuk ringkasan operasi, dan jangan hapus data atau mengganti password akun testing.',
+                'Use the demo data carefully. Try the flow for each role, open Shark Lite for operational summaries, and do not delete data or change testing account passwords.'
+              )}
+            </p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+            <div className="flex items-start gap-3 rounded-2xl border border-white bg-white/80 p-3 shadow-sm">
+              <Users size={18} className="mt-0.5 shrink-0 text-ocean-700" />
+              <p className="text-xs font-bold leading-5 text-slate-600">
+                <span className="text-slate-900">Admin</span>: dashboard, master data, reports, audit. <span className="text-slate-900">Operator</span>: receiving, processing, stock. <span className="text-slate-900">Buyer</span>: buyer portal only.
+              </p>
+            </div>
+            <div className="flex items-start gap-3 rounded-2xl border border-white bg-white/80 p-3 shadow-sm">
+              <Bot size={18} className="mt-0.5 shrink-0 text-ocean-700" />
+              <p className="text-xs font-bold leading-5 text-slate-600">
+                Shark Lite is demo intelligence: read-only, role-aware, rule-based, no Gemini, no backend actions.
+              </p>
+            </div>
+            <div className="flex items-start gap-3 rounded-2xl border border-white bg-white/80 p-3 shadow-sm sm:col-span-2 lg:col-span-1">
+              <ShieldCheck size={18} className="mt-0.5 shrink-0 text-emerald-600" />
+              <p className="text-xs font-bold leading-5 text-slate-600">
+                Safe testing: no password changes, no bulk deletes, no production reset. Use QA/demo records when trying forms.
+              </p>
+            </div>
+          </div>
+        </div>
+      </Card>
 
       {/* ── KPI Grid ── */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
