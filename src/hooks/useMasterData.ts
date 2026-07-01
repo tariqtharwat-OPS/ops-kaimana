@@ -16,7 +16,7 @@ export function useMasterData(collectionName: string, includeInactive = false) {
     // SCOPING: If user is a Buyer, restrict visibility of transactional collections
     if (currentUser?.role === 'Buyer') {
       if (!currentUser.linkedBuyerId) {
-        console.error("SECURITY BLOCK: Buyer account lacks linkedBuyerId.");
+        console.warn("SECURITY BLOCK: Buyer account lacks linkedBuyerId.");
         setData([]);
         setLoading(false);
         return () => {};
