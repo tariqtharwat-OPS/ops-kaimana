@@ -108,9 +108,9 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
 
   if (!currentUser) {
     return (
-      <div className="min-h-screen flex flex-col md:flex-row bg-[#020617] selection:bg-ocean-500 selection:text-white relative">
+      <div className="min-h-[100dvh] flex flex-col md:flex-row bg-[#020617] selection:bg-ocean-500 selection:text-white relative overflow-x-hidden">
         {/* Top-aligned Language Selection (Responsive fix) */}
-        <div className="absolute top-8 left-0 right-0 z-[100] flex justify-center md:justify-start md:px-24">
+        <div className="absolute top-5 md:top-8 left-0 right-0 z-[100] flex justify-center md:justify-start md:px-24">
            <div className="flex bg-white/5 border border-white/10 backdrop-blur-md p-1.5 rounded-2xl">
              <button onClick={() => setLanguage('id')} className={`px-5 py-2 rounded-xl text-[10px] font-black tracking-widest uppercase transition-all ${language === 'id' ? 'bg-ocean-500 text-white shadow-lg shadow-ocean-500/20' : 'text-slate-400 hover:text-white'}`}>INDONESIA</button>
              <button onClick={() => setLanguage('en')} className={`px-5 py-2 rounded-xl text-[10px] font-black tracking-widest uppercase transition-all ${language === 'en' ? 'bg-ocean-500 text-white shadow-lg shadow-ocean-500/20' : 'text-slate-400 hover:text-white'}`}>ENGLISH</button>
@@ -118,30 +118,30 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
         </div>
 
         {/* Left Side: Dynamic Branding */}
-        <div className="md:w-3/5 relative overflow-hidden flex flex-col items-center justify-center p-8 pt-24 md:p-12 lg:p-24 min-h-[50vh] md:min-h-screen">
+        <div className="md:w-3/5 relative overflow-hidden flex flex-col items-center justify-center px-6 pt-24 pb-8 md:p-12 lg:p-24 min-h-[44dvh] md:min-h-screen">
           {/* Abstract backgrounds */}
           <div className="absolute top-0 left-0 w-full h-full opacity-30">
              <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] rounded-full bg-ocean-600/20 blur-[120px] animate-pulse"></div>
              <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-accent-500/10 blur-[100px]"></div>
           </div>
           
-          <div className="relative z-10 w-full max-w-2xl text-center space-y-8 md:space-y-12">
+          <div className="relative z-10 w-full max-w-2xl text-center space-y-5 md:space-y-12">
             <div className="group relative inline-block">
               <div className="absolute -inset-1 bg-gradient-to-r from-ocean-500 to-accent-500 rounded-[3rem] blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
-              <div className="relative w-48 h-48 md:w-80 md:h-80 bg-white rounded-[2.5rem] md:rounded-[3rem] shadow-2xl flex items-center justify-center p-8 md:p-12 transition-transform duration-700 hover:scale-[1.02]">
+              <div className="relative w-40 h-40 sm:w-48 sm:h-48 md:w-80 md:h-80 bg-white rounded-[2rem] md:rounded-[3rem] shadow-2xl flex items-center justify-center p-7 sm:p-8 md:p-12 transition-transform duration-700 hover:scale-[1.02]">
                 <img src="/images/logo.png" alt="Logo" className="w-full h-auto object-contain" />
               </div>
             </div>
             
-            <div className="space-y-4 md:space-y-6 animate-slide-up">
+            <div className="space-y-3 md:space-y-6 animate-slide-up">
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-md mx-auto">
                 <Sparkles size={14} className="text-ocean-400" />
                 <span className="text-[10px] font-black tracking-[0.3em] text-white/60 uppercase">Operational Excellence</span>
               </div>
-              <h1 className="text-4xl md:text-6xl lg:text-8xl font-black text-white tracking-tighter italic uppercase leading-none">
+              <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-8xl font-black text-white tracking-tighter italic uppercase leading-none">
                 OPS <span className="text-transparent bg-clip-text bg-gradient-to-br from-ocean-400 to-accent-400">Kaimana</span>
               </h1>
-              <p className="text-slate-400 font-medium text-base md:text-xl max-w-lg mx-auto leading-relaxed">
+              <p className="text-slate-400 font-medium text-sm sm:text-base md:text-xl max-w-lg mx-auto leading-relaxed">
                 {t('Sistem Operasional Pemrosesan Ikan Terintegrasi', 'Future-ready Integrated Fish Processing Operational System')}
               </p>
             </div>
@@ -149,8 +149,8 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
         </div>
 
         {/* Right Side: Glass Form */}
-        <div className="md:w-2/5 flex items-center justify-center p-8 bg-[#0f172a] relative border-l border-white/5 min-h-[50vh] md:min-h-screen">
-          <div className="w-full max-w-md space-y-12 relative z-10">
+        <div className="md:w-2/5 flex items-center justify-center px-6 py-8 md:p-8 bg-[#0f172a] relative border-l border-white/5 min-h-0 md:min-h-screen">
+          <div className="w-full max-w-md space-y-8 md:space-y-12 relative z-10">
             <div className="space-y-2">
               <h2 className="text-3xl font-black text-white tracking-tight">{needsSetup ? t('Konfigurasi Awal', 'Initial Setup') : t('Selamat Datang', 'Welcome Back')}</h2>
               <p className="text-slate-500 font-medium">{needsSetup ? t('Siapkan sistem Anda dalam hitungan detik', 'Ready your system in seconds') : t('Silakan masuk ke akun Anda', 'Please sign in to your account')}</p>
@@ -177,19 +177,19 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
                    </button>
                 </div>
               ) : (
-                <div className="space-y-8 animate-slide-up">
-                  <div className="space-y-6">
+                <div className="space-y-6 md:space-y-8 animate-slide-up">
+                  <div className="space-y-5 md:space-y-6">
                     <div className="space-y-2 group">
                       <label className="text-white/40 group-focus-within:text-ocean-400 transition-colors tracking-widest uppercase">User Identifier</label>
                       <input type="email" value={loginEmail} onChange={e => { setLoginEmail(e.target.value); setLoginError(''); }}
                         onKeyDown={e => e.key === 'Enter' && document.getElementById('pw')?.focus()} placeholder="Email address" autoFocus
-                        className="w-full bg-white/5 border-white/10 text-white focus:bg-white/10 py-4" />
+                        className="w-full bg-white/5 border-white/10 text-white focus:bg-white/10 py-4 min-h-[54px]" />
                     </div>
                     <div className="space-y-2 group">
                       <label className="text-white/40 group-focus-within:text-ocean-400 transition-colors tracking-widest uppercase">Access Password</label>
                       <input id="pw" type="password" value={loginPassword} onChange={e => { setLoginPassword(e.target.value); setLoginError(''); }}
                         onKeyDown={e => e.key === 'Enter' && handleLogin()} placeholder="••••••••"
-                        className="w-full bg-white/5 border-white/10 text-white focus:bg-white/10 py-4" />
+                        className="w-full bg-white/5 border-white/10 text-white focus:bg-white/10 py-4 min-h-[54px]" />
                     </div>
                   </div>
                   {loginError && <p className="text-xs text-rose-400 font-bold bg-rose-400/10 p-3 rounded-lg border border-rose-400/20">{loginError}</p>}
@@ -285,13 +285,13 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
         />
       )}
 
-      <main className={`flex-1 print:ml-0 ${collapsed ? 'lg:ml-24' : 'lg:ml-80'} ml-0 transition-all duration-500 relative h-full overflow-y-auto no-scrollbar`}>
+      <main className={`flex-1 print:ml-0 ${collapsed ? 'lg:ml-24' : 'lg:ml-80'} ml-0 transition-all duration-500 relative h-full overflow-y-auto overflow-x-hidden no-scrollbar`}>
         {/* Subtle Background Glow Effects for Inner Pages */}
         <div className="absolute top-[-10%] right-[-5%] w-[800px] h-[800px] bg-ocean-400/5 rounded-full blur-[120px] pointer-events-none -z-10"></div>
         <div className="absolute bottom-[-10%] left-[-5%] w-[800px] h-[800px] bg-accent-400/5 rounded-full blur-[120px] pointer-events-none -z-10"></div>
 
         {/* Glass Header */}
-        <header className="print:hidden h-24 sticky top-0 z-40 px-4 md:px-12 flex items-center justify-between bg-white/70 backdrop-blur-2xl border-b border-white shadow-[0_4px_30px_rgba(0,0,0,0.02)]">
+        <header className="print:hidden min-h-20 md:h-24 sticky top-0 z-40 px-4 md:px-12 py-3 md:py-0 flex items-center justify-between gap-3 bg-white/70 backdrop-blur-2xl border-b border-white shadow-[0_4px_30px_rgba(0,0,0,0.02)]">
           <div className="flex items-center gap-4">
             <button 
               onClick={() => setMobileMenuOpen(true)}
@@ -302,7 +302,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
             <div className="animate-slide-up">
             <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">{t('Sistem Operasional', 'Operational System')}</h2>
             <div className="flex items-center gap-3 mt-1">
-              <span className="text-xl md:text-2xl font-black text-slate-900 tracking-tighter">{currentUser.fullName}</span>
+              <span className="text-lg md:text-2xl font-black text-slate-900 tracking-tighter leading-tight line-clamp-1 max-w-[150px] sm:max-w-none">{currentUser.fullName}</span>
               <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.5)] animate-pulse"></div>
             </div>
           </div>
@@ -333,7 +333,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
           </div>
         </header>
 
-        <div className="p-6 md:p-12 print:p-0 max-w-[1600px] mx-auto animate-slide-up">
+        <div className="p-4 sm:p-6 md:p-12 print:p-0 max-w-[1600px] mx-auto animate-slide-up">
           {children}
         </div>
       </main>

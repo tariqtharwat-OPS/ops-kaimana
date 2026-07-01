@@ -34,9 +34,16 @@
     @apply bg-[#f8fafc] text-slate-800 antialiased selection:bg-ocean-100 selection:text-ocean-900 font-sans;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
     overscroll-behavior: contain;
-    overflow: hidden;
-    height: 100vh;
-    width: 100vw;
+    overflow-x: hidden;
+    overflow-y: auto;
+    min-height: 100vh;
+    min-height: 100dvh;
+    width: 100%;
+  }
+
+  #root {
+    min-height: 100vh;
+    min-height: 100dvh;
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -115,8 +122,9 @@
 .modal-overlay {
   @apply fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4;
 }
+
 .modal-content {
-  @apply bg-white rounded-[2.5rem] w-full max-w-2xl shadow-2xl overflow-hidden;
+  @apply bg-white rounded-3xl md:rounded-[2.5rem] w-full max-w-2xl shadow-2xl overflow-hidden;
   animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
