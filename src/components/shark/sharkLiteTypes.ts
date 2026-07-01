@@ -11,6 +11,7 @@ export interface SharkLiteContext {
   currentUser: AppUser;
   today: string;
   items: SharkLiteRecord[];
+  suppliers: SharkLiteRecord[];
   buyers: SharkLiteRecord[];
   receivings: SharkLiteRecord[];
   processing: SharkLiteRecord[];

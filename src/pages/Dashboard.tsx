@@ -1,8 +1,8 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   AlertCircle, TrendingUp, Package, Clock,
-  DollarSign, Truck, FileText, Activity, Bot, ShieldCheck, Users
+  DollarSign, Truck, FileText, Activity, Bot, ShieldCheck, Users, X, SearchCheck
 } from 'lucide-react';
 import { Card, Header, Badge } from '../components/ui/DesignSystem';
 import { useLanguage } from '../context/LanguageContext';
@@ -13,13 +13,18 @@ import { getItemLabel } from '../utils/itemMapping';
 export const Dashboard = () => {
   const { t } = useLanguage();
   const { currentUser } = useAuth();
+  const [selectedMovement, setSelectedMovement] = useState<any | null>(null);
 
   const { data: stock } = useMasterData('stock', true);
   const { data: receivings } = useMasterData('receivings', true);
   const { data: sales } = useMasterData('sales', true);
   const { data: movements } = useMasterData('stock_movements', true);
-  const { data: buyers } = useMasterData('buyers');
-  const { data: items } = useMasterData('items');
+  const { data: buyers } = useMasterData('buyers', true);
+  const { data: suppliers } = useMasterData('suppliers', true);
+  const { data: items } = useMasterData('items', true);
+  const { data: users } = useMasterData('users', true);
+  const { data: expenseCategories } = useMasterData('expense_categories', true);
+  const { data: allocations } = useMasterData('buyerAllocations', true);
 
   const todayStr = new Date().toISOString().split('T')[0];
 
@@ -54,6 +59,25 @@ export const Dashboard = () => {
     sales.filter((s: any) => s.status === 'Posted' && s.dispatchStatus !== 'Dispatched').length,
   [sales]);
 
+  const notRecorded = t('Belum tercatat', 'Not recorded yet');
+
+  const movementDetailRows = (movement: any) => {
+    const item = items.find((entry: any) => entry.id === movement.itemId);
+    const source = movement.source || movement.sourceModule || movement.module || notRecorded;
+    const createdAt = movement.timestamp?.toDate ? movement.timestamp.toDate() : new Date(movement.timestamp || movement.created_at || Date.now());
+    return [
+      ['Movement type', movement.type || notRecorded],
+      ['Product', getItemLabel(item)],
+      ['Quantity', `${movement.quantity || 0} ${item?.unit || movement.unit || 'kg'}`],
+      ['Source module', source],
+      ['Source document', movement.docId || movement.sourceId || movement.reference || notRecorded],
+      ['Date/time', Number.isNaN(createdAt.getTime()) ? notRecorded : createdAt.toLocaleString('id-ID')],
+      ['Created by', movement.createdBy || movement.userName || notRecorded],
+      ['Status', movement.status || notRecorded],
+      ['Notes', movement.notes || notRecorded],
+    ];
+  };
+
   // ── Recent activity: last 8 movements ────────────────────────────────────
   const recentActivity = useMemo(() =>
     [...movements]
@@ -64,6 +88,18 @@ export const Dashboard = () => {
       })
       .slice(0, 8),
   [movements]);
+
+  const hasArabicText = (value: any) => /[\u0600-\u06FF]/.test(JSON.stringify(value || ''));
+
+  const dataQuality = useMemo(() => {
+    const supplierMissingContact = suppliers.filter((s: any) => !(s.phone || s.whatsapp)).length;
+    const buyerMissingContact = buyers.filter((b: any) => !(b.phone || b.whatsapp || b.pic)).length;
+    const buyerMissingLinkedUser = buyers.filter((b: any) => !users.some((u: any) => u.linkedBuyerId === b.id || b.linkedUserId === u.id)).length;
+    const productMissingCore = items.filter((item: any) => !(item.scientificName && (item.defaultGrade || item.gradeProfileId) && (item.sizeRange || item.sizeProfileId))).length;
+    const languageIssues = [...expenseCategories, ...items, ...suppliers, ...buyers].filter(hasArabicText).length;
+    const provisionalAllocations = allocations.filter((allocation: any) => allocation.status === 'Provisional').length;
+    return { supplierMissingContact, buyerMissingContact, buyerMissingLinkedUser, productMissingCore, languageIssues, movementCount: recentActivity.length, provisionalAllocations };
+  }, [allocations, buyers, expenseCategories, items, recentActivity.length, suppliers, users]);
 
   // ── KPI Card helper ───────────────────────────────────────────────────────
   const KpiCard = ({ icon, label, value, sub, color, to }: { icon: React.ReactNode, label: string, value: React.ReactNode, sub?: string, color?: string, to?: string }) => {
@@ -189,6 +225,38 @@ export const Dashboard = () => {
         />
       </div>
 
+      <Card className="border-[#0F3A5F]/10 bg-white p-5 md:p-7">
+        <div className="mb-5 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#071827] text-cyan-300">
+              <SearchCheck size={18} />
+            </div>
+            <div>
+              <h3 className="text-sm font-black uppercase tracking-widest text-slate-900">Management Watch</h3>
+              <p className="text-xs font-bold text-slate-400">Data Quality / Demo Readiness</p>
+            </div>
+          </div>
+          <Badge variant={dataQuality.languageIssues > 0 ? 'pending' : 'posted'}>
+            {dataQuality.languageIssues > 0 ? 'Review' : 'Clean'}
+          </Badge>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            ['Supplier contact missing', dataQuality.supplierMissingContact],
+            ['Buyer contact/link issues', dataQuality.buyerMissingContact + dataQuality.buyerMissingLinkedUser],
+            ['Product seafood fields missing', dataQuality.productMissingCore],
+            ['Recent movements', dataQuality.movementCount],
+            ['Language hygiene warnings', dataQuality.languageIssues],
+            ['Provisional allocations', dataQuality.provisionalAllocations],
+          ].map(([label, value]) => (
+            <div key={label} className="rounded-2xl border border-slate-100 bg-slate-50/60 p-4">
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{label}</p>
+              <p className="mt-2 text-2xl font-black text-slate-900">{value}</p>
+            </div>
+          ))}
+        </div>
+      </Card>
+
       {/* ── Recent Activity ── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <Card>
@@ -204,7 +272,7 @@ export const Dashboard = () => {
                 const ts = m.timestamp?.toDate ? m.timestamp.toDate() : new Date(m.timestamp || m.created_at || 0);
                 const it = items.find((x: any) => x.id === m.itemId);
                 return (
-                  <div key={i} className="flex items-center gap-3 p-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                  <button key={i} type="button" onClick={() => setSelectedMovement(m)} className="flex w-full items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 p-2.5 text-left transition-all hover:border-cyan-200 hover:bg-cyan-50/40">
                     <Badge variant={m.type === 'IN' ? 'posted' : 'pending'}>{m.type}</Badge>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-black text-slate-900 truncate">{getItemLabel(it)}</p>
@@ -216,7 +284,7 @@ export const Dashboard = () => {
                       </p>
                       <p className="text-[10px] text-slate-300 font-bold">{ts.toLocaleDateString('id-ID')}</p>
                     </div>
-                  </div>
+                  </button>
                 );
               })}
             </div>
@@ -252,6 +320,36 @@ export const Dashboard = () => {
           )}
         </Card>
       </div>
+      {selectedMovement && (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-lg overflow-hidden rounded-3xl bg-white shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-100 bg-[#071827] px-6 py-5 text-white">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-widest text-cyan-200">IN/OUT Traceability</p>
+                <h3 className="text-lg font-black">Stock Movement Detail</h3>
+              </div>
+              <button type="button" onClick={() => setSelectedMovement(null)} className="rounded-2xl bg-white/10 p-2 text-white/70 hover:text-white">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="max-h-[70dvh] overflow-y-auto p-6">
+              <div className="grid gap-3">
+                {movementDetailRows(selectedMovement).map(([label, value]) => (
+                  <div key={label} className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{label}</p>
+                    <p className="mt-1 break-words text-sm font-black text-slate-800">{value}</p>
+                  </div>
+                ))}
+              </div>
+              {(selectedMovement.docId || selectedMovement.sourceId) && (
+                <Link to={String(selectedMovement.source || '').toLowerCase().includes('receiving') ? '/receiving' : String(selectedMovement.source || '').toLowerCase().includes('sale') ? '/sales' : '/stock'} className="mt-5 block rounded-2xl bg-ocean-700 px-4 py-3 text-center text-xs font-black uppercase tracking-widest text-white">
+                  Open source module
+                </Link>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

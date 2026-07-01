@@ -22,6 +22,14 @@ export function useMasterData(collectionName: string, includeInactive = false) {
         return () => {};
       }
 
+      const buyerAllowedCollections = ['items', 'sales', 'buyerAllocations', 'dispatches', 'buyerCredits'];
+      if (!buyerAllowedCollections.includes(collectionName)) {
+        console.warn(`SECURITY BLOCK: Buyer cannot subscribe to ${collectionName}.`);
+        setData([]);
+        setLoading(false);
+        return () => {};
+      }
+
       const transactionalCollections = ['sales', 'buyerAllocations', 'dispatches', 'buyerCredits'];
       if (transactionalCollections.includes(collectionName)) {
         constraints.push(where('buyerId', '==', currentUser.linkedBuyerId));

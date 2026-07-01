@@ -44,7 +44,7 @@ export const BuyerView: React.FC = () => {
         action={
           currentUser?.role === 'Buyer' ? (
             <div className="bg-ocean-50 border border-ocean-100 rounded-xl px-4 py-2 font-black text-sm shadow-sm text-ocean-800">
-              {buyers.find(b => b.id === currentUser.linkedBuyerId)?.name || 'My Portal'}
+              {currentUser.fullName || 'My Buyer Portal'}
             </div>
           ) : (
             <select 

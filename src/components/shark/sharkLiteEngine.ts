@@ -11,10 +11,17 @@ export const SHARK_LITE_PROMPTS: SharkPrompt[] = [
   { id: 'reports', label: 'Summarize reports.', question: 'Summarize reports.', roles: ['Admin'] },
   { id: 'audit', label: 'Summarize audit activity.', question: 'Summarize audit activity.', roles: ['Admin'] },
   { id: 'mismatch', label: 'Are there any data mismatches?', question: 'Are there any data mismatches?', roles: ['Admin'] },
+  { id: 'master-incomplete', label: 'What master data is incomplete?', question: 'What master data is incomplete?', roles: ['Admin'] },
+  { id: 'supplier-contact', label: 'Which suppliers miss phone/WA?', question: 'Which suppliers are missing phone or WhatsApp?', roles: ['Admin'] },
+  { id: 'product-quality', label: 'Which products need better data?', question: 'Which products are missing scientific name, grade, or size?', roles: ['Admin', 'Operator'] },
+  { id: 'traceability', label: 'Explain IN/OUT traceability.', question: 'Explain IN/OUT traceability.', roles: ['Admin', 'Operator'] },
+  { id: 'demo-risk', label: 'What is risky before demo?', question: 'What is risky before a serious demo?', roles: ['Admin'] },
+  { id: 'language-hygiene', label: 'Any language/data hygiene issues?', question: 'Are there language or data hygiene issues?', roles: ['Admin'] },
   { id: 'buyer-allocation-admin', label: 'Which buyer has allocation?', question: 'Which buyer has allocation?', roles: ['Admin'] },
   { id: 'operator-receiving', label: 'What receiving activity happened today?', question: 'What receiving activity happened today?', roles: ['Operator'] },
   { id: 'operator-stock', label: 'What stock changed?', question: 'What stock changed?', roles: ['Operator'] },
   { id: 'operator-processing', label: 'What processing happened?', question: 'What processing happened?', roles: ['Operator'] },
+  { id: 'operator-incomplete', label: 'What operational data is incomplete?', question: 'What operational data is incomplete?', roles: ['Operator'] },
   { id: 'operator-posting', label: 'What should I check before posting?', question: 'What should I check before posting?', roles: ['Operator'] },
   { id: 'operator-note', label: 'Prepare a receiving note as text only.', question: 'Prepare a receiving note as text only.', roles: ['Operator'] },
   { id: 'buyer-allocation', label: 'Apa allocation saya?', question: 'Apa allocation saya?', roles: ['Buyer'] },
@@ -156,6 +163,62 @@ function findMismatches(ctx: SharkLiteContext) {
   return notes.length ? notes.join('\n') : 'No obvious mismatch detected from the visible frontend data.';
 }
 
+function hasArabicText(value: unknown) {
+  return /[\u0600-\u06FF]/.test(JSON.stringify(value || ''));
+}
+
+function masterDataQuality(ctx: SharkLiteContext) {
+  const suppliersMissing = ctx.suppliers.filter((supplier) => !(supplier.phone || supplier.whatsapp));
+  const buyersMissingContact = ctx.buyers.filter((buyer) => !(buyer.phone || buyer.whatsapp || buyer.pic));
+  const buyersMissingUser = ctx.buyers.filter((buyer) => !ctx.users.some((user) => user.linkedBuyerId === buyer.id || buyer.linkedUserId === user.id));
+  const productsMissing = ctx.items.filter((item) => !(item.scientificName && (item.defaultGrade || item.gradeProfileId) && (item.sizeRange || item.sizeProfileId)));
+  const languageIssues = [...ctx.suppliers, ...ctx.buyers, ...ctx.items, ...ctx.expenses].filter(hasArabicText);
+
+  return [
+    `Master data readiness:`,
+    `Suppliers missing phone/WhatsApp: ${suppliersMissing.length}.`,
+    `Buyers missing contact/PIC: ${buyersMissingContact.length}.`,
+    `Buyers missing linked user: ${buyersMissingUser.length}.`,
+    `Products missing scientific name / grade / size: ${productsMissing.length}.`,
+    `Language hygiene warnings: ${languageIssues.length}.`,
+  ].join('\n');
+}
+
+function supplierContactGaps(ctx: SharkLiteContext) {
+  const missing = ctx.suppliers.filter((supplier) => !(supplier.phone || supplier.whatsapp)).slice(0, 8);
+  if (missing.length === 0) return 'All visible suppliers have phone or WhatsApp recorded.';
+  return missing.map((supplier) => `${supplier.name || supplier.id}: missing phone/WhatsApp.`).join('\n');
+}
+
+function productDataGaps(ctx: SharkLiteContext) {
+  const missing = ctx.items.filter((item) => !(item.scientificName && (item.defaultGrade || item.gradeProfileId) && (item.sizeRange || item.sizeProfileId))).slice(0, 8);
+  if (missing.length === 0) return 'Product master data looks ready: scientific name, grade, and size are filled for visible products.';
+  return missing.map((item) => `${itemName(ctx, item.id)}: add scientific name, grade, or size range.`).join('\n');
+}
+
+function explainTraceability(ctx: SharkLiteContext) {
+  const recent = [...ctx.stockMovements].sort((a, b) => Number(b.timestamp?.seconds || 0) - Number(a.timestamp?.seconds || 0)).slice(0, 4);
+  const movementLines = recent.length
+    ? recent.map((move) => `${move.type || 'MOVE'} ${kg(Number(move.quantity || 0))} ${itemName(ctx, move.itemId)} from ${move.source || 'Not recorded yet'}.`).join('\n')
+    : 'No recent movement is visible.';
+
+  return [
+    'IN/OUT traceability explains why stock changed.',
+    'IN usually comes from receiving or processing output. OUT usually comes from sales/dispatch, processing input, or adjustment.',
+    `Recent movement:\n${movementLines}`,
+    'If a source document is missing, the UI shows Belum tercatat / Not recorded yet instead of breaking old records.',
+  ].join('\n');
+}
+
+function demoRisk(ctx: SharkLiteContext) {
+  return [
+    'Before a serious demo, check:',
+    masterDataQuality(ctx),
+    `Draft receiving documents: ${countDraft(ctx.receivings)}.`,
+    `Data mismatches: ${findMismatches(ctx)}`,
+  ].join('\n');
+}
+
 function investorExplanation(ctx: SharkLiteContext) {
   if (ctx.currentUser.role === 'Buyer') {
     return 'Buyer Portal ini hanya menampilkan allocation milik akun Anda: product, quantity, dan status. It proves OPS Kaimana can expose a safe customer-facing view without revealing internal receiving, stock, users, supplier costs, or audit data.';
@@ -240,12 +303,21 @@ export function answerSharkLite(question: string, ctx: SharkLiteContext): string
   const role = ctx.currentUser.role;
 
   if (role === 'Buyer') {
+    if (/(supplier|cost|margin|profit|stock|receiving|processing|audit|user|all buyer|other buyer|purchase|internal)/i.test(normalized)) {
+      return 'Maaf, informasi tersebut adalah data internal operasional. Anda hanya dapat melihat allocation dan informasi transaksi milik Anda.';
+    }
     if (normalized.includes('provisional')) return 'Provisional berarti allocation sudah tercatat dari receiving, tetapi belum final untuk dispatch/shipment. It is visible to you, but not yet final shipped quantity.';
     if (normalized.includes('only my own') || normalized.includes('see only') || normalized.includes('security')) return 'Yes. In Buyer mode, Shark Lite only uses your linked buyer allocation and buyer-safe records. It does not read admin users, receiving, processing, audit log, supplier payables, or other buyers.';
     if (normalized.includes('portal') || normalized.includes('explain')) return investorExplanation(ctx);
     return buyerAllocation(ctx);
   }
 
+  if (normalized.includes('master data') || normalized.includes('incomplete')) return masterDataQuality(ctx);
+  if (normalized.includes('supplier') && (normalized.includes('phone') || normalized.includes('whatsapp') || normalized.includes('wa'))) return supplierContactGaps(ctx);
+  if (normalized.includes('scientific') || normalized.includes('products need') || normalized.includes('missing scientific') || normalized.includes('better data')) return productDataGaps(ctx);
+  if (normalized.includes('traceability') || normalized.includes('in/out') || normalized.includes('movement happened') || normalized.includes('stock movement')) return explainTraceability(ctx);
+  if (normalized.includes('serious demo') || normalized.includes('risky before') || normalized.includes('demo risk')) return demoRisk(ctx);
+  if (normalized.includes('language') || normalized.includes('hygiene')) return masterDataQuality(ctx);
   if (normalized.includes('investor') || normalized.includes('explain this system')) return investorExplanation(ctx);
   if (normalized.includes('under control') || normalized.includes('mini plant')) return `${summarizeStock(ctx)}\n\n${managementWatch(ctx)}`;
   if (normalized.includes('management') || normalized.includes('watch') || normalized.includes('risiko') || normalized.includes('diperhatikan')) return managementWatch(ctx);

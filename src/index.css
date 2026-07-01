@@ -2,17 +2,17 @@
 
 @theme {
   /* Premium Deep Ocean Palette */
-  --color-ocean-950: #020617;
-  --color-ocean-900: #0f172a;
-  --color-ocean-800: #1e293b;
-  --color-ocean-700: #334155;
-  --color-ocean-600: #475569;
-  --color-ocean-500: #2563eb; /* Primary Accent */
-  --color-ocean-400: #3b82f6; 
-  --color-ocean-300: #60a5fa;
-  --color-ocean-200: #93c5fd;
-  --color-ocean-100: #dbeafe;
-  --color-ocean-50: #eff6ff;
+  --color-ocean-950: #020b14;
+  --color-ocean-900: #071827;
+  --color-ocean-800: #0b1f33;
+  --color-ocean-700: #0f3a5f;
+  --color-ocean-600: #15527d;
+  --color-ocean-500: #0e7490; /* SeafoodOS Primary */
+  --color-ocean-400: #14b8a6; 
+  --color-ocean-300: #22d3ee;
+  --color-ocean-200: #67e8f9;
+  --color-ocean-100: #cffafe;
+  --color-ocean-50: #ecfeff;
 
   --color-accent-500: #06b6d4; /* Cyan Accent */
   --color-accent-400: #22d3ee;

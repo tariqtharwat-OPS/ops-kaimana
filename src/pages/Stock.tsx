@@ -7,7 +7,8 @@ import {
   TrendingUp, 
   AlertCircle,
   ChevronRight,
-  UserCheck
+  UserCheck,
+  X
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useMasterData } from '../hooks/useMasterData';
@@ -18,6 +19,7 @@ import { getItemLabel, getItemCodeLabel } from '../utils/itemMapping';
 export const StockPage: React.FC = () => {
   const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<'available' | 'assigned'>('available');
+  const [selectedMovement, setSelectedMovement] = useState<any | null>(null);
 
   // Real data from Firestore
   const { data: stock } = useMasterData('stock', true);
@@ -30,6 +32,26 @@ export const StockPage: React.FC = () => {
   const totalPhysical = stock.reduce((sum: number, s: any) => sum + (s.physicalQty || 0), 0);
   const totalReserved = stock.reduce((sum: number, s: any) => sum + (s.reservedQty || 0), 0);
   const totalAvailable = totalPhysical - totalReserved;
+  const notRecorded = t('Belum tercatat', 'Not recorded yet');
+
+  const movementDetailRows = (movement: any) => {
+    const item = items.find((entry: any) => entry.id === movement.itemId);
+    const grade = grades.find((entry: any) => entry.id === movement.gradeId);
+    const size = sizes.find((entry: any) => entry.id === movement.sizeId);
+    const createdAt = movement.timestamp?.toDate ? movement.timestamp.toDate() : new Date(movement.timestamp || movement.created_at || Date.now());
+    return [
+      ['Movement type', movement.type || notRecorded],
+      ['Product', getItemLabel(item)],
+      ['Grade / Size', `${grade?.name || notRecorded} / ${size?.name || notRecorded}`],
+      ['Quantity', `${movement.quantity || 0} ${item?.unit || movement.unit || 'kg'}`],
+      ['Source module', movement.source || movement.sourceModule || movement.module || notRecorded],
+      ['Source document', movement.docId || movement.sourceId || movement.reference || notRecorded],
+      ['Date/time', Number.isNaN(createdAt.getTime()) ? notRecorded : createdAt.toLocaleString('id-ID')],
+      ['Created by', movement.createdBy || movement.userName || notRecorded],
+      ['Status', movement.status || notRecorded],
+      ['Notes', movement.notes || notRecorded],
+    ];
+  };
 
   return (
     <div className="space-y-10 animate-in fade-in duration-500">
@@ -174,6 +196,7 @@ export const StockPage: React.FC = () => {
               const timeB = b.timestamp?.toMillis ? b.timestamp.toMillis() : new Date(b.timestamp || b.created_at).getTime();
               return timeB - timeA;
             }).slice(0, 10)}
+            onRowClick={(movement) => setSelectedMovement(movement)}
             columns={[
               { 
                 header: t('WAKTU', 'TIME'), 
@@ -199,6 +222,31 @@ export const StockPage: React.FC = () => {
           />
         </Card>
       </div>
+      {selectedMovement && (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-lg overflow-hidden rounded-3xl bg-white shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-100 bg-[#071827] px-6 py-5 text-white">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-widest text-cyan-200">IN/OUT Traceability</p>
+                <h3 className="text-lg font-black">Stock Movement Detail</h3>
+              </div>
+              <button type="button" onClick={() => setSelectedMovement(null)} className="rounded-2xl bg-white/10 p-2 text-white/70 hover:text-white">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="max-h-[70dvh] overflow-y-auto p-6">
+              <div className="grid gap-3">
+                {movementDetailRows(selectedMovement).map(([label, value]) => (
+                  <div key={label} className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{label}</p>
+                    <p className="mt-1 break-words text-sm font-black text-slate-800">{value}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

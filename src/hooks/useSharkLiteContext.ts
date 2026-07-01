@@ -6,6 +6,7 @@ import type { SharkLiteContext, SharkLiteRecord } from '../components/shark/shar
 
 const EMPTY_CONTEXT = {
   items: [],
+  suppliers: [],
   buyers: [],
   receivings: [],
   processing: [],
@@ -21,6 +22,7 @@ const EMPTY_CONTEXT = {
 
 const COLLECTION_KEYS = {
   items: 'items',
+  suppliers: 'suppliers',
   buyers: 'buyers',
   receivings: 'receivings',
   processing: 'processing',
@@ -40,6 +42,7 @@ function getAllowedKeys(role?: string): ContextKey[] {
   if (role === 'Admin') {
     return [
       'items',
+      'suppliers',
       'buyers',
       'receivings',
       'processing',
@@ -57,6 +60,7 @@ function getAllowedKeys(role?: string): ContextKey[] {
   if (role === 'Operator') {
     return [
       'items',
+      'suppliers',
       'buyers',
       'receivings',
       'processing',

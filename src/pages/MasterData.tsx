@@ -164,8 +164,8 @@ export const MasterDataPage: React.FC = () => {
   const { data: grades } = useMasterData('grades', true);
   const { data: sizes } = useMasterData('sizes', true);
   const { data: sales } = useMasterData('sales', true);
-  const { data: receivings } = useMasterData('receivings', true);
   const { data: adjustments } = useMasterData('adjustments', true);
+  const { data: users } = useMasterData('users', true);
 
   // Derived calculations for Buyers (Accounts Receivable)
   const getBuyerStats = (buyerId: string) => {
@@ -188,16 +188,6 @@ export const MasterDataPage: React.FC = () => {
     return { balance, allocatedStock };
   };
 
-  // Derived calculations for Suppliers (Accounts Payable)
-  const getSupplierStats = (supplierId: string) => {
-    const supplierReceivings = receivings.filter((r: any) => r.supplierId === supplierId);
-    const balance = supplierReceivings
-      .filter((r: any) => r.status === 'Posted')
-      .reduce((sum, r: any) => sum + (r.balanceDue !== undefined ? r.balanceDue : r.totalAmount), 0);
-      
-    return { balance };
-  };
-
   const tabs = [
     { id: 'items', label: t('Barang', 'Items'), icon: Package },
     { id: 'grading', label: t('Grading', 'Grading'), icon: Layers },
@@ -207,6 +197,9 @@ export const MasterDataPage: React.FC = () => {
     { id: 'expenses', label: t('Kategori Biaya', 'Expense Cat.'), icon: CreditCard },
     { id: 'workers', label: t('Pekerja', 'Workers'), icon: HardHat },
   ];
+
+  const textInputClass = "w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-ocean-800/10 focus:border-ocean-800 outline-none transition-all font-bold";
+  const compactValue = (value: any) => value || <span className="text-slate-300">-</span>;
 
   const renderModal = () => {
     if (!showModal) return null;
@@ -280,6 +273,59 @@ export const MasterDataPage: React.FC = () => {
                       value={formData.nameId || ''}
                       onChange={(e) => updateForm('nameId', e.target.value)}
                     />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-slate-100">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Scientific Name</label>
+                    <input type="text" placeholder="Thunnus albacares" className={textInputClass} value={formData.scientificName || ''} onChange={(e) => updateForm('scientificName', e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('Spesies / Kategori', 'Species / Category')}</label>
+                    <input type="text" placeholder="Tuna / Pelagic" className={textInputClass} value={formData.speciesCategory || ''} onChange={(e) => updateForm('speciesCategory', e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Grade</label>
+                    <input type="text" placeholder="A / B / Export" className={textInputClass} value={formData.defaultGrade || ''} onChange={(e) => updateForm('defaultGrade', e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('Rentang Ukuran', 'Size Range')}</label>
+                    <input type="text" placeholder="10-20 kg" className={textInputClass} value={formData.sizeRange || ''} onChange={(e) => updateForm('sizeRange', e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Unit</label>
+                    <input type="text" placeholder="kg" className={textInputClass} value={formData.unit || ''} onChange={(e) => updateForm('unit', e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('Storage Type', 'Storage Type')}</label>
+                    <select className={textInputClass} value={formData.storageType || ''} onChange={(e) => updateForm('storageType', e.target.value)}>
+                      <option value="">--</option>
+                      <option>Chilled</option>
+                      <option>Frozen</option>
+                      <option>Super Frozen</option>
+                      <option>Dry</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('Temperature', 'Temperature')}</label>
+                    <input type="text" placeholder="-18 C / -60 C" className={textInputClass} value={formData.temperatureRequirement || ''} onChange={(e) => updateForm('temperatureRequirement', e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('Default Yield %', 'Default Yield %')}</label>
+                    <input type="number" placeholder="75" className={textInputClass} value={formData.defaultYieldPercent || ''} onChange={(e) => updateForm('defaultYieldPercent', Number(e.target.value))} />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('Default Buying Price', 'Default Buying Price')}</label>
+                    <input type="number" placeholder="0" className={textInputClass} value={formData.defaultBuyingPrice || ''} onChange={(e) => updateForm('defaultBuyingPrice', Number(e.target.value))} />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('Default Selling Price', 'Default Selling Price')}</label>
+                    <input type="number" placeholder="0" className={textInputClass} value={formData.defaultSellingPrice || ''} onChange={(e) => updateForm('defaultSellingPrice', Number(e.target.value))} />
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Notes</label>
+                    <textarea rows={2} placeholder="Product handling notes" className={`${textInputClass} resize-none`} value={formData.notes || ''} onChange={(e) => updateForm('notes', e.target.value)} />
                   </div>
                 </div>
 
@@ -456,15 +502,45 @@ export const MasterDataPage: React.FC = () => {
                     onChange={(e) => updateForm('address', e.target.value)}
                   />
                 </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('KONTAK', 'CONTACT')}</label>
-                  <input 
-                    type="text" 
-                    placeholder="+62..." 
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl focus:ring-2 focus:ring-ocean-800/10 focus:border-ocean-800 outline-none transition-all font-bold"
-                    value={formData.phone || ''}
-                    onChange={(e) => updateForm('phone', e.target.value)}
-                  />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('Telepon', 'Phone')}</label>
+                    <input type="text" placeholder="+62..." className={textInputClass} value={formData.phone || ''} onChange={(e) => updateForm('phone', e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">WhatsApp</label>
+                    <input type="text" placeholder="+62..." className={textInputClass} value={formData.whatsapp || ''} onChange={(e) => updateForm('whatsapp', e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">PIC / Contact Person</label>
+                    <input type="text" placeholder="Nama PIC" className={textInputClass} value={formData.pic || ''} onChange={(e) => updateForm('pic', e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('Tipe Supplier', 'Supplier Type')}</label>
+                    <select className={textInputClass} value={formData.supplierType || ''} onChange={(e) => updateForm('supplierType', e.target.value)}>
+                      <option value="">--</option>
+                      <option>Fisherman</option>
+                      <option>Collector</option>
+                      <option>Company</option>
+                      <option>Boat</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('Kota / Area', 'City / Area')}</label>
+                    <input type="text" placeholder="Kaimana" className={textInputClass} value={formData.cityArea || ''} onChange={(e) => updateForm('cityArea', e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('Payment Terms', 'Payment Terms')}</label>
+                    <input type="text" placeholder="Cash / 7 days" className={textInputClass} value={formData.paymentTerms || ''} onChange={(e) => updateForm('paymentTerms', e.target.value)} />
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('Bank Account', 'Bank Account')}</label>
+                    <input type="text" placeholder="Bank / account number / holder" className={textInputClass} value={formData.bankAccount || ''} onChange={(e) => updateForm('bankAccount', e.target.value)} />
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Notes</label>
+                    <textarea rows={2} placeholder="Supplier notes" className={`${textInputClass} resize-none`} value={formData.notes || ''} onChange={(e) => updateForm('notes', e.target.value)} />
+                  </div>
                 </div>
               </div>
             )}
@@ -535,6 +611,51 @@ export const MasterDataPage: React.FC = () => {
                     value={formData.phone || ''}
                     onChange={(e) => updateForm('phone', e.target.value)}
                   />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">WhatsApp</label>
+                    <input type="text" placeholder="+62..." className={textInputClass} value={formData.whatsapp || ''} onChange={(e) => updateForm('whatsapp', e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">PIC / Contact Person</label>
+                    <input type="text" placeholder="Buyer PIC" className={textInputClass} value={formData.pic || ''} onChange={(e) => updateForm('pic', e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('Tipe Buyer', 'Buyer Type')}</label>
+                    <select className={textInputClass} value={formData.buyerType || ''} onChange={(e) => updateForm('buyerType', e.target.value)}>
+                      <option value="">--</option>
+                      <option>Local</option>
+                      <option>Export</option>
+                      <option>Wholesale</option>
+                      <option>Retail</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('Payment Terms', 'Payment Terms')}</label>
+                    <input type="text" placeholder="COD / 7 days / 30 days" className={textInputClass} value={formData.paymentTerms || ''} onChange={(e) => updateForm('paymentTerms', e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('Credit Limit', 'Credit Limit')}</label>
+                    <input type="number" placeholder="0" className={textInputClass} value={formData.creditLimit || ''} onChange={(e) => updateForm('creditLimit', Number(e.target.value))} />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('Linked User', 'Linked User')}</label>
+                    <select className={textInputClass} value={formData.linkedUserId || ''} onChange={(e) => updateForm('linkedUserId', e.target.value)}>
+                      <option value="">--</option>
+                      {users.filter((user: any) => user.role === 'Buyer').map((user: any) => (
+                        <option key={user.id} value={user.id}>{user.email || user.fullName || user.id}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('Delivery Address', 'Delivery Address')}</label>
+                    <textarea rows={2} placeholder="Buyer delivery address" className={`${textInputClass} resize-none`} value={formData.deliveryAddress || formData.address || ''} onChange={(e) => updateForm('deliveryAddress', e.target.value)} />
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Notes</label>
+                    <textarea rows={2} placeholder="Buyer-safe operational notes" className={`${textInputClass} resize-none`} value={formData.notes || ''} onChange={(e) => updateForm('notes', e.target.value)} />
+                  </div>
                 </div>
               </div>
             )}
@@ -663,8 +784,19 @@ export const MasterDataPage: React.FC = () => {
             data={items}
             columns={[
               { header: t('KODE', 'CODE'), accessor: 'item_code', className: 'font-black text-slate-900' },
-              { header: t('KATEGORI', 'CATEGORY'), accessor: (item) => <Badge variant="draft">{item.category}</Badge> },
-              { header: t('NAMA (EN)', 'NAME (EN)'), accessor: 'nameEn', className: 'font-bold text-slate-600' },
+              { header: t('PRODUK', 'PRODUCT'), accessor: (item) => (
+                <div>
+                  <p className="font-black text-slate-900">{item.nameId || item.nameEn || item.name || '-'}</p>
+                  <p className="text-[10px] font-bold text-slate-400">{item.nameEn || item.scientificName || '-'}</p>
+                </div>
+              ) },
+              { header: t('SPECIES / GRADE', 'SPECIES / GRADE'), accessor: (item) => (
+                <div className="space-y-1">
+                  <Badge variant="draft">{item.speciesCategory || item.category || 'Seafood'}</Badge>
+                  <p className="text-[10px] font-bold text-slate-400">{item.defaultGrade || 'Grade not set'} / {item.sizeRange || 'Size not set'}</p>
+                </div>
+              ) },
+              { header: t('STORAGE', 'STORAGE'), accessor: (item) => compactValue(item.storageType || item.temperatureRequirement), className: 'font-bold text-slate-600' },
               { header: t('STATUS', 'STATUS'), accessor: (item) => renderStatusBadge(item.active_status) },
               { 
                 header: '', 
@@ -729,15 +861,9 @@ export const MasterDataPage: React.FC = () => {
             columns={[
               { header: t('ID', 'ID'), accessor: 'id', className: 'font-black text-slate-900' },
               { header: t('NAMA PEMASOK', 'SUPPLIER NAME'), accessor: 'name', className: 'font-bold text-slate-900' },
-              { header: t('ALAMAT', 'ADDRESS'), accessor: (s) => s.address || '-', className: 'text-slate-400 truncate max-w-xs' },
-              { 
-                header: t('SISA HUTANG', 'OUTSTANDING PAYABLE'), 
-                accessor: (s: any) => {
-                  const stats = getSupplierStats(s.id);
-                  return <span className="font-bold text-red-600">Rp {stats.balance.toLocaleString()}</span>;
-                },
-                className: 'text-right'
-              },
+              { header: 'PHONE / WA', accessor: (s) => <span className="font-bold">{s.phone || s.whatsapp || '-'}</span> },
+              { header: 'PIC', accessor: (s) => compactValue(s.pic), className: 'text-slate-500' },
+              { header: t('TYPE', 'TYPE'), accessor: (s) => <Badge variant="draft">{s.supplierType || 'Supplier'}</Badge> },
               { header: t('STATUS', 'STATUS'), accessor: (item) => renderStatusBadge(item.active_status) },
               { 
                 header: '', 
@@ -753,15 +879,13 @@ export const MasterDataPage: React.FC = () => {
             data={buyers}
             columns={[
               { header: t('NAMA PEMBELI / PARTNER', 'BUYER / PARTNER NAME'), accessor: 'name', className: 'font-bold text-slate-900' },
-              { header: t('KONTAK', 'CONTACT'), accessor: 'phone', className: 'text-slate-400' },
-              { 
-                header: t('SISA PIUTANG', 'OUTSTANDING RECEIVABLE'), 
-                accessor: (b: any) => {
-                  const stats = getBuyerStats(b.id);
-                  return <span className="font-bold text-emerald-600">Rp {stats.balance.toLocaleString()}</span>;
-                },
-                className: 'text-right'
-              },
+              { header: 'PHONE / WA', accessor: (b) => <span className="font-bold">{b.phone || b.whatsapp || '-'}</span>, className: 'text-slate-500' },
+              { header: 'PIC', accessor: (b) => compactValue(b.pic), className: 'text-slate-500' },
+              { header: t('TYPE', 'TYPE'), accessor: (b) => <Badge variant="draft">{b.buyerType || 'Buyer'}</Badge> },
+              { header: t('LINKED USER', 'LINKED USER'), accessor: (b) => {
+                const linked = users.find((user: any) => user.id === b.linkedUserId || user.linkedBuyerId === b.id);
+                return <span className="text-xs font-bold text-slate-500">{linked?.email || '-'}</span>;
+              }},
               { 
                 header: t('STOK ALOKASI', 'ALLOCATED STOCK'), 
                 accessor: (b: any) => {
